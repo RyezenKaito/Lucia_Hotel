@@ -1,0 +1,52 @@
+package connectDatabase;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class ConnectDatabase {
+	private static Connection con = null;
+	private static ConnectDatabase instance = new ConnectDatabase();
+	
+	private final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyDatPhong;encrypt=false";
+	private final String USER="sa";
+	private final String PASSWORD ="sapassword";
+	
+	private ConnectDatabase() {
+		try {
+			con = DriverManager.getConnection(URL, USER, PASSWORD);
+		} catch (SQLException e) {
+			// TODO: handle exception
+			System.err.println("Lỗi kết nối Database: " + e.getMessage());
+		}
+	}
+	
+	public static ConnectDatabase getInstance() {
+		return instance;
+	}
+	
+	public Connection getConnection() {
+		try {
+			if(con== null || con.isClosed()) {
+				con = DriverManager.getConnection(URL, USER, PASSWORD);
+				System.out.println("Kết nối database thành công.");
+			}
+		} catch (SQLException e) {
+			// TODO: handle exception
+			System.err.println("Lỗi kết nối Database: " + e.getMessage());
+		}
+		
+		return con;
+	}
+	public  void disconnect() {
+		if(con!= null) {
+			try {
+				con.close();
+				System.out.println("Đã ngắt kết nối Database.");
+			} catch (SQLException e) {
+				System.out.println("Lỗi ngắt kết nối. Vui long kiểm tra lại.");
+				e.printStackTrace();
+			}
+		}
+	}
+}
