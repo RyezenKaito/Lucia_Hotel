@@ -38,35 +38,35 @@ INSERT INTO DichVu (maDichVu, tenDichVu, giaDichVu, loaiDichVu, mieuTa) VALUES
 ('DV03', N'Giặt ủi', 100000, N'MAYGIAT', N'Gói giặt ủi');
 
 -- 6. CHÈN PHÒNG
-INSERT INTO Phong (maPhong, tenPhong, tenLoaiPhong, tinhTrang, soPhong) VALUES 
+INSERT INTO Phong (maPhong, tenLoaiPhong, tinhTrang, soTang) VALUES 
 
 -- Tầng 1
-('P101', N'Phòng 101', 'SINGLE', N'CONTRONG', 101),
-('P102', N'Phòng 102', 'DOUBLE', N'CONTRONG', 102),
-('P103', N'Phòng 103', 'TWIN',   N'CONTRONG', 103),
-('P104', N'Phòng 104', 'TRIPLE', N'CONTRONG', 104),
-('P105', N'Phòng 105', 'FAMILY', N'CONTRONG', 105),
+('P101', 'SINGLE', N'CONTRONG',1),
+('P102', 'DOUBLE', N'CONTRONG',1),
+('P103', 'TWIN',   N'CONTRONG',1),
+('P104', 'TRIPLE', N'CONTRONG',1),
+('P105', 'FAMILY', N'CONTRONG',1),
 
 -- Tầng 2
-('P201', N'Phòng 201', 'SINGLE', N'CONTRONG', 201),
-('P202', N'Phòng 202', 'DOUBLE', N'CONTRONG', 202),
-('P203', N'Phòng 203', 'TWIN',   N'CONTRONG', 203),
-('P204', N'Phòng 204', 'TRIPLE', N'CONTRONG', 204),
-('P205', N'Phòng 205', 'FAMILY', N'CONTRONG', 205),
+('P201', 'SINGLE', N'CONTRONG',2),
+('P202', 'DOUBLE', N'CONTRONG',2),
+('P203', 'TWIN',   N'CONTRONG',2),
+('P204', 'TRIPLE', N'CONTRONG',2),
+('P205', 'FAMILY', N'CONTRONG',2),
 
 -- Tầng 3
-('P301', N'Phòng 301', 'SINGLE', N'CONTRONG', 301),
-('P302', N'Phòng 302', 'DOUBLE', N'CONTRONG', 302),
-('P303', N'Phòng 303', 'TWIN',   N'CONTRONG', 303),
-('P304', N'Phòng 304', 'TRIPLE', N'CONTRONG', 304),
-('P305', N'Phòng 305', 'FAMILY', N'CONTRONG', 305),
+('P301', 'SINGLE', N'CONTRONG',3),
+('P302', 'DOUBLE', N'CONTRONG',3),
+('P303', 'TWIN',   N'CONTRONG',3),
+('P304', 'TRIPLE', N'CONTRONG',3),
+('P305', 'FAMILY', N'CONTRONG',3),
 
 -- Tầng 4
-('P401', N'Phòng 401', 'SINGLE', N'CONTRONG', 401),
-('P402', N'Phòng 402', 'DOUBLE', N'CONTRONG', 402),
-('P403', N'Phòng 403', 'TWIN',   N'CONTRONG', 403),
-('P404', N'Phòng 404', 'TRIPLE', N'CONTRONG', 404),
-('P405', N'Phòng 405', 'FAMILY', N'CONTRONG', 405);
+('P401', 'SINGLE', N'CONTRONG',4),
+('P402', 'DOUBLE', N'CONTRONG',4),
+('P403', 'TWIN',   N'CONTRONG',4),
+('P404', 'TRIPLE', N'CONTRONG',4),
+('P405', 'FAMILY', N'CONTRONG',4);
 
 -- 7. CHÈN ĐẶT PHÒNG
 INSERT INTO DatPhong (maDatPhong, ngayDatPhong, maKhachHang, ngayCheckInDuKien, ngayCheckInThucTe, ngayCheckOutDuKien, ngayCheckOutThucTe) VALUES 

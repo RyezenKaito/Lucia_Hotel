@@ -1,6 +1,6 @@
 ﻿
-
--- DROP DATABASE QuanLyDatPhong;
+--USE master
+--DROP DATABASE QuanLyDatPhong;
 -- Kiểm tra và tạo Database
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'QuanLyDatPhong')
 BEGIN
@@ -75,10 +75,8 @@ CREATE TABLE DichVu (
 -- Bảng Phòng
 CREATE TABLE Phong (
     maPhong VARCHAR(20) PRIMARY KEY,
-    tenPhong NVARCHAR(50),
     tenLoaiPhong VARCHAR(50),
     tinhTrang NVARCHAR(20) CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG')),
-    soPhong INT,
     CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (tenLoaiPhong) REFERENCES LoaiPhong_ThongTin(tenLoaiPhong)
 );
 
@@ -159,5 +157,5 @@ CREATE TABLE DichVuDaSuDung (
     CONSTRAINT FK_DVSD_DichVu FOREIGN KEY (maDichVu) REFERENCES DichVu(maDichVu),
     CONSTRAINT FK_DVSD_DatPhong FOREIGN KEY (maDatPhong) REFERENCES DatPhong(maDatPhong)
 );
-
+Alter Table Phong add soTang INT
 GO
