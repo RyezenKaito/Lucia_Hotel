@@ -3,10 +3,8 @@ package gui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
-
 import dao.NhanVienDAO;
 import model.entities.NhanVien;
-
 import java.awt.*;
 import java.awt.event.*;
 
@@ -16,8 +14,8 @@ public class DangNhapJFrame extends JFrame implements ActionListener {
     private JPasswordField txtPassword;
     private JButton btnLogin;
     private NhanVienDAO nvDAO = new NhanVienDAO();
+    private JCheckBox chkShowPassword;
 
-    private final Color PRIMARY_BROWN = new Color(78, 52, 46);
     private final Color BG_COLOR = new Color(245, 241, 234);
     private final Color TEXT_DARK = new Color(50, 30, 20);
     private final Color BTN_GOLD_DEFAULT = new Color(190, 150, 80);
@@ -33,87 +31,97 @@ public class DangNhapJFrame extends JFrame implements ActionListener {
 
         JPanel pnlMain = new JPanel(new GridLayout(1, 2));
 
-        // LEFT
-        JPanel pnlLeft = new JPanel(new GridBagLayout());
-        pnlLeft.setBackground(PRIMARY_BROWN);
-        JLabel lblHotelName = new JLabel("LUCIA STAR");
-        lblHotelName.setFont(new Font("Serif", Font.BOLD, 36));
-        lblHotelName.setForeground(new Color(230, 210, 160));
-        pnlLeft.add(lblHotelName);
+        // --- LEFT PANEL: BACKGROUND ---
+        JPanel pnlLeft = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                ImageIcon bgIcon = new ImageIcon("src/background/LUCIA_STAR.jpg");
+                if (bgIcon.getImage() != null) {
+                    g.drawImage(bgIcon.getImage(), 0, 0, getWidth(), getHeight(), this);
+                }
+            }
+        };
 
-        // RIGHT
+        // --- RIGHT PANEL ---
         JPanel pnlRight = new JPanel();
         pnlRight.setBackground(BG_COLOR);
         pnlRight.setLayout(new BoxLayout(pnlRight, BoxLayout.Y_AXIS));
-        pnlRight.setBorder(new EmptyBorder(60, 60, 60, 60));
+        pnlRight.setBorder(new EmptyBorder(40, 60, 40, 60));
 
         JLabel lblLoginTitle = new JLabel("ĐĂNG NHẬP");
-        lblLoginTitle.setFont(new Font("Serif", Font.BOLD, 30));
+        lblLoginTitle.setFont(new Font("Serif", Font.BOLD, 32));
         lblLoginTitle.setForeground(TEXT_DARK);
         lblLoginTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblLoginTitle.setBorder(new MatteBorder(0, 0, 3, 0, BTN_GOLD_DEFAULT));
 
-        txtUsername = new JTextField();
+        txtUsername = new JTextField("LUCIA");
         txtPassword = new JPasswordField();
-
-        // ✅ FIX INPUT USERNAME (LUCIA0001)
-        ((javax.swing.text.AbstractDocument) txtUsername.getDocument())
-                .setDocumentFilter(new javax.swing.text.DocumentFilter() {
-                    @Override
-                    public void replace(FilterBypass fb, int offset, int length, String text,
-                                        javax.swing.text.AttributeSet attrs)
-                            throws javax.swing.text.BadLocationException {
-
-                        if (text == null) return;
-
-                        // Cho phép chữ + số
-                        if (!text.matches("[a-zA-Z0-9]*")) return;
-
-                        int currentLength = fb.getDocument().getLength();
-                        int newLength = currentLength + text.length() - length;
-
-                        // max 9 ký tự: LUCIA0001
-                        if (newLength <= 9) {
-                            super.replace(fb, offset, length, text.toUpperCase(), attrs);
-                        }
-                    }
-                });
-
-        txtUsername.setText("LUCIA"); // auto prefix
 
         JPanel pnlUserField = createCustomInput("Mã nhân viên:", txtUsername);
         JPanel pnlPassField = createCustomInput("Mật khẩu:", txtPassword);
 
+        // --- CHECKBOX ---
+        chkShowPassword = new JCheckBox("Hiện mật khẩu");
+        chkShowPassword.setBackground(BG_COLOR);
+        chkShowPassword.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        chkShowPassword.setForeground(TEXT_DARK);
+        chkShowPassword.addActionListener(e -> {
+            txtPassword.setEchoChar(chkShowPassword.isSelected() ? (char) 0 : '•');
+        });
+
+        JPanel pnlChk = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        pnlChk.setBackground(BG_COLOR);
+        pnlChk.add(chkShowPassword);
+
+        // --- BUTTON ---
         btnLogin = new JButton("Đăng Nhập");
         btnLogin.setBackground(BTN_GOLD_DEFAULT);
         btnLogin.setForeground(BTN_TEXT_COLOR);
-        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        btnLogin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 18));
         btnLogin.setFocusPainted(false);
-        btnLogin.setBorder(BorderFactory.createEmptyBorder());
         btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         btnLogin.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 btnLogin.setBackground(BTN_GOLD_HOVER);
             }
-
             public void mouseExited(MouseEvent e) {
                 btnLogin.setBackground(BTN_GOLD_DEFAULT);
             }
         });
 
-        btnLogin.addActionListener(this);
+        JPanel pnlBtnWrapper = new JPanel(new BorderLayout());
+        pnlBtnWrapper.setOpaque(false);
+        pnlBtnWrapper.setBorder(new EmptyBorder(10, 30, 10, 30));
+        pnlBtnWrapper.add(btnLogin, BorderLayout.CENTER);
+        pnlBtnWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
+
+        // =========================
+        // ✅ FIX ENTER BEHAVIOR
+        // =========================
+
+        // Enter ở username → xuống password
+        txtUsername.addActionListener(e -> txtPassword.requestFocus());
+
+        // Enter ở password → login
         txtPassword.addActionListener(this);
 
+        // Button login
+        btnLogin.addActionListener(this);
+
+        // =========================
+
+        // Layout
         pnlRight.add(Box.createVerticalGlue());
         pnlRight.add(lblLoginTitle);
-        pnlRight.add(Box.createVerticalStrut(40));
+        pnlRight.add(Box.createVerticalStrut(30));
         pnlRight.add(pnlUserField);
-        pnlRight.add(Box.createVerticalStrut(20));
+        pnlRight.add(Box.createVerticalStrut(15));
         pnlRight.add(pnlPassField);
-        pnlRight.add(Box.createVerticalStrut(35));
-        pnlRight.add(btnLogin);
+        pnlRight.add(pnlChk);
+        pnlRight.add(Box.createVerticalStrut(20));
+        pnlRight.add(pnlBtnWrapper);
         pnlRight.add(Box.createVerticalGlue());
 
         pnlMain.add(pnlLeft);
@@ -128,9 +136,8 @@ public class DangNhapJFrame extends JFrame implements ActionListener {
 
         JLabel lbl = new JLabel(labelText);
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lbl.setForeground(new Color(120, 100, 90));
 
-        textField.setFont(new Font("Segoe UI", Font.PLAIN, 17));
+        textField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         textField.setOpaque(false);
         textField.setBorder(new MatteBorder(0, 0, 1, 0, new Color(180, 160, 150)));
 
@@ -144,34 +151,18 @@ public class DangNhapJFrame extends JFrame implements ActionListener {
         String user = txtUsername.getText().trim();
         String pass = new String(txtPassword.getPassword());
 
-        // validate rỗng
         if (user.isEmpty() || pass.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
+            JOptionPane.showMessageDialog(this, "Nhập đủ thông tin đi ông!");
             return;
         }
 
-        // validate format LUCIA0001
-        if (!user.matches("LUCIA\\d{4}")) {
-            JOptionPane.showMessageDialog(this, "Mã NV phải dạng LUCIAxxx");
-            return;
-        }
-
-        // login
         if (nvDAO.authenticate(user, pass)) {
             NhanVien staff = nvDAO.getById(user);
-
-            JOptionPane.showMessageDialog(this,
-                    "Đăng nhập thành công!\nXin chào: " + staff.getHoTen());
-
-            SwingUtilities.invokeLater(() -> {
-                new MainFrame(staff).setVisible(true);
-                this.dispose();
-            });
-
+            JOptionPane.showMessageDialog(this, "Chào mừng " + staff.getHoTen());
+            new MainFrame(staff).setVisible(true);
+            this.dispose();
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "Sai tài khoản hoặc mật khẩu!");
-
+            JOptionPane.showMessageDialog(this, "Sai mã NV hoặc mật khẩu!");
             txtPassword.setText("");
             txtPassword.requestFocus();
         }

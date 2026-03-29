@@ -9,6 +9,7 @@ import java.util.Objects;
 import model.entities.NhanVien;
 import dao.NhanVienDAO;
 import model.enums.ChucVu;
+import model.enums.trinhDo;
 
 public class NhanVienForm extends JDialog {
     private JTextField txtTen, txtSDT, txtHeSo;
@@ -16,7 +17,10 @@ public class NhanVienForm extends JDialog {
     private JComboBox<NhanVien> cbNguoiQuanLy; 
     private JLabel lblErrTen, lblErrSDT, lblErrHeSo, lblNQL;
     private NhanVienDAO dao = new NhanVienDAO();
-    
+    private JTextField txtDiaChi;
+    private JComboBox<trinhDo> cbTrinhDo;
+    private JLabel lblErrDiaChi;
+
     private final Color BROWN_DARK = new Color(70, 45, 40); 
     private final Color ERR_RED = new Color(220, 53, 69);
     private final Color BORDER_GRAY = new Color(210, 210, 210);
@@ -51,34 +55,75 @@ public class NhanVienForm extends JDialog {
         header.add(btnClose, BorderLayout.EAST);
         mainCard.add(header, BorderLayout.NORTH);
 
-        // --- BODY ---
+     // --- BODY ---
         JPanel body = new JPanel(new GridBagLayout());
         body.setBackground(Color.WHITE);
-        body.setBorder(new EmptyBorder(20, 40, 10, 40));
+        body.setBorder(new EmptyBorder(25, 40, 15, 40));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
 
-        addFormRow("Họ tên:", txtTen = createTextField(), lblErrTen = createErrLabel(), body, gbc, 0);
-        addFormRow("Số điện thoại:", txtSDT = createTextField(), lblErrSDT = createErrLabel(), body, gbc, 2);
-        addFormRow("Hệ số lương:", txtHeSo = createTextField(), lblErrHeSo = createErrLabel(), body, gbc, 4);
+        int y = 0;
 
-        // Chức vụ
-        gbc.gridy = 6; gbc.gridx = 0; gbc.weightx = 0.3;
-        gbc.insets = new Insets(5, 0, 15, 10);
+        // Họ tên
+        addFormRow("Họ tên:", txtTen = createTextField(), lblErrTen = createErrLabel(), body, gbc, y);
+        y += 2;
+
+        // Địa chỉ
+        addFormRow("Địa chỉ:", txtDiaChi = createTextField(), lblErrDiaChi = createErrLabel(), body, gbc, y);
+        y += 2;
+
+        // SĐT
+        addFormRow("Số điện thoại:", txtSDT = createTextField(), lblErrSDT = createErrLabel(), body, gbc, y);
+        y += 2;
+
+        // Hệ số
+        addFormRow("Hệ số lương:", txtHeSo = createTextField(), lblErrHeSo = createErrLabel(), body, gbc, y);
+        y += 2;
+
+        // ===== TRÌNH ĐỘ =====
+        gbc.gridy = y; 
+        gbc.gridx = 0;
+        gbc.insets = new Insets(8, 0, 8, 10);
+        body.add(new JLabel("Trình độ:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        cbTrinhDo = new JComboBox<>(trinhDo.values());
+        styleComboBox(cbTrinhDo);
+        body.add(cbTrinhDo, gbc);
+
+        y++;
+
+        // ===== CHỨC VỤ =====
+        gbc.gridy = y;
+        gbc.gridx = 0;
+        gbc.insets = new Insets(8, 0, 8, 10);
         body.add(new JLabel("Chức vụ:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        gbc.insets = new Insets(5, 0, 15, 0);
+
+        gbc.gridx = 1;
         cbChucVu = new JComboBox<>(new String[]{"Quản lý", "Nhân viên"});
         styleComboBox(cbChucVu);
-        body.add(cbChucVu, gbc);
+        
+        // SỬ DỤNG GIAO DIỆN CHỈ ĐỌC (TEXTFIELD) THAY VÌ COMBOBOX MỜ XÁM KHI EDIT
+        if (nvEdit != null) {
+            JTextField txtCV = createReadOnlyTextField();
+            txtCV.setText(nvEdit.getRole() == ChucVu.QUAN_LY ? "Quản lý" : "Nhân viên");
+            body.add(txtCV, gbc);
+        } else {
+            body.add(cbChucVu, gbc);
+        }
 
-        // Người quản lý (Fix giao diện bằng tắp lự)
-        gbc.gridy = 7; gbc.gridx = 0; gbc.weightx = 0.3;
-        gbc.insets = new Insets(0, 0, 15, 10);
+        y++;
+
+        // ===== NGƯỜI QUẢN LÝ =====
+        gbc.gridy = y;
+        gbc.gridx = 0;
         lblNQL = new JLabel("Người quản lý:");
         body.add(lblNQL, gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        gbc.insets = new Insets(0, 0, 15, 0);
+
+        gbc.gridx = 1;
         cbNguoiQuanLy = new JComboBox<>();
         styleComboBox(cbNguoiQuanLy);
         loadManagersToComboBox();
@@ -86,7 +131,9 @@ public class NhanVienForm extends JDialog {
 
         lblNQL.setVisible(false);
         cbNguoiQuanLy.setVisible(false);
+
         mainCard.add(body, BorderLayout.CENTER);
+
 
         // --- FOOTER ---
         RoundedButton btnSave = new RoundedButton("LƯU DỮ LIỆU", 15);
@@ -111,11 +158,17 @@ public class NhanVienForm extends JDialog {
 
         setupFocusValidation();
 
+        // ============================================
+        // LOAD DATA KHI CHỈNH SỬA (CẬP NHẬT NHÂN VIÊN)
+        // ============================================
         if (nvEdit != null) {
             txtTen.setText(nvEdit.getHoTen());
             txtSDT.setText(nvEdit.getSoDT());
             txtHeSo.setText(String.valueOf(nvEdit.getHeSoLuong()));
             cbChucVu.setSelectedIndex(nvEdit.getRole() == ChucVu.QUAN_LY ? 0 : 1);
+            
+            // Đã thay thế ComboBox thành txtCV phía trên, bỏ cbChucVu.setEnabled(false) để tránh lỗi nền xám
+            
             if (nvEdit.getRole() == ChucVu.NHAN_VIEN) {
                 lblNQL.setVisible(true);
                 cbNguoiQuanLy.setVisible(true);
@@ -125,25 +178,52 @@ public class NhanVienForm extends JDialog {
                     }
                 }
             }
+            txtDiaChi.setText(nvEdit.getDiaChi());
+            for (int i = 0; i < cbTrinhDo.getItemCount(); i++) {
+                if (cbTrinhDo.getItemAt(i) == nvEdit.getTrinhDo()) {
+                    cbTrinhDo.setSelectedIndex(i);
+                    break;
+                }
+            }
         }
     }
 
-    private void addFormRow(String labelText, JTextField field, JLabel errLabel, JPanel parent, GridBagConstraints gbc, int y) {
-        gbc.gridy = y; gbc.gridx = 0; gbc.weightx = 0.3;
-        gbc.insets = new Insets(5, 0, 0, 10);
-        parent.add(new JLabel(labelText), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.7;
-        gbc.insets = new Insets(5, 0, 0, 0);
-        parent.add(field, gbc);
-        gbc.gridy = y + 1; gbc.gridx = 1;
-        gbc.insets = new Insets(2, 0, 8, 0);
-        parent.add(errLabel, gbc);
+    private void addFormRow(String labelText, JTextField field, JLabel errLabel,
+            JPanel parent, GridBagConstraints gbc, int y) {
+		gbc.gridy = y;
+		gbc.gridx = 0;
+		gbc.weightx = 0.3;
+		gbc.insets = new Insets(8, 0, 0, 10);
+		parent.add(new JLabel(labelText), gbc);
+		
+		gbc.gridx = 1;
+		gbc.weightx = 0.7;
+		gbc.insets = new Insets(8, 0, 0, 0);
+		parent.add(field, gbc);
+		
+		gbc.gridy = y + 1;
+		gbc.gridx = 1;
+		gbc.insets = new Insets(2, 0, 6, 0);
+		parent.add(errLabel, gbc);
     }
 
     private JTextField createTextField() {
         JTextField t = new JTextField();
         t.setPreferredSize(new Dimension(0, 38));
         t.setBorder(new RoundedBorder(10, BORDER_GRAY));
+        return t;
+    }
+
+    // --- HÀM TẠO TEXTFIELD BỊ KHÓA NHƯNG VẪN ĐẸP MẶC ĐỊNH ---
+    private JTextField createReadOnlyTextField() {
+        JTextField t = new JTextField();
+        t.setPreferredSize(new Dimension(0, 38));
+        t.setBorder(new RoundedBorder(10, BORDER_GRAY));
+        t.setBackground(Color.WHITE); // Ép màu nền trắng
+        t.setForeground(Color.BLACK); // Ép màu chữ đen nguyên bản
+        t.setEditable(false);
+        t.setFocusable(false); // Chặn không cho hiện con nháy chuột
+        t.setCursor(new Cursor(Cursor.DEFAULT_CURSOR)); // Trỏ chuột bình thường
         return t;
     }
 
@@ -201,8 +281,8 @@ public class NhanVienForm extends JDialog {
                         .count();
 
                 // ➤ THÊM MỚI
-                if (nvEdit == null && countQL >= 1) {
-                    JOptionPane.showMessageDialog(this, "Chỉ được phép có 1 quản lý!");
+                if (nvEdit == null && countQL >= 2) {
+                    JOptionPane.showMessageDialog(this, "Chỉ được phép có tối đa 2 quản lý!");
                     return;
                 }
 
@@ -210,8 +290,8 @@ public class NhanVienForm extends JDialog {
                 if (nvEdit != null) {
                     boolean wasManager = nvEdit.getRole() == ChucVu.QUAN_LY;
 
-                    if (!wasManager && countQL >= 1) {
-                        JOptionPane.showMessageDialog(this, "Đã tồn tại quản lý!");
+                    if (!wasManager && countQL >= 2) {
+                        JOptionPane.showMessageDialog(this, "Đã đủ 2 quản lý!");
                         return;
                     }
                 }
@@ -239,7 +319,8 @@ public class NhanVienForm extends JDialog {
             n.setSoDT(txtSDT.getText().trim());
             n.setHeSoLuong(Float.parseFloat(txtHeSo.getText().trim()));
             n.setRole(isManagerSelected ? ChucVu.QUAN_LY : ChucVu.NHAN_VIEN);
-
+            n.setDiaChi(txtDiaChi.getText().trim());
+            n.setTrinhDo((trinhDo) cbTrinhDo.getSelectedItem());
             if (n.getRole() == ChucVu.NHAN_VIEN && cbNguoiQuanLy.getSelectedItem() != null) {
                 n.setMaQL(((NhanVien) cbNguoiQuanLy.getSelectedItem()).getMaNV());
             } else {
@@ -255,7 +336,6 @@ public class NhanVienForm extends JDialog {
                 JOptionPane.showMessageDialog(this, "Thành công!");
                 dispose();
             }
-
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
         }

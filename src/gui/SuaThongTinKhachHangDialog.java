@@ -53,6 +53,7 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         setMinimumSize(new Dimension(600, 700));
         setResizable(false);
         setLocationRelativeTo(owner);
+        SwingUtilities.invokeLater(() -> txtTenKH.requestFocusInWindow());
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -73,9 +74,6 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         h.setLayout(new BoxLayout(h, BoxLayout.Y_AXIS));
         h.setBorder(new EmptyBorder(26, 32, 20, 32));
 
-        JLabel ico = lbl("✏️", 34, Font.PLAIN, Color.WHITE);
-        ico.setAlignmentX(LEFT_ALIGNMENT);
-
         JLabel title = lbl("Cập nhật thông tin khách hàng", 21, Font.BOLD, Color.WHITE);
         title.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -88,7 +86,6 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
         sep.setAlignmentX(LEFT_ALIGNMENT);
 
-        h.add(ico);
         h.add(Box.createVerticalStrut(8));
         h.add(title);
         h.add(Box.createVerticalStrut(4));
@@ -112,6 +109,7 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         txtMaKH.setForeground(new Color(100, 110, 130));
 
         txtTenKH = makeField(nvl(kh.getHoTen()));
+        txtTenKH.requestFocus();
         txtCCCD  = makeField(nvl(kh.getCCCD()));
         txtSDT   = makeField(nvl(kh.getSoDienThoai()));
 
@@ -126,15 +124,15 @@ public class SuaThongTinKhachHangDialog extends JDialog {
                 : LocalDate.now().minusYears(25);
         initDatePicker(initDate);
 
-        form.add(fieldBlock("🔑  Mã khách hàng",       txtMaKH,  null,        "Không thể chỉnh sửa"));
+        form.add(fieldBlock("Mã khách hàng",       txtMaKH,  null,        "Không thể chỉnh sửa"));
         form.add(Box.createVerticalStrut(13));
-        form.add(fieldBlock("📋  Họ và tên",             txtTenKH, errTen,      null));
+        form.add(fieldBlock("Họ và tên",             txtTenKH, errTen,      null));
         form.add(Box.createVerticalStrut(13));
         form.add(dateBlock());
         form.add(Box.createVerticalStrut(13));
-        form.add(fieldBlock("🪪  Số căn cước công dân",  txtCCCD,  errCCCD,     "Đúng 12 chữ số"));
+        form.add(fieldBlock("Số căn cước công dân",  txtCCCD,  errCCCD,     "Đúng 12 chữ số"));
         form.add(Box.createVerticalStrut(13));
-        form.add(fieldBlock("📞  Số điện thoại",          txtSDT,   errSDT,      "Đúng 10 chữ số"));
+        form.add(fieldBlock("Số điện thoại",          txtSDT,   errSDT,      "Đúng 10 chữ số"));
         return form;
     }
 
@@ -172,7 +170,7 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         b.setOpaque(false);
         b.setAlignmentX(LEFT_ALIGNMENT);
 
-        JLabel lbl  = lbl("🎂  Ngày sinh", 13, Font.BOLD, new Color(34, 52, 78));
+        JLabel lbl  = lbl("Ngày sinh", 13, Font.BOLD, new Color(34, 52, 78));
         lbl.setAlignmentX(LEFT_ALIGNMENT);
         JLabel hint = lbl("    Phải đủ 16 tuổi trở lên", 11, Font.ITALIC,
                           new Color(140, 150, 165));
@@ -199,7 +197,7 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         f.setBorder(new MatteBorder(1, 0, 0, 0, new Color(215, 220, 228)));
 
         JButton btnDong    = makeBtn("Đóng",              C_CANCEL,  new Color(50, 65, 90));
-        JButton btnCapNhat = makeBtn("✔   Lưu thay đổi", C_PRIMARY, Color.WHITE);
+        JButton btnCapNhat = makeBtn("Lưu thay đổi", C_PRIMARY, Color.WHITE);
 
         btnDong   .addActionListener(e -> dispose());
         btnCapNhat.addActionListener(e -> handleUpdate(kh));
@@ -288,7 +286,7 @@ public class SuaThongTinKhachHangDialog extends JDialog {
         }
         if (!ok) return;
 
-        kh.setHoTen(ten);
+        kh.setHoTen(toTitleCase(ten));
         kh.setCCCD(cccd);
         kh.setSoDienThoai(sdt);
         kh.setNgaySinh(ns);
@@ -389,4 +387,22 @@ public class SuaThongTinKhachHangDialog extends JDialog {
     }
 
     private String nvl(String s) { return s != null ? s : ""; }
+    
+    private String toTitleCase(String input) {
+    	if(input == null || input.isEmpty()) return input;
+    	StringBuilder sb = new StringBuilder();
+    	boolean nextUpper = true;
+    	for (char ch : input.toCharArray()) {
+    		if(Character.isWhitespace(ch)) {
+    			nextUpper = true;
+    			sb.append(ch);
+    		} else if (nextUpper) {
+    			sb.append(Character.toUpperCase(ch));
+    			nextUpper = false;
+    		} else {
+    			sb.append(Character.toLowerCase(ch));
+    		}
+    	}
+    	return sb.toString();
+    }
 }

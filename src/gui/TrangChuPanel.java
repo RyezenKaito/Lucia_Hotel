@@ -24,10 +24,10 @@ public class TrangChuPanel extends JPanel {
         // Phần thống kê (Thẻ Modern)
         JPanel stats = new JPanel(new GridLayout(1, 4, 25, 0));
         stats.setOpaque(false);
-        stats.add(createStatCard("TỔNG PHÒNG", "20", "🏠", new Color(50, 30, 28)));
-        stats.add(createStatCard("ĐANG Ở", "0", "👥", new Color(165, 55, 55)));
-        stats.add(createStatCard("PHÒNG TRỐNG", "20", "✨", new Color(66, 130, 90)));
-        stats.add(createStatCard("DOANH THU", "0", "💰", new Color(212, 175, 55)));
+        stats.add(createStatCard("TỔNG PHÒNG", "--", "🏠", new Color(50, 30, 28)));
+        stats.add(createStatCard("ĐÃ CÓ KHÁCH", "--", "👥", new Color(165, 55, 55)));
+        stats.add(createStatCard("PHÒNG TRỐNG", "--", "✨", new Color(66, 130, 90)));
+        stats.add(createStatCard("DOANH THU", "--", "💰", new Color(212, 175, 55)));
 
         // Phần nội dung sơ đồ phòng
         JPanel center = new JPanel(new BorderLayout());

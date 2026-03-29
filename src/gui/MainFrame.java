@@ -45,9 +45,9 @@ public class MainFrame extends JFrame {
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
 
-        // Nạp các Panel (Mở lại NhanVienPanel cho bạn)
+        // Nạp các Panel
         mainPanel.add(new TrangChuPanel(), "dashboard");
-        mainPanel.add(new TaoDonDatPhongPanel(), "booking");
+//        mainPanel.add(new TaoDonDatPhongPanel(), "booking");
         mainPanel.add(createScrollPane(new KhachHangPanel()), "customers");
         mainPanel.add(createScrollPane(new NhanVienPanel(isAdmin)), "staff");
         mainPanel.add(new CheckInPanel(), "checkin");
@@ -55,7 +55,9 @@ public class MainFrame extends JFrame {
         mainPanel.add(createScrollPane(new HoaDonPanel()), "invoices");
         mainPanel.add(createScrollPane(new ThemDichVuPanel()), "service");
         mainPanel.add(new BangGiaDichVuPanel(), "servicePrice");
-        mainPanel.add(createScrollPane(new QuanLyPhongPanel()), "rooms");
+        
+        // TRUYỀN QUYỀN IS_ADMIN VÀO ĐÂY
+        mainPanel.add(createScrollPane(new QuanLyPhongPanel(isAdmin)), "rooms");
         	
         add(mainPanel, BorderLayout.CENTER);
     }
@@ -105,10 +107,10 @@ public class MainFrame extends JFrame {
         sidebar.add(menuItem("Hóa đơn", "invoices"));
         sidebar.add(Box.createVerticalStrut(5));
         sidebar.add(menuItem("Nhân viên", "staff"));
-        if(isAdmin) {
-        	sidebar.add(Box.createVerticalStrut(5));
-            sidebar.add(menuItem("Phòng", "rooms"));
-        }
+
+        sidebar.add(Box.createVerticalStrut(5));
+        sidebar.add(menuItem("Phòng", "rooms"));
+
 
         sidebar.add(Box.createVerticalGlue());
         
@@ -177,7 +179,9 @@ public class MainFrame extends JFrame {
         });
 
         return btn;
-    }    private JButton menuItem(String text, String cardName) {
+    }    
+    
+    private JButton menuItem(String text, String cardName) {
         JButton btn = new JButton(text);
         // GIỮ NGUYÊN CHIỀU CAO 50 NHƯ BẠN MUỐN
         btn.setMaximumSize(new Dimension(250, 50));
@@ -202,7 +206,9 @@ public class MainFrame extends JFrame {
             if (activeMenuButton != null) setNormalStyle(activeMenuButton);
             setActiveStyle(btn);
             activeMenuButton = btn;
-            cardLayout.show(mainPanel, cardName);
+            if(cardName != null) {
+                cardLayout.show(mainPanel, cardName);
+            }
         });
 
         btn.addMouseListener(new MouseAdapter() {

@@ -6,6 +6,8 @@ import model.entities.KhachHang;
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -38,7 +40,7 @@ public class KhachHangDialog extends JDialog {
     private JComboBox<Integer> cbNam   = new JComboBox<>();
 
     // ── Error labels ────────────────────────────────────────────────────────
-    private JLabel errMaKH, errTen, errNgaySinh, errCCCD, errSDT;
+    private JLabel errTen, errNgaySinh, errCCCD, errSDT;
 
     private final KhachHangDAO    dao;
     private final KhachHangPanel  panel;
@@ -53,6 +55,7 @@ public class KhachHangDialog extends JDialog {
         setMinimumSize(new Dimension(600, 680));
         setResizable(false);
         setLocationRelativeTo(owner);
+        SwingUtilities.invokeLater(() -> txtTenKH.requestFocusInWindow());
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -73,14 +76,12 @@ public class KhachHangDialog extends JDialog {
         h.setLayout(new BoxLayout(h, BoxLayout.Y_AXIS));
         h.setBorder(new EmptyBorder(26, 32, 20, 32));
 
-        JLabel ico = lbl("👤", 36, Font.PLAIN, Color.WHITE);
-        ico.setAlignmentX(LEFT_ALIGNMENT);
 
         JLabel title = lbl("Thêm khách hàng mới", 22, Font.BOLD, Color.WHITE);
         title.setAlignmentX(LEFT_ALIGNMENT);
 
         JLabel sub = lbl("Vui lòng điền đầy đủ thông tin bên dưới", 13, Font.PLAIN,
-                         new Color(180, 160, 140));
+                         new Color(255, 255, 0));
         sub.setAlignmentX(LEFT_ALIGNMENT);
 
         JSeparator sep = new JSeparator();
@@ -88,7 +89,6 @@ public class KhachHangDialog extends JDialog {
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
         sep.setAlignmentX(LEFT_ALIGNMENT);
 
-        h.add(ico);
         h.add(Box.createVerticalStrut(8));
         h.add(title);
         h.add(Box.createVerticalStrut(4));
@@ -105,23 +105,17 @@ public class KhachHangDialog extends JDialog {
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setBorder(new EmptyBorder(22, 32, 8, 32));
 
-        String nextMa = dao.getNextMaKH(); // Ví dụ: "KH00000001"
         txtMaKH = makeField();
-        txtMaKH.setText(nextMa.substring(2)); // chỉ giữ "00000001"
-        txtMaKH.addKeyListener(new java.awt.event.KeyAdapter() {
-        	@Override
-        	public void keyTyped(java.awt.event.KeyEvent e) {
-        		char c = e.getKeyChar();
-        		if(!Character.isDigit(c)) { e.consume(); return; }
-        		if(txtMaKH.getText().length() >= 8) e.consume();
-        	}
-        });
-
+        txtMaKH.setText(dao.getNextMaKH());
+        txtMaKH.setEditable(false);
+        txtMaKH.setBackground(new Color(230, 232, 238));
+        txtMaKH.setForeground(new Color(100, 110, 130));
+        
         txtTenKH = makeField();
+        txtTenKH.requestFocus();
         txtCCCD  = makeField();
         txtSDT   = makeField();
-
-        errMaKH 	= errLbl();
+        
         errTen      = errLbl();
         errNgaySinh = errLbl();
         errCCCD     = errLbl();
@@ -130,15 +124,15 @@ public class KhachHangDialog extends JDialog {
         // Khởi tạo date picker (mặc định 25 năm trước)
         initDatePicker(LocalDate.now().minusYears(25));
 
-        form.add(fieldBlock("🔑  Mã khách hàng",       txtMaKH,  null,        "Chỉ nhập 8 chữ số "));
+        form.add(fieldBlock("Mã khách hàng",       txtMaKH,  null,        "Chỉ nhập 8 chữ số "));
         form.add(Box.createVerticalStrut(13));
-        form.add(fieldBlock("📋  Họ và tên",             txtTenKH, errTen,      null));
+        form.add(fieldBlock("Họ và tên",             txtTenKH, errTen,      null));
         form.add(Box.createVerticalStrut(13));
         form.add(dateBlock());
         form.add(Box.createVerticalStrut(13));
-        form.add(fieldBlock("🪪  Số căn cước công dân",  txtCCCD,  errCCCD,     "Đúng 12 chữ số"));
+        form.add(fieldBlock("Số căn cước công dân",  txtCCCD,  errCCCD,     "Đúng 12 chữ số"));
         form.add(Box.createVerticalStrut(13));
-        form.add(fieldBlock("📞  Số điện thoại",          txtSDT,   errSDT,      "Đúng 10 chữ số"));
+        form.add(fieldBlock("Số điện thoại",          txtSDT,   errSDT,      "Đúng 10 chữ số"));
         return form;
     }
 
@@ -148,7 +142,7 @@ public class KhachHangDialog extends JDialog {
        b.setOpaque(false);
        b.setAlignmentX(LEFT_ALIGNMENT);
 
-       JLabel lbl = lbl("🔑  Mã khách hàng", 13, Font.BOLD, new Color(60, 40, 30));
+       JLabel lbl = lbl("Mã khách hàng", 13, Font.BOLD, new Color(250,250, 30));
        lbl.setAlignmentX(LEFT_ALIGNMENT);
 
        JLabel hint = lbl("    Chỉ nhập phần số (tối đa 8 chữ số, VD: 00000001)", 11,
@@ -181,7 +175,6 @@ public class KhachHangDialog extends JDialog {
        row.add(prefix,  BorderLayout.WEST);
        row.add(txtMaKH, BorderLayout.CENTER);
 
-       errMaKH.setAlignmentX(LEFT_ALIGNMENT);
 
        b.add(lbl);
        b.add(Box.createVerticalStrut(2));
@@ -189,7 +182,6 @@ public class KhachHangDialog extends JDialog {
        b.add(Box.createVerticalStrut(5));
        b.add(row);
        b.add(Box.createVerticalStrut(2));
-       b.add(errMaKH);
        return b;
    }
 
@@ -231,7 +223,7 @@ public class KhachHangDialog extends JDialog {
         b.setOpaque(false);
         b.setAlignmentX(LEFT_ALIGNMENT);
 
-        JLabel lbl = lbl("🎂  Ngày sinh", 13, Font.BOLD, new Color(60, 40, 30));
+        JLabel lbl = lbl("Ngày sinh", 13, Font.BOLD, new Color(60, 40, 30));
         lbl.setAlignmentX(LEFT_ALIGNMENT);
         JLabel hint = lbl("    Phải đủ 16 tuổi trở lên", 11, Font.ITALIC,
                           new Color(160, 145, 125));
@@ -259,7 +251,7 @@ public class KhachHangDialog extends JDialog {
         f.setBorder(new MatteBorder(1, 0, 0, 0, new Color(220, 215, 205)));
 
         JButton btnHuy  = makeBtn("Hủy",                 C_CANCEL,  new Color(70, 50, 40));
-        JButton btnThem = makeBtn("✔   Thêm khách hàng", C_PRIMARY, Color.WHITE);
+        JButton btnThem = makeBtn("Thêm khách hàng", C_PRIMARY, Color.WHITE);
 
         btnHuy.addActionListener(e  -> dispose());
         btnThem.addActionListener(e -> handleSubmit());
@@ -337,22 +329,11 @@ public class KhachHangDialog extends JDialog {
         clearErrors();
         boolean ok = true;
 
-        String soKH = txtMaKH.getText().trim();
+        String maKH = txtMaKH.getText().trim();
         String ten  = txtTenKH.getText().trim();
         String cccd = txtCCCD .getText().trim();
         String sdt  = txtSDT  .getText().trim();
 
-     // 1. Phần số mã KH: 1–8 chữ số, pad thành 8 chữ số → "KH" + "00000001"
-        String maKH = "";
-        if (soKH.isEmpty()) {
-            showErr(errMaKH, "Vui lòng nhập phần số của mã khách hàng");
-            ok = false;
-        } else if (!soKH.matches("\\d{1,8}")) {
-            showErr(errMaKH, "Chỉ được nhập tối đa 8 chữ số");
-            ok = false;
-        } else {
-            maKH = "KH" + String.format("%08d", Long.parseLong(soKH));
-        }
         // 2. Tên không rỗng
         if (ten.isEmpty()) { showErr(errTen, "Tên khách hàng không được để trống"); ok = false; }
 
@@ -372,10 +353,10 @@ public class KhachHangDialog extends JDialog {
 
         if (!ok) return;
 
-        KhachHang kh = new KhachHang(maKH, ten, cccd, sdt, ns);
+        KhachHang kh = new KhachHang(maKH, toTitleCase(ten), cccd, sdt, ns);
         if (dao.insert(kh)) {
             JOptionPane.showMessageDialog(this,
-                    "✅  Thêm khách hàng thành công!", "Thông báo",
+                    "Thêm khách hàng thành công!", "Thông báo",
                     JOptionPane.INFORMATION_MESSAGE);
             if (panel != null) panel.initData();
             dispose();
@@ -466,5 +447,23 @@ public class KhachHangDialog extends JDialog {
     private void clearErrors() {
         for (JLabel l : new JLabel[]{errTen, errNgaySinh, errCCCD, errSDT})
             if (l != null) l.setText(" ");
+    }
+    
+    private String toTitleCase(String input) {
+    	if(input == null || input.isEmpty()) return input;
+    	StringBuilder sb = new StringBuilder();
+    	boolean nextUpper = true;
+    	for (char ch : input.toCharArray()) {
+    		if(Character.isWhitespace(ch)) {
+    			nextUpper = true;
+    			sb.append(ch);
+    		} else if (nextUpper) {
+    			sb.append(Character.toUpperCase(ch));
+    			nextUpper = false;
+    		} else {
+    			sb.append(Character.toLowerCase(ch));
+    		}
+    	}
+    	return sb.toString();
     }
 }

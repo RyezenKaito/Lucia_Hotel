@@ -202,6 +202,10 @@ public class KhachHangPanel extends JPanel {
         header.setBackground(new Color(90, 55, 45));
         header.setForeground(Color.WHITE);
         header.setPreferredSize(new Dimension(100, 40));
+        
+        // --- CHỐNG KÉO THẢ VÀ THAY ĐỔI KÍCH THƯỚC CỘT ---
+        header.setReorderingAllowed(false); // Khóa không cho đổi vị trí cột (Kéo thả)
+        header.setResizingAllowed(false);   // Khóa không cho kéo giãn kích thước cột (Tùy chọn)
 
         // Renderer: căn giữa + highlight sinh nhật hôm nay
         tbl.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
@@ -403,12 +407,12 @@ public class KhachHangPanel extends JPanel {
     private JPopupMenu createPopupMenu() {
         JPopupMenu popup = new JPopupMenu();
 
-        JMenuItem itemSua = new JMenuItem("✏  Sửa thông tin");
+        JMenuItem itemSua = new JMenuItem("Sửa thông tin");
         itemSua.setBackground(new Color(34, 52, 78));
         itemSua.setForeground(Color.WHITE);
         itemSua.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
-        JMenuItem itemXoa = new JMenuItem("🗑  Xóa khách hàng");
+        JMenuItem itemXoa = new JMenuItem("Xóa khách hàng");
         itemXoa.setBackground(new Color(180, 50, 50));
         itemXoa.setForeground(Color.WHITE);
         itemXoa.setFont(new Font("Segoe UI", Font.BOLD, 13));

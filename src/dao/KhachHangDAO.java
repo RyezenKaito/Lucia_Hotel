@@ -227,4 +227,5 @@ public class KhachHangDAO {
         if (d != null) kh.setNgaySinh(d.toLocalDate());
         return kh;
     }
+    
 }
