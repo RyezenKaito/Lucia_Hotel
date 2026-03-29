@@ -17,9 +17,12 @@ import model.enums.TrangThaiPhong;
 
 public class QuanLyPhongPanel extends JPanel {
     private PhongDAO phongDAO = new PhongDAO();
+    private dao.BangGiaPhongDAO bangGiaPhongDAO = new dao.BangGiaPhongDAO(); 
     private DefaultTableModel dtmPhong;
     private JTable tblPhong;
     private TableRowSorter<DefaultTableModel> rowSorter;
+    
+    private JLabel lblValTongPhong, lblValPhongTrong, lblValCoKhach, lblValBaoTri;
 
     public QuanLyPhongPanel() {
         setLayout(new BorderLayout());
@@ -56,7 +59,6 @@ public class QuanLyPhongPanel extends JPanel {
         titlePanel.add(lblSubTitle);
 
         JButton btnAdd = new JButton("+ Thêm phòng");
-        // --- ĐÃ ĐỔI MÀU NỀN SANG XANH LÁ (Success Green) ---
         btnAdd.setBackground(new Color(40, 167, 69)); 
         btnAdd.setForeground(Color.WHITE);
         btnAdd.setFocusPainted(false);
@@ -70,14 +72,19 @@ public class QuanLyPhongPanel extends JPanel {
         topPanel.add(titlePanel, BorderLayout.WEST);
         topPanel.add(btnAdd, BorderLayout.EAST);
 
+        lblValTongPhong = new JLabel("0");
+        lblValPhongTrong = new JLabel("0");
+        lblValCoKhach = new JLabel("0");
+        lblValBaoTri = new JLabel("0");
+
         JPanel cardPanel = new JPanel(new GridLayout(1, 4, 15, 0));
         cardPanel.setOpaque(false);
         cardPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
-        cardPanel.add(createStatCard("TỔNG SỐ PHÒNG", "20", Color.BLACK));
-        cardPanel.add(createStatCard("PHÒNG TRỐNG", "15", new Color(40, 100, 80)));
-        cardPanel.add(createStatCard("ĐANG CÓ KHÁCH", "3", new Color(180, 150, 100)));
-cardPanel.add(createStatCard("ĐANG BẢO TRÌ", "2", new Color(150, 50, 50)));
+        cardPanel.add(createStatCard("TỔNG SỐ PHÒNG", lblValTongPhong, Color.BLACK));
+        cardPanel.add(createStatCard("PHÒNG TRỐNG", lblValPhongTrong, new Color(40, 100, 80)));
+        cardPanel.add(createStatCard("ĐANG CÓ KHÁCH", lblValCoKhach, new Color(180, 150, 100)));
+        cardPanel.add(createStatCard("ĐANG BẢO TRÌ", lblValBaoTri, new Color(150, 50, 50)));
 
         JPanel searchPanel = new JPanel(new BorderLayout());
         searchPanel.setBackground(Color.WHITE);
@@ -144,15 +151,15 @@ cardPanel.add(createStatCard("ĐANG BẢO TRÌ", "2", new Color(150, 50, 50)));
         return pnlMain;
     }
 
-    private JPanel createStatCard(String title, String value, Color valueColor) {
+    private JPanel createStatCard(String title, JLabel lblValue, Color valueColor) {
         JPanel card = new JPanel(new GridLayout(2, 1, 0, 5));
         card.setBackground(Color.WHITE);
         card.setBorder(new EmptyBorder(15, 20, 15, 20));
-JLabel lblTitle = new JLabel(title);
+
+        JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 11));
         lblTitle.setForeground(Color.LIGHT_GRAY);
 
-        JLabel lblValue = new JLabel(value);
         lblValue.setFont(new Font("SansSerif", Font.BOLD, 20));
         lblValue.setForeground(valueColor);
 
@@ -162,11 +169,23 @@ JLabel lblTitle = new JLabel(title);
     }
 
     private JScrollPane createTable() {
-        String[] columns = {"Số thứ tự", "Mã phòng", "Loại phòng", "Trạng thái", "Số tầng"};
-        dtmPhong = new DefaultTableModel(null, columns);
+        // --- THÊM CỘT "SỨC CHỨA" VÀO DANH SÁCH ---
+        String[] columns = {"Số thứ tự", "Mã phòng", "Loại phòng", "Giá phòng", "Sức chứa", "Trạng thái", "Số tầng"};
+        
+        dtmPhong = new DefaultTableModel(null, columns) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; 
+            }
+        };
         tblPhong = new JTable(dtmPhong);
         
         rowSorter = new TableRowSorter<>(dtmPhong);
+        
+        for (int i = 0; i < columns.length; i++) {
+            rowSorter.setSortable(i, false); 
+        }
+        
         tblPhong.setRowSorter(rowSorter);
 
         tblPhong.setRowHeight(40);
@@ -180,6 +199,8 @@ JLabel lblTitle = new JLabel(title);
         header.setBackground(new Color(90, 55, 45));
         header.setForeground(Color.WHITE);
         header.setPreferredSize(new Dimension(100, 40));
+        
+        header.setReorderingAllowed(false);
 
         DefaultTableCellRenderer dftcr = new DefaultTableCellRenderer();
         dftcr.setHorizontalAlignment(SwingConstants.CENTER);
@@ -189,13 +210,11 @@ JLabel lblTitle = new JLabel(title);
         JMenuItem mnuSua = new JMenuItem("✏️ Cập nhật thông tin");
         JMenuItem mnuXoa = new JMenuItem("🗑️ Xóa phòng này");
         
-        // --- ĐỔI MÀU VÀ IN ĐẬM CHỮ CHO MENU CHUỘT PHẢI ---
-        mnuSua.setForeground(new Color(0, 102, 204)); // Màu Xanh dương
+        mnuSua.setForeground(new Color(0, 102, 204)); 
         mnuSua.setFont(new Font("Segoe UI", Font.BOLD, 14));
         
-        mnuXoa.setForeground(new Color(220, 53, 69)); // Màu Đỏ
+        mnuXoa.setForeground(new Color(220, 53, 69)); 
         mnuXoa.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        // --------------------------------------------------
         
         popupMenu.add(mnuSua);
         popupMenu.addSeparator(); 
@@ -221,7 +240,7 @@ JLabel lblTitle = new JLabel(title);
         });
 
         mnuXoa.addActionListener(e -> {
-int viewRow = tblPhong.getSelectedRow();
+            int viewRow = tblPhong.getSelectedRow();
             if (viewRow != -1) {
                 int modelRow = tblPhong.convertRowIndexToModel(viewRow);
                 String maPhong = dtmPhong.getValueAt(modelRow, 1).toString();
@@ -247,8 +266,10 @@ int viewRow = tblPhong.getSelectedRow();
                 int modelRow = tblPhong.convertRowIndexToModel(viewRow);
                 String maPhong = dtmPhong.getValueAt(modelRow, 1).toString();
                 String loaiPhong = dtmPhong.getValueAt(modelRow, 2).toString();
-                String trangThai = dtmPhong.getValueAt(modelRow, 3).toString();
-                int soTang = Integer.parseInt(dtmPhong.getValueAt(modelRow, 4).toString());
+                
+                // --- ĐÃ DỊCH CHUYỂN INDEX DO CÓ THÊM CỘT SỨC CHỨA ---
+                String trangThai = dtmPhong.getValueAt(modelRow, 5).toString(); // Trạng thái bị đẩy sang cột 5
+                int soTang = Integer.parseInt(dtmPhong.getValueAt(modelRow, 6).toString()); // Số tầng bị đẩy sang cột 6
 
                 new PhongDialog(QuanLyPhongPanel.this, maPhong, loaiPhong, trangThai, soTang).setVisible(true);
             }
@@ -264,20 +285,53 @@ int viewRow = tblPhong.getSelectedRow();
     public void initData() {
         dtmPhong.setRowCount(0);
         List<Phong> dsPhong = phongDAO.getAll();
+        
+        int countTong = dsPhong.size();
+        int countTrong = 0;
+        int countCoKhach = 0;
+        int countBaoTri = 0;
 
         int stt = 1; 
         for (Phong p : dsPhong) {
-            String trangThai = p.getTrangThai() == TrangThaiPhong.CONTRONG ? "Còn trống" :
-                              (p.getTrangThai() == TrangThaiPhong.DACOKHACH ? "Đã có khách" : "Đang bảo trì");
-                              
+            String trangThai = "";
+            
+            if (p.getTrangThai() == TrangThaiPhong.CONTRONG) {
+                trangThai = "Còn trống";
+                countTrong++;
+            } else if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) {
+                trangThai = "Đã có khách";
+                countCoKhach++;
+            } else {
+                trangThai = "Đang bảo trì";
+                countBaoTri++;
+            }
+            
+            String loaiPhongStr = p.getLoaiPhong().getTenLoaiPhong().toString();
+            
+            // Lấy giá phòng
+            model.entities.BangGiaPhong bgp = bangGiaPhongDAO.getPriceByNameRoomType(loaiPhongStr);
+            double price = (bgp != null) ? bgp.getDonGia() : 0.0;
+            String strPrice = String.format("%,.0f đ", price);
+            
+            // --- GỌI DAO ĐỂ LẤY SỨC CHỨA ---
+            int sucChua = phongDAO.getSucChua(loaiPhongStr);
+            String strSucChua = (sucChua > 0) ? sucChua + " người" : "Chưa cập nhật";
+            
             Object[] row = {
                 stt++, 
                 p.getMaPhong(), 
-                p.getLoaiPhong().getTenLoaiPhong().toString(), 
+                loaiPhongStr, 
+                strPrice,
+                strSucChua, // <--- THÊM BIẾN SỨC CHỨA VÀO BẢNG
                 trangThai, 
                 p.getSoTang()
             };
             dtmPhong.addRow(row);
         }
+        
+        lblValTongPhong.setText(String.valueOf(countTong));
+        lblValPhongTrong.setText(String.valueOf(countTrong));
+        lblValCoKhach.setText(String.valueOf(countCoKhach));
+        lblValBaoTri.setText(String.valueOf(countBaoTri));
     }
 }

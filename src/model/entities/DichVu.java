@@ -16,6 +16,11 @@ public class DichVu {
     public DichVu() {
     }
 
+    // THÊM MỚI: Constructor chỉ nhận 1 tham số là maDichVu
+    public DichVu(String maDichVu) {
+        this.maDichVu = maDichVu;
+    }
+
     // Constructor đầy đủ tham số
     public DichVu(String maDichVu, String tenDichVu, double giaDichVu, String loaiDichVu, String mieuTa) {
         this.maDichVu = maDichVu;

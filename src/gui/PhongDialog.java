@@ -17,37 +17,40 @@ public class PhongDialog extends JDialog {
     private PhongDAO phongDAO = new PhongDAO();
     private QuanLyPhongPanel parentPanel;
     
-    // Biến cờ hiệu để biết đang ở chế độ Thêm hay Sửa
     private boolean isEditMode = false;
 
-    // Constructor 1: Dùng khi bấm nút "+ Thêm phòng"
     public PhongDialog(QuanLyPhongPanel parentPanel) {
         this.parentPanel = parentPanel;
         initUI();
         setTitle("Thêm Phòng Mới");
     }
 
-    // Constructor 2: Dùng khi click chuột phải chọn "Sửa"
     public PhongDialog(QuanLyPhongPanel parentPanel, String maPhong, String loaiPhong, String trangThai, int soTang) {
         this.parentPanel = parentPanel;
         initUI();
-        this.isEditMode = true; // Đổi cờ hiệu sang chế độ Sửa
+        this.isEditMode = true; 
         setTitle("Cập Nhật Thông Tin Phòng");
         
-        // Đổ dữ liệu cũ lên form
-        txtMaPhong.setText(maPhong);
-        txtMaPhong.setEditable(false); // KHÔNG CHO SỬA MÃ PHÒNG VÌ LÀ KHÓA CHÍNH
+        txtMaPhong.setText(maPhong.trim());
+        txtMaPhong.setEditable(false); 
         txtMaPhong.setBackground(new Color(230, 230, 230)); 
         
         txtSoTang.setText(String.valueOf(soTang));
-        cbLoaiPhong.setSelectedItem(TenLoaiPhong.valueOf(loaiPhong));
-        cbTrangThai.setSelectedItem(trangThai);
+        
+        // Cực kỳ quan trọng: Phải trim() biến loaiPhong trước khi valueOf
+        try {
+            cbLoaiPhong.setSelectedItem(TenLoaiPhong.valueOf(loaiPhong.trim()));
+        } catch (Exception e) {
+            System.err.println("Không thể parse loại phòng: " + loaiPhong);
+        }
+        
+        cbTrangThai.setSelectedItem(trangThai.trim());
     }
 
     private void initUI() {
         setSize(400, 350);
-        setLocationRelativeTo(null); // Giữa màn hình
-        setModal(true); // Khóa màn hình nền khi đang mở
+        setLocationRelativeTo(null); 
+        setModal(true); 
         setLayout(new BorderLayout());
         
         JPanel pnlForm = new JPanel(new GridLayout(4, 2, 10, 20));
@@ -71,18 +74,16 @@ public class PhongDialog extends JDialog {
         
         add(pnlForm, BorderLayout.CENTER);
         
-        // Nút chức năng
         JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnSave = new JButton("Lưu dữ liệu");
         btnSave.setBackground(new Color(60, 40, 35));
         btnSave.setForeground(Color.WHITE);
-btnCancel = new JButton("Hủy");
+        btnCancel = new JButton("Hủy");
         
         pnlBottom.add(btnSave);
         pnlBottom.add(btnCancel);
         add(pnlBottom, BorderLayout.SOUTH);
         
-        // Sự kiện nút bấm
         btnCancel.addActionListener(e -> dispose());
         btnSave.addActionListener(e -> savePhong());
     }
@@ -93,7 +94,7 @@ btnCancel = new JButton("Hủy");
             int tang = Integer.parseInt(txtSoTang.getText().trim());
             TenLoaiPhong loai = (TenLoaiPhong) cbLoaiPhong.getSelectedItem();
             
-            String ttStr = cbTrangThai.getSelectedItem().toString();
+            String ttStr = cbTrangThai.getSelectedItem().toString().trim();
             TrangThaiPhong tt = ttStr.equals("Còn trống") ? TrangThaiPhong.CONTRONG :
                                 (ttStr.equals("Đã có khách") ? TrangThaiPhong.DACOKHACH : TrangThaiPhong.BAN);
             
@@ -104,11 +105,10 @@ btnCancel = new JButton("Hủy");
 
             Phong p = new Phong(ma, new LoaiPhong(loai), tt, tang);
             
-            // Xử lý lưu dựa theo chế độ Thêm hay Sửa
             if (isEditMode) {
                 if (phongDAO.update(p)) {
                     JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
-                    parentPanel.initData(); // Gọi lại hàm load bảng của QuanLyPhongPanel để cập nhật
+                    parentPanel.initData(); 
                     dispose(); 
                 } else {
                     JOptionPane.showMessageDialog(this, "Cập nhật thất bại. Vui lòng kiểm tra lại!");
