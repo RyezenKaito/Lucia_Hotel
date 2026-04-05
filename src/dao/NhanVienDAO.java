@@ -17,23 +17,27 @@ public class NhanVienDAO {
 
     // ── Helper: map ResultSet → NhanVien ─────────────────────────────────────
     private NhanVien mapRow(ResultSet rs) throws Exception {
-        // 1. Khởi tạo bằng constructor
         NhanVien nv = new NhanVien(
                 rs.getString("maNV"),
                 rs.getString("hoTen"),
                 rs.getString("diaChi"),
                 parseTrinhDo(rs.getString("trinhDo")),
                 rs.getDate("ngayVaoLam") != null ? rs.getDate("ngayVaoLam").toLocalDate() : null,
-                rs.getFloat("heSoLuong"),
-                rs.getInt("luongCB"),
                 parseVaiTro(rs.getString("role")));
 
-        // 2. Gán các trường bổ sung để hiển thị đầy đủ trên Table và Form
         nv.setSoDT(rs.getString("soDT"));
         nv.setMaQL(rs.getString("maQL"));
         nv.setMatKhau(rs.getString("mk"));
 
-        // 3. Gán Ngày sinh (Mới thêm)
+        // SDT, CCCD (nullable từ DB)
+        String cccdVal = rs.getString("soCCCD");
+        if (cccdVal != null && !cccdVal.isBlank()) {
+            try {
+                nv.setCccd(cccdVal.trim());
+            } catch (Exception ignored) {
+            }
+        }
+
         if (rs.getDate("ngaySinh") != null) {
             nv.setNgaySinh(rs.getDate("ngaySinh").toLocalDate());
         }
@@ -49,10 +53,11 @@ public class NhanVienDAO {
             case "QUANLY":
             case "QUAN_LY":
                 return ChucVu.QUAN_LY;
+            case "ADMIN":
+                return ChucVu.ADMIN;
             case "NV":
             case "NHANVIEN":
             case "NHAN_VIEN":
-                return ChucVu.NHAN_VIEN;
             default:
                 return ChucVu.NHAN_VIEN;
         }
@@ -71,7 +76,14 @@ public class NhanVienDAO {
     private String toVaiTroString(ChucVu cv) {
         if (cv == null)
             return "NV";
-        return cv == ChucVu.QUAN_LY ? "QL" : "NV";
+        switch (cv) {
+            case QUAN_LY:
+                return "QL";
+            case ADMIN:
+                return "ADMIN";
+            default:
+                return "NV";
+        }
     }
 
     // ── READ ALL ──────────────────────────────────────────────────────────────
@@ -89,24 +101,19 @@ public class NhanVienDAO {
         return ds;
     }
 
-    // ── TÌM KIẾM THEO TÊN, MÃ, SĐT (HÀM BẠN YÊU CẦU) ──────────────────────────
+    // ── TÌM KIẾM THEO TÊN, MÃ, SĐT ──────────────────────────────────────────
     public List<NhanVien> findByKeyword(String keyword) {
         List<NhanVien> ds = new ArrayList<>();
-        // Sử dụng LIKE với % để tìm kiếm tương đối
         String sql = "SELECT * FROM NV WHERE maNV LIKE ? OR hoTen LIKE ? OR soDT LIKE ?";
-
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
-
             String searchStr = "%" + keyword + "%";
             ps.setString(1, searchStr);
             ps.setString(2, searchStr);
             ps.setString(3, searchStr);
-
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+                while (rs.next())
                     ds.add(mapRow(rs));
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -133,8 +140,8 @@ public class NhanVienDAO {
     // ── INSERT ────────────────────────────────────────────────────────────────
     public boolean insert(NhanVien nv) {
         String sql = "INSERT INTO NV "
-                + "(maNV, hoTen, soDT, ngayVaoLam, heSoLuong, mk, role, diaChi, trinhDo, luongCB, maQL, ngaySinh) "
-                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "(maNV, hoTen, soDT, ngayVaoLam, mk, role, diaChi, trinhDo, maQL, ngaySinh, soCCCD) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -142,16 +149,16 @@ public class NhanVienDAO {
             ps.setString(1, nv.getMaNV());
             ps.setString(2, nv.getHoTen());
             ps.setString(3, nv.getSoDT());
-            ps.setDate(4, nv.getNgayVaoLamDate() != null ? Date.valueOf(nv.getNgayVaoLamDate())
+            ps.setDate(4, nv.getNgayVaoLamDate() != null
+                    ? Date.valueOf(nv.getNgayVaoLamDate())
                     : Date.valueOf(java.time.LocalDate.now()));
-            ps.setFloat(5, nv.getHeSoLuong());
-            ps.setString(6, nv.getMatKhau() != null ? nv.getMatKhau() : "123");
-            ps.setString(7, toVaiTroString(nv.getRole()));
-            ps.setString(8, nv.getDiaChi());
-            ps.setString(9, nv.getTrinhDo() != null ? nv.getTrinhDo().name() : "THCS");
-            ps.setInt(10, nv.getLuongCB());
-            ps.setString(11, nv.getMaQL());
-            ps.setDate(12, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
+            ps.setString(5, nv.getMatKhau() != null ? nv.getMatKhau() : "123");
+            ps.setString(6, toVaiTroString(nv.getRole()));
+            ps.setString(7, nv.getDiaChi());
+            ps.setString(8, nv.getTrinhDo() != null ? nv.getTrinhDo().name() : "THCS");
+            ps.setString(9, nv.getMaQL());
+            ps.setDate(10, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
+            ps.setString(11, nv.getCccd());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -164,7 +171,7 @@ public class NhanVienDAO {
     public boolean update(NhanVien nv) {
         String sql = "UPDATE NV SET "
                 + "hoTen=?, soDT=?, ngayVaoLam=?, "
-                + "heSoLuong=?, role=?, maQL=?, diaChi=?, luongCB=?, ngaySinh=? "
+                + "role=?, maQL=?, diaChi=?, ngaySinh=?, soCCCD=? "
                 + "WHERE maNV=?";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -172,13 +179,12 @@ public class NhanVienDAO {
             ps.setString(1, nv.getHoTen());
             ps.setString(2, nv.getSoDT());
             ps.setDate(3, nv.getNgayVaoLamDate() != null ? Date.valueOf(nv.getNgayVaoLamDate()) : null);
-            ps.setFloat(4, nv.getHeSoLuong());
-            ps.setString(5, toVaiTroString(nv.getRole()));
-            ps.setString(6, nv.getMaQL());
-            ps.setString(7, nv.getDiaChi());
-            ps.setInt(8, nv.getLuongCB());
-            ps.setDate(9, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
-            ps.setString(10, nv.getMaNV());
+            ps.setString(4, toVaiTroString(nv.getRole()));
+            ps.setString(5, nv.getMaQL());
+            ps.setString(6, nv.getDiaChi());
+            ps.setDate(7, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
+            ps.setString(8, nv.getCccd());
+            ps.setString(9, nv.getMaNV());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -200,22 +206,6 @@ public class NhanVienDAO {
         return false;
     }
 
-    // Count Manager
-    public int countManager() {
-        String sql = "SELECT COUNT(*) FROM NV WHERE role IN ('QUANLY', 'QL', 'QUAN_LY')";
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-                Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            if (rs.next())
-                return rs.getInt(1);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
     // ── AUTHENTICATE ──────────────────────────────────────────────────────────
     public boolean authenticate(String staffID, String password) {
         String sql = "SELECT mk FROM NV WHERE maNV=?";
@@ -234,22 +224,23 @@ public class NhanVienDAO {
 
     // ── GENERATE ID ───────────────────────────────────────────────────────────
     public String generateMaNV() {
-        String prefix = "LUCIA";
-        String sql = "SELECT MAX(maNV) FROM NV";
+        String sql = "SELECT maNV FROM NV WHERE maNV LIKE 'LUCIA%'";
+        int max = 0;
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-                Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            if (rs.next()) {
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
                 String last = rs.getString(1);
-                if (last != null && last.startsWith(prefix)) {
-                    int num = Integer.parseInt(last.replace(prefix, ""));
-                    return prefix + String.format("%04d", num + 1);
+                if (last != null && last.length() > 5) {
+                    try {
+                        int num = Integer.parseInt(last.substring(5));
+                        if(num > max) max = num;
+                    } catch(Exception ignored) {}
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return prefix + "0001";
+        return String.format("LUCIA%03d", max + 1);
     }
 }

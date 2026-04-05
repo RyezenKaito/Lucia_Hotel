@@ -7,13 +7,11 @@ import model.enums.ChucVu;
 import model.enums.trinhDo;
 
 public class NhanVien {
-    private String maNV, hoTen, diaChi, soDT, matKhau;
+    private String maNV, hoTen, diaChi, soDT, matKhau, cccd;
     private ChucVu role;
     private trinhDo trinhDo;
     private LocalDate ngaySinh, ngayVaoLamDate;
-    private float heSoLuong;
     private String maQL;
-    private int luongCB;
 
     // Sử dụng static để tránh tạo mới formatter cho mỗi object, tiết kiệm bộ nhớ
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -21,31 +19,27 @@ public class NhanVien {
     // --- CONSTRUCTORS ---
     public NhanVien() {
         // Khởi tạo các giá trị mặc định hợp lệ để tránh NullPointerException
-        this.maNV = "LUCIA0000";
+        this.maNV = "LUCIA000";
         this.hoTen = "Chưa xác định";
         this.diaChi = "Chưa có";
         this.soDT = "0900000000";
         this.matKhau = "123";
+        this.cccd = "000000000000";
         this.role = ChucVu.NHAN_VIEN;
         this.trinhDo = trinhDo.THCS;
         this.ngaySinh = LocalDate.now().minusYears(19); // Đảm bảo > 18 tuổi
         this.ngayVaoLamDate = LocalDate.now();
-        this.heSoLuong = 1.84f;
-        this.luongCB = 1000000;
     }
 
-    public NhanVien(String maNV, String hoTen, String diaChi, trinhDo trinhDo, LocalDate ngayVaoLamDate, 
-                    float heSoLuong, int luongCB, ChucVu role) {
+    public NhanVien(String maNV, String hoTen, String diaChi, trinhDo trinhDo,
+                    LocalDate ngayVaoLamDate, ChucVu role) {
         this.setMaNV(maNV);
         this.setHoTen(hoTen);
         this.setDiaChi(diaChi);
         this.setTrinhDo(trinhDo);
         this.setNgayVaoLamDate(ngayVaoLamDate);
-        this.setHeSoLuong(heSoLuong);
-        this.setLuongCB(luongCB);
         this.setRole(role);
     }
-    
 
     public NhanVien(String maNV) {
 		super();
@@ -55,8 +49,8 @@ public class NhanVien {
 	// --- GETTERS & SETTERS ---
 
     public void setMaNV(String maNV) {
-        if (maNV == null || !maNV.matches("LUCIA\\d{4}"))
-            throw new IllegalArgumentException("Mã NV phải dạng LUCIAxxxx (VD: LUCIA0001)");
+        if (maNV == null || !maNV.matches("LUCIA\\d+"))
+            throw new IllegalArgumentException("Mã NV phải in hoa 'LUCIA' và đi kèm số (VD: LUCIA001)");
         this.maNV = maNV;
     }
 
@@ -66,8 +60,8 @@ public class NhanVien {
 
     public void setMaQL(String maQL) {
         // Cho phép maQL null (vì Quản lý cấp cao nhất không có người quản lý)
-        if (maQL != null && !maQL.matches("LUCIA\\d{4}"))
-            throw new IllegalArgumentException("Mã QL phải dạng LUCIAxxxx");
+        if (maQL != null && !maQL.matches("LUCIA\\d+"))
+            throw new IllegalArgumentException("Mã QL phải in hoa 'LUCIA' và đi kèm số (VD: LUCIA001)");
         this.maQL = maQL;
     }
 
@@ -91,10 +85,20 @@ public class NhanVien {
     public String getSoDT() { return soDT; }
 
     public void setSoDT(String soDT) {
-        // Regex sửa lại: Bắt đầu bằng 0, theo sau là 9 chữ số (tổng 10 số)
         if (soDT != null && soDT.matches("0\\d{9}"))
         	this.soDT = soDT;
         else throw new IllegalArgumentException("SĐT phải gồm 10 chữ số và bắt đầu bằng số 0");
+    }
+
+    public String getCccd() { return cccd; }
+
+    /**
+     * CCCD hợp lệ: 9 chữ số (CMND cũ) hoặc 12 chữ số (CCCD mới).
+     */
+    public void setCccd(String cccd) {
+        if (cccd == null || !cccd.matches("\\d{9}(\\d{3})?"))
+            throw new IllegalArgumentException("CCCD phải gồm 9 hoặc 12 chữ số");
+        this.cccd = cccd;
     }
 
     public String getHoTen() { return hoTen; }
@@ -136,29 +140,13 @@ public class NhanVien {
         this.ngayVaoLamDate = ngayVaoLamDate;
     }
 
-    public float getHeSoLuong() { return heSoLuong; }
-
-    public void setHeSoLuong(float heSoLuong) {
-        if (heSoLuong < 1.0f || heSoLuong > 10.0f) // Điều chỉnh lại khoảng hợp lý nếu cần
-            throw new IllegalArgumentException("Hệ số lương không hợp lệ");
-        this.heSoLuong = heSoLuong;
-    }
-
-    public int getLuongCB() { return luongCB; }
-
-    public void setLuongCB(int luongCB) {
-        if (luongCB <= 0) throw new IllegalArgumentException("Lương căn bản phải lớn hơn 0");
-        this.luongCB = luongCB;
-    }
-
-    // --- TO STRING (Đã sửa lỗi NullPointerException) ---
+    // --- TO STRING ---
     @Override
     public String toString() {
-        // Kiểm tra null cho ngày tháng trước khi format để tránh lỗi "temporal"
         String sNgaySinh = (ngaySinh != null) ? ngaySinh.format(FMT) : "Chưa có";
         String sNgayVao = (ngayVaoLamDate != null) ? ngayVaoLamDate.format(FMT) : "Chưa có";
 
-        return String.format("NV [Mã: %s, Tên: %s, SĐT: %s, Chức vụ: %s, Ngày vào: %s, Hệ số: %.2f]", 
-                maNV, hoTen, soDT, role, sNgayVao, heSoLuong);
+        return String.format("NV [Mã: %s, Tên: %s, SĐT: %s, CCCD: %s, Chức vụ: %s, Ngày vào: %s]",
+                maNV, hoTen, soDT, cccd, role, sNgayVao);
     }
 }

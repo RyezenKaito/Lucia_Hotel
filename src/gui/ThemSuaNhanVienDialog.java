@@ -22,85 +22,92 @@ import model.enums.ChucVu;
 import model.enums.trinhDo;
 
 /**
- * ThemSuaNhanVienDialog – JavaFX (thay thế NhanVienForm Swing).
+ * ThemSuaNhanVienDialog – JavaFX.
  *
  * Quy tắc phân quyền:
- * ─ Khi THÊM: Manager chỉ được chọn chức vụ "Nhân viên", option "Quản lý" bị disable.
- * ─ Khi SỬA:  Chỉ cho sửa nhân viên (staff). Chức vụ là readonly.
+ * ─ ADMIN : Có thể thêm cả Quản lý lẫn Nhân viên. Sửa/xóa tất cả.
+ * ─ QUAN_LY : Khi THÊM → chức vụ gán cứng "Nhân viên" (không ComboBox).
+ * Khi SỬA → chức vụ readonly.
+ * ─ Khi chọn QUAN_LY làm chức vụ mới: trình độ phải là DAIHOC hoặc TREN_DAIHOC.
  */
 public class ThemSuaNhanVienDialog extends Stage {
 
     /* ── Bảng màu ─────────────────────────────────────────────────── */
-    private static final String C_SIDEBAR      = "#1e3a8a";
-    private static final String C_ACTIVE       = "#1d4ed8";
-    private static final String C_CONTENT_BG   = "#f8f9fa";
-    private static final String C_BORDER       = "#e9ecef";
-    private static final String C_GOLD         = "#d4af37";
-    private static final String C_ERROR        = "#dc2626";
+    private static final String C_SIDEBAR = "#1e3a8a";
+    private static final String C_ACTIVE = "#1d4ed8";
+    private static final String C_CONTENT_BG = "#f8f9fa";
+    private static final String C_BORDER = "#e9ecef";
+    private static final String C_GOLD = "#d4af37";
+    private static final String C_ERROR = "#dc2626";
 
     /* ── State ────────────────────────────────────────────────────── */
     private final NhanVienDAO dao = new NhanVienDAO();
-    private final NhanVien nvEdit;         // null = thêm mới
-    private final NhanVien currentUser;    // người đang đăng nhập
+    private final NhanVien nvEdit; // null = thêm mới
+    private final NhanVien currentUser; // người đang đăng nhập
     private final NhanVienView parentView; // để reload
 
+    /** Có phải ADMIN không (toàn quyền) */
+    private final boolean isAdmin;
+
     /* ── Form fields ──────────────────────────────────────────────── */
-    private TextField txtTen, txtSDT, txtHeSo, txtDiaChi;
+    private TextField txtTen, txtSDT, txtCCCD, txtDiaChi;
     private ComboBox<String> cbChucVu;
     private ComboBox<trinhDo> cbTrinhDo;
     private ComboBox<NhanVien> cbNguoiQuanLy;
 
-    private Label lblErrTen, lblErrSDT, lblErrHeSo, lblErrDiaChi;
+    private DatePicker dpNgaySinh;
+    private Label lblErrTen, lblErrSDT, lblErrCCCD, lblErrDiaChi, lblErrNS;
     private VBox nguoiQuanLyBox;
 
     /* ── Constructor ──────────────────────────────────────────────── */
     public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit,
-                                  NhanVien currentUser, NhanVienView parentView) {
-        this.nvEdit      = nvEdit;
+            NhanVien currentUser, NhanVienView parentView) {
+        this.nvEdit = nvEdit;
         this.currentUser = currentUser;
-        this.parentView  = parentView;
+        this.parentView = parentView;
+        this.isAdmin = (currentUser != null && currentUser.getRole() == ChucVu.ADMIN);
 
         initOwner(owner);
         initModality(Modality.APPLICATION_MODAL);
         initStyle(StageStyle.TRANSPARENT);
 
-        Scene scene = new Scene(buildRoot(), 560, 620);
+        Scene scene = new Scene(buildRoot(), 560, 640);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         setScene(scene);
         centerOnScreen();
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       ROOT
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * ROOT
+     * ════════════════════════════════════════════════════════════════
+     */
     private VBox buildRoot() {
         VBox root = new VBox();
         root.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 16;" +
-            "-fx-border-radius: 16;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0, 0, 6);"
-        );
-
+                "-fx-background-color: white;" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-radius: 16;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0, 0, 6);");
         root.getChildren().addAll(
-            buildDialogHeader(),
-            buildFormBody(),
-            buildFooter()
-        );
+                buildDialogHeader(),
+                buildFormBody(),
+                buildFooter());
         return root;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       HEADER
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * HEADER
+     * ════════════════════════════════════════════════════════════════
+     */
     private HBox buildDialogHeader() {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(18, 24, 18, 24));
         header.setStyle(
-            "-fx-background-color: " + C_SIDEBAR + ";" +
-            "-fx-background-radius: 16 16 0 0;"
-        );
+                "-fx-background-color: " + C_SIDEBAR + ";" +
+                        "-fx-background-radius: 16 16 0 0;");
 
         VBox titleBox = new VBox(2);
         Label lblTitle = new Label(nvEdit == null ? "THÊM NHÂN VIÊN MỚI" : "CẬP NHẬT NHÂN VIÊN");
@@ -108,8 +115,8 @@ public class ThemSuaNhanVienDialog extends Stage {
         lblTitle.setTextFill(Color.WHITE);
 
         Label lblSub = new Label(nvEdit == null
-            ? "Điền đầy đủ thông tin bên dưới"
-            : "Chỉnh sửa thông tin nhân viên " + nvEdit.getMaNV());
+                ? "Điền đầy đủ thông tin bên dưới"
+                : "Chỉnh sửa thông tin nhân viên " + nvEdit.getMaNV());
         lblSub.setFont(Font.font("Segoe UI", 12));
         lblSub.setTextFill(Color.web("#93c5fd"));
         titleBox.getChildren().addAll(lblTitle, lblSub);
@@ -119,67 +126,79 @@ public class ThemSuaNhanVienDialog extends Stage {
 
         Button btnClose = new Button("✕");
         btnClose.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 18px;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 4 10 4 10;"
-        );
+                "-fx-background-color: transparent;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 18px;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 4 10 4 10;");
         btnClose.setOnMouseEntered(e -> btnClose.setStyle(
-            "-fx-background-color: rgba(255,255,255,0.15);" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 18px;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 4 10 4 10;" +
-            "-fx-background-radius: 6;"
-        ));
+                "-fx-background-color: rgba(255,255,255,0.15);" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 18px;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 4 10 4 10;" +
+                        "-fx-background-radius: 6;"));
         btnClose.setOnMouseExited(e -> btnClose.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 18px;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 4 10 4 10;"
-        ));
+                "-fx-background-color: transparent;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 18px;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 4 10 4 10;"));
         btnClose.setOnAction(e -> close());
 
         header.getChildren().addAll(titleBox, spacer, btnClose);
         return header;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       FORM BODY
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * FORM BODY
+     * ════════════════════════════════════════════════════════════════
+     */
     private ScrollPane buildFormBody() {
         VBox form = new VBox(6);
         form.setPadding(new Insets(22, 32, 10, 32));
         form.setStyle("-fx-background-color: white;");
 
-        /* ── Họ tên ─────────────────────────────────────────────── */
-        txtTen = makeField("Nhập họ tên nhân viên");
+        /* ── Họ và tên ─────────────────────────────────────────────── */
+        txtTen = makeField("Nhập họ và tên");
         lblErrTen = makeErrLabel();
-        form.getChildren().addAll(fieldRow("Họ tên *", txtTen, lblErrTen));
+        form.getChildren().add(fieldRow("Họ và tên *", txtTen, lblErrTen));
 
         /* ── Địa chỉ ────────────────────────────────────────────── */
         txtDiaChi = makeField("Nhập địa chỉ");
         lblErrDiaChi = makeErrLabel();
-        form.getChildren().addAll(fieldRow("Địa chỉ", txtDiaChi, lblErrDiaChi));
+        form.getChildren().add(fieldRow("Địa chỉ", txtDiaChi, lblErrDiaChi));
 
         /* ── SĐT ────────────────────────────────────────────────── */
         txtSDT = makeField("VD: 0901234567");
         lblErrSDT = makeErrLabel();
-        form.getChildren().addAll(fieldRow("Số điện thoại *", txtSDT, lblErrSDT));
+        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT));
 
-        /* ── Hệ số lương ────────────────────────────────────────── */
-        txtHeSo = makeField("VD: 1.84");
-        lblErrHeSo = makeErrLabel();
-        form.getChildren().addAll(fieldRow("Hệ số lương *", txtHeSo, lblErrHeSo));
+        txtCCCD = makeField("VD: 001234567890 (Mã định danh 12 số)");
+        model.utils.ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
+        lblErrCCCD = makeErrLabel();
+        form.getChildren().add(fieldRow("Số CCCD *", txtCCCD, lblErrCCCD));
+
+        /* ── Ngày sinh ──────────────────────────────────────────── */
+        dpNgaySinh = new DatePicker();
+        dpNgaySinh.setPromptText("Chọn ngày sinh");
+        dpNgaySinh.setPrefHeight(40);
+        dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
+        dpNgaySinh.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8; -fx-background-radius: 8;" +
+                        "-fx-font-size: 13px;");
+        lblErrNS = makeErrLabel();
+        form.getChildren().add(fieldRow("Ngày sinh *", dpNgaySinh, lblErrNS));
 
         /* ── Trình độ ───────────────────────────────────────────── */
         cbTrinhDo = new ComboBox<>();
         cbTrinhDo.getItems().addAll(trinhDo.values());
         cbTrinhDo.getSelectionModel().selectFirst();
         styleCombo(cbTrinhDo);
-        form.getChildren().add(comboRow("Trình độ", cbTrinhDo));
+        form.getChildren().add(comboRow("Trình độ *", cbTrinhDo));
 
         /* ── Chức vụ ────────────────────────────────────────────── */
         cbChucVu = new ComboBox<>();
@@ -187,51 +206,21 @@ public class ThemSuaNhanVienDialog extends Stage {
         styleCombo(cbChucVu);
 
         if (nvEdit != null) {
-            // SỬA: chức vụ readonly (hiển thị TextField thay ComboBox)
-            TextField txtCV = new TextField(
-                nvEdit.getRole() == ChucVu.QUAN_LY ? "Quản lý" : "Nhân viên");
-            txtCV.setEditable(false);
-            txtCV.setStyle(
-                "-fx-background-color: #f3f4f6;" +
-                "-fx-border-color: " + C_BORDER + ";" +
-                "-fx-border-radius: 8;" +
-                "-fx-background-radius: 8;" +
-                "-fx-font-size: 13px;" +
-                "-fx-padding: 8 12 8 12;" +
-                "-fx-text-fill: #6b7280;"
-            );
-            txtCV.setPrefHeight(40);
+            // SỬA: hiển thị chức vụ hiện tại, readonly
+            String roleLabel = getRoleLabel(nvEdit.getRole());
+            TextField txtCV = makeReadonlyField(roleLabel);
             form.getChildren().add(comboRow("Chức vụ", txtCV));
-        } else {
-            // THÊM: Manager chỉ được thêm staff → disable option "Quản lý"
+        } else if (isAdmin) {
+            // THÊM + ADMIN: chọn tự do Quản lý / Nhân viên
             cbChucVu.getSelectionModel().select("Nhân viên");
-
-            // Disable "Quản lý" bằng cell factory
-            cbChucVu.setCellFactory(lv -> new ListCell<>() {
-                @Override
-                protected void updateItem(String item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText(null);
-                        setDisable(false);
-                        setStyle("");
-                    } else {
-                        setText(item);
-                        if ("Quản lý".equals(item)) {
-                            setDisable(true);
-                            setStyle("-fx-opacity: 0.4;");
-                        } else {
-                            setDisable(false);
-                            setStyle("");
-                        }
-                    }
-                }
-            });
-
-            form.getChildren().add(comboRow("Chức vụ", cbChucVu));
+            form.getChildren().add(comboRow("Chức vụ *", cbChucVu));
+        } else {
+            // THÊM + QUAN_LY: gán cứng Nhân viên, không cho chọn
+            TextField txtCV = makeReadonlyField("Nhân viên");
+            form.getChildren().add(comboRow("Chức vụ", txtCV));
         }
 
-        /* ── Người quản lý (chỉ hiện khi chức vụ = Nhân viên) ──── */
+        /* ── Người quản lý ──────────────────────────────────────── */
         cbNguoiQuanLy = new ComboBox<>();
         styleCombo(cbNguoiQuanLy);
         loadManagersToCombo();
@@ -256,11 +245,11 @@ public class ThemSuaNhanVienDialog extends Stage {
         lblNQL.setTextFill(Color.web("#374151"));
         nguoiQuanLyBox.getChildren().addAll(lblNQL, cbNguoiQuanLy);
 
-        // Mặc định ẩn, chỉ hiện khi chọn Nhân viên
         updateNguoiQuanLyVisibility();
         form.getChildren().add(nguoiQuanLyBox);
 
-        if (nvEdit == null) {
+        // Listener cập nhật visibility khi ADMIN đổi cbChucVu
+        if (nvEdit == null && isAdmin) {
             cbChucVu.setOnAction(e -> updateNguoiQuanLyVisibility());
         }
 
@@ -269,11 +258,14 @@ public class ThemSuaNhanVienDialog extends Stage {
             txtTen.setText(nvEdit.getHoTen());
             txtDiaChi.setText(nvEdit.getDiaChi() != null ? nvEdit.getDiaChi() : "");
             txtSDT.setText(nvEdit.getSoDT());
-            txtHeSo.setText(String.valueOf(nvEdit.getHeSoLuong()));
+            txtCCCD.setText(nvEdit.getCccd() != null ? nvEdit.getCccd() : "");
 
-            if (nvEdit.getTrinhDo() != null) cbTrinhDo.getSelectionModel().select(nvEdit.getTrinhDo());
+            if (nvEdit.getNgaySinh() != null)
+                dpNgaySinh.setValue(nvEdit.getNgaySinh());
 
-            // Nếu là nhân viên → chọn người quản lý
+            if (nvEdit.getTrinhDo() != null)
+                cbTrinhDo.getSelectionModel().select(nvEdit.getTrinhDo());
+
             if (nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getMaQL() != null) {
                 nguoiQuanLyBox.setVisible(true);
                 nguoiQuanLyBox.setManaged(true);
@@ -297,182 +289,180 @@ public class ThemSuaNhanVienDialog extends Stage {
         return scroll;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       FOOTER
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * FOOTER
+     * ════════════════════════════════════════════════════════════════
+     */
     private HBox buildFooter() {
         HBox footer = new HBox(12);
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(14, 32, 20, 32));
         footer.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-border-color: " + C_BORDER + " transparent transparent transparent;" +
-            "-fx-border-width: 1 0 0 0;" +
-            "-fx-background-radius: 0 0 16 16;"
-        );
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + " transparent transparent transparent;" +
+                        "-fx-border-width: 1 0 0 0;" +
+                        "-fx-background-radius: 0 0 16 16;");
 
-        Button btnCancel = new Button("Hủy");
-        btnCancel.setPrefWidth(100);
-        btnCancel.setPrefHeight(40);
-        btnCancel.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 8;" +
-            "-fx-background-radius: 8;" +
-            "-fx-font-size: 13px;" +
-            "-fx-text-fill: #374151;" +
-            "-fx-cursor: hand;"
-        );
-        btnCancel.setOnMouseEntered(e -> btnCancel.setStyle(
-            "-fx-background-color: #f3f4f6;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 8;" +
-            "-fx-background-radius: 8;" +
-            "-fx-font-size: 13px;" +
-            "-fx-text-fill: #374151;" +
-            "-fx-cursor: hand;"
-        ));
-        btnCancel.setOnMouseExited(e -> btnCancel.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 8;" +
-            "-fx-background-radius: 8;" +
-            "-fx-font-size: 13px;" +
-            "-fx-text-fill: #374151;" +
-            "-fx-cursor: hand;"
-        ));
+        Button btnCancel = makeFooterBtn("Hủy", "white", "#374151", C_BORDER, "#f3f4f6");
         btnCancel.setOnAction(e -> close());
 
-        Button btnSave = new Button(nvEdit == null ? "💾  Thêm mới" : "💾  Cập nhật");
-        btnSave.setPrefWidth(140);
-        btnSave.setPrefHeight(40);
-        btnSave.setStyle(
-            "-fx-background-color: " + C_SIDEBAR + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 13px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-radius: 8;" +
-            "-fx-cursor: hand;"
-        );
-        btnSave.setOnMouseEntered(e -> btnSave.setStyle(
-            "-fx-background-color: " + C_ACTIVE + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 13px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-radius: 8;" +
-            "-fx-cursor: hand;"
-        ));
-        btnSave.setOnMouseExited(e -> btnSave.setStyle(
-            "-fx-background-color: " + C_SIDEBAR + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 13px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-radius: 8;" +
-            "-fx-cursor: hand;"
-        ));
+        Button btnSave = makeFooterBtn(nvEdit == null ? "💾  Thêm mới" : "💾  Cập nhật",
+                C_SIDEBAR, "white", "transparent", C_ACTIVE);
         btnSave.setOnAction(e -> handleSave());
 
         footer.getChildren().addAll(btnCancel, btnSave);
         return footer;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       VALIDATION
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * VALIDATION
+     * ════════════════════════════════════════════════════════════════
+     */
     private void setupValidation() {
-        txtTen.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateAll(); });
-        txtSDT.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateAll(); });
-        txtHeSo.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateAll(); });
+        txtTen.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateTen();
+        });
+        txtSDT.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateSDT();
+        });
+        txtCCCD.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateCCCD();
+        });
+        dpNgaySinh.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateNS();
+        });
+    }
+
+    private boolean validateTen() {
+        String ten = txtTen.getText().trim().replaceAll("\\s+", " ");
+        if (ten.isEmpty()) {
+            showFieldError(lblErrTen, txtTen, "⚠ Không được để trống.");
+            return false;
+        }
+        if (!ten.matches(model.utils.ValidationUtils.REGEX_NAME)) {
+            showFieldError(lblErrTen, txtTen, "⚠ Chỉ được chứa chữ cái và khoảng trắng.");
+            return false;
+        }
+        if (ten.matches(model.utils.ValidationUtils.REGEX_SPAM_CHAR)) {
+            showFieldError(lblErrTen, txtTen, "⚠ Tên có chứa ký tự lặp lại bất thường.");
+            return false;
+        }
+        if (!model.utils.ValidationUtils.isValidNameLength(ten)) {
+            showFieldError(lblErrTen, txtTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
+            return false;
+        }
+        clearFieldError(lblErrTen, txtTen);
+        return true;
+    }
+
+    private boolean validateNS() {
+        java.time.LocalDate ns = dpNgaySinh.getValue();
+        if (ns == null) {
+            showFieldError(lblErrNS, dpNgaySinh, "⚠ Vui lòng chọn ngày sinh.");
+            return false;
+        }
+        if (java.time.LocalDate.now().minusYears(16).isBefore(ns)) {
+            showFieldError(lblErrNS, dpNgaySinh, "⚠ Khách hàng phải từ đủ 16 tuổi.");
+            return false;
+        }
+        clearFieldError(lblErrNS, dpNgaySinh);
+        return true;
+    }
+
+    private boolean validateSDT() {
+        String sdt = txtSDT.getText().trim();
+        if (sdt.isEmpty()) {
+            showFieldError(lblErrSDT, txtSDT, "⚠ Không được để trống.");
+            return false;
+        }
+        if (!sdt.matches(model.utils.ValidationUtils.REGEX_PHONE_VN)) {
+            showFieldError(lblErrSDT, txtSDT, "⚠ Sai đầu số nhà mạng Việt Nam (03x, 05x, 07x, 08x, 09x).");
+            return false;
+        }
+        clearFieldError(lblErrSDT, txtSDT);
+        return true;
+    }
+
+    private boolean validateCCCD() {
+        String cccd = txtCCCD.getText().trim();
+        java.time.LocalDate ns = dpNgaySinh.getValue();
+        if (cccd.isEmpty()) {
+            showFieldError(lblErrCCCD, txtCCCD, "⚠ Không được để trống.");
+            return false;
+        }
+        if (!cccd.matches(model.utils.ValidationUtils.REGEX_CCCD_FORMAT)) {
+            showFieldError(lblErrCCCD, txtCCCD, "⚠ Phải gồm đúng 12 chữ số.");
+            return false;
+        }
+        if (model.utils.ValidationUtils.isValidProvinceCode(cccd)) {
+            showFieldError(lblErrCCCD, txtCCCD, "⚠ Mã tỉnh/thành phố không hợp lệ.");
+            return false;
+        }
+        if (ns != null) {
+            int namSinh = ns.getYear();
+            if (!model.utils.ValidationUtils.isValidCCCDCenturyAndGender(cccd, namSinh)) {
+                showFieldError(lblErrCCCD, txtCCCD,
+                        "⚠ số thứ 4 không khớp (dưới năm 2000 0:nam 1:nữ, từ năm 2000 2:nam, 3:nữ ).");
+                return false;
+            }
+            if (!model.utils.ValidationUtils.isValidCCCDBirthYear(cccd, namSinh)) {
+                showFieldError(lblErrCCCD, txtCCCD, "⚠ 2 số năm sinh trên CCCD bị sai (số 5,6).");
+                return false;
+            }
+        }
+        clearFieldError(lblErrCCCD, txtCCCD);
+        return true;
     }
 
     private boolean validateAll() {
         boolean ok = true;
-
-        // Tên
-        if (txtTen.getText().trim().isEmpty()) {
-            lblErrTen.setText("Họ tên không được để trống");
-            highlightError(txtTen, true);
+        if (!validateTen())
             ok = false;
-        } else {
-            lblErrTen.setText("");
-            highlightError(txtTen, false);
-        }
-
-        // SĐT
-        if (!txtSDT.getText().matches("0\\d{9}")) {
-            lblErrSDT.setText("SĐT gồm 10 số, bắt đầu bằng 0");
-            highlightError(txtSDT, true);
+        if (!validateSDT())
             ok = false;
-        } else {
-            lblErrSDT.setText("");
-            highlightError(txtSDT, false);
-        }
-
-        // Hệ số
-        try {
-            float hs = Float.parseFloat(txtHeSo.getText().trim());
-            if (hs < 1.0f || hs > 10.0f) throw new NumberFormatException();
-            lblErrHeSo.setText("");
-            highlightError(txtHeSo, false);
-        } catch (NumberFormatException e) {
-            lblErrHeSo.setText("Hệ số phải từ 1.0 đến 10.0");
-            highlightError(txtHeSo, true);
+        if (!validateCCCD())
             ok = false;
-        }
-
+        if (!validateNS())
+            ok = false;
         return ok;
     }
 
-    private void highlightError(TextField tf, boolean error) {
-        if (error) {
-            tf.setStyle(
-                "-fx-background-color: #fef2f2;" +
-                "-fx-border-color: " + C_ERROR + ";" +
-                "-fx-border-radius: 8;" +
-                "-fx-background-radius: 8;" +
-                "-fx-font-size: 13px;" +
-                "-fx-padding: 8 12 8 12;"
-            );
-        } else {
-            tf.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-border-color: " + C_BORDER + ";" +
-                "-fx-border-radius: 8;" +
-                "-fx-background-radius: 8;" +
-                "-fx-font-size: 13px;" +
-                "-fx-padding: 8 12 8 12;"
-            );
-        }
-    }
-
-    /* ════════════════════════════════════════════════════════════════
-       SAVE
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * SAVE
+     * ════════════════════════════════════════════════════════════════
+     */
     private void handleSave() {
-        if (!validateAll()) return;
+        if (!validateAll())
+            return;
 
         try {
             NhanVien n = (nvEdit != null) ? nvEdit : new NhanVien();
 
-            // ── Xác định chức vụ ────────────────────────────────────
-            boolean isManagerSelected;
+            // ── Xác định chức vụ target ──────────────────────────────
+            ChucVu targetRole;
             if (nvEdit != null) {
-                isManagerSelected = nvEdit.getRole() == ChucVu.QUAN_LY;
+                // Sửa: giữ nguyên role cũ
+                targetRole = nvEdit.getRole();
+            } else if (isAdmin) {
+                // ADMIN thêm: đọc từ ComboBox
+                targetRole = "Quản lý".equals(cbChucVu.getValue()) ? ChucVu.QUAN_LY : ChucVu.NHAN_VIEN;
             } else {
-                isManagerSelected = "Quản lý".equals(cbChucVu.getValue());
+                // QUAN_LY thêm: gán cứng NV
+                targetRole = ChucVu.NHAN_VIEN;
             }
 
-            // ── Chặn giới hạn quản lý ──────────────────────────────
-            if (isManagerSelected) {
-                List<NhanVien> all = dao.getAll();
-                long countQL = all.stream().filter(x -> x.getRole() == ChucVu.QUAN_LY).count();
-
-                if (nvEdit == null && countQL >= 2) {
-                    showError("Chỉ được phép có tối đa 2 quản lý!");
-                    return;
-                }
-                if (nvEdit != null && nvEdit.getRole() != ChucVu.QUAN_LY && countQL >= 2) {
-                    showError("Đã đủ 2 quản lý!");
+            // ── Validate trình độ khi gán QUAN_LY ────────────────────
+            trinhDo selectedTrinhDo = cbTrinhDo.getValue();
+            if (targetRole == ChucVu.QUAN_LY) {
+                if (selectedTrinhDo != trinhDo.DAIHOC && selectedTrinhDo != trinhDo.TREN_DAIHOC) {
+                    showError("Quản lý phải có trình độ Đại học hoặc Trên đại học!");
                     return;
                 }
             }
@@ -484,19 +474,22 @@ public class ThemSuaNhanVienDialog extends Stage {
                 for (NhanVien item : all) {
                     try {
                         int id = Integer.parseInt(item.getMaNV().replace("LUCIA", ""));
-                        if (id > maxId) maxId = id;
-                    } catch (NumberFormatException ignored) {}
+                        if (id > maxId)
+                            maxId = id;
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
                 n.setMaNV(String.format("LUCIA%04d", maxId + 1));
             }
 
             // ── Gán dữ liệu ────────────────────────────────────────
-            n.setHoTen(txtTen.getText().trim());
+            n.setHoTen(model.utils.ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " ")));
             n.setDiaChi(txtDiaChi.getText().trim());
             n.setSoDT(txtSDT.getText().trim());
-            n.setHeSoLuong(Float.parseFloat(txtHeSo.getText().trim()));
-            n.setRole(isManagerSelected ? ChucVu.QUAN_LY : ChucVu.NHAN_VIEN);
-            n.setTrinhDo(cbTrinhDo.getValue());
+            n.setCccd(txtCCCD.getText().trim());
+            n.setNgaySinh(dpNgaySinh.getValue());
+            n.setRole(targetRole);
+            n.setTrinhDo(selectedTrinhDo);
 
             if (n.getRole() == ChucVu.NHAN_VIEN && cbNguoiQuanLy.getValue() != null) {
                 n.setMaQL(cbNguoiQuanLy.getValue().getMaNV());
@@ -509,12 +502,13 @@ public class ThemSuaNhanVienDialog extends Stage {
 
             if (ok) {
                 showInfo("Thành công!", nvEdit == null
-                    ? "Đã thêm nhân viên " + n.getMaNV() + " thành công."
-                    : "Đã cập nhật thông tin nhân viên " + n.getMaNV() + ".");
-                if (parentView != null) parentView.loadData();
+                        ? "Đã thêm nhân viên " + n.getMaNV() + " thành công."
+                        : "Đã cập nhật thông tin nhân viên " + n.getMaNV() + ".");
+                if (parentView != null)
+                    parentView.loadData();
                 close();
             } else {
-                showError("Thao tác thất bại – kiểm tra lại dữ liệu.");
+                showError("Thao tác thất bại – kiểm tra lại dữ liệu hoặc cột cccd trong DB.");
             }
 
         } catch (Exception ex) {
@@ -522,18 +516,28 @@ public class ThemSuaNhanVienDialog extends Stage {
         }
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       HELPERS
-    ════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * HELPERS
+     * ════════════════════════════════════════════════════════════════
+     */
+
+    /**
+     * Xác định xem "Người quản lý" combobox có nên hiển thị không.
+     * Ẩn khi: đang thêm và chức vụ = Quản lý, hoặc nvEdit là Quản lý/Admin.
+     */
     private void updateNguoiQuanLyVisibility() {
-        boolean isStaff;
+        boolean showNQL;
         if (nvEdit != null) {
-            isStaff = nvEdit.getRole() == ChucVu.NHAN_VIEN;
+            showNQL = nvEdit.getRole() == ChucVu.NHAN_VIEN;
+        } else if (isAdmin) {
+            showNQL = "Nhân viên".equals(cbChucVu.getValue());
         } else {
-            isStaff = "Nhân viên".equals(cbChucVu.getValue());
+            // QUAN_LY thêm → luôn hiển thị (vì target = NHAN_VIEN)
+            showNQL = true;
         }
-        nguoiQuanLyBox.setVisible(isStaff);
-        nguoiQuanLyBox.setManaged(isStaff);
+        nguoiQuanLyBox.setVisible(showNQL);
+        nguoiQuanLyBox.setManaged(showNQL);
     }
 
     private void loadManagersToCombo() {
@@ -541,21 +545,42 @@ public class ThemSuaNhanVienDialog extends Stage {
         List<NhanVien> all = dao.getAll();
         if (all != null) {
             all.stream()
-               .filter(n -> n.getRole() == ChucVu.QUAN_LY)
-               .forEach(cbNguoiQuanLy.getItems()::add);
+                    .filter(n -> n.getRole() == ChucVu.QUAN_LY || n.getRole() == ChucVu.ADMIN)
+                    .forEach(cbNguoiQuanLy.getItems()::add);
         }
     }
 
-    /* ── Form helpers ─────────────────────────────────────────────── */
-    private VBox fieldRow(String labelText, TextField field, Label errLabel) {
+    private String getRoleLabel(ChucVu role) {
+        if (role == null)
+            return "Nhân viên";
+        return switch (role) {
+            case QUAN_LY -> "Quản lý";
+            case ADMIN -> "Admin";
+            default -> "Nhân viên";
+        };
+    }
+
+    private VBox fieldRow(String labelText, Control field, Label errLabel) {
         VBox box = new VBox(4);
         box.setPadding(new Insets(0, 0, 2, 0));
 
-        Label lbl = new Label(labelText);
-        lbl.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-        lbl.setTextFill(Color.web("#374151"));
+        HBox lblBox = new HBox(4);
+        if (labelText.endsWith("*")) {
+            Label lblText = new Label(labelText.substring(0, labelText.length() - 1).trim());
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
+            Label lblStar = new Label("*");
+            lblStar.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblStar.setTextFill(Color.web(C_ERROR));
+            lblBox.getChildren().addAll(lblText, lblStar);
+        } else {
+            Label lblText = new Label(labelText);
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
+            lblBox.getChildren().add(lblText);
+        }
 
-        box.getChildren().addAll(lbl, field, errLabel);
+        box.getChildren().addAll(lblBox, field, errLabel);
         return box;
     }
 
@@ -563,11 +588,23 @@ public class ThemSuaNhanVienDialog extends Stage {
         VBox box = new VBox(4);
         box.setPadding(new Insets(0, 0, 2, 0));
 
-        Label lbl = new Label(labelText);
-        lbl.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-        lbl.setTextFill(Color.web("#374151"));
+        HBox lblBox = new HBox(4);
+        if (labelText.endsWith("*")) {
+            Label lblText = new Label(labelText.substring(0, labelText.length() - 1).trim());
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
+            Label lblStar = new Label("*");
+            lblStar.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblStar.setTextFill(Color.web(C_ERROR));
+            lblBox.getChildren().addAll(lblText, lblStar);
+        } else {
+            Label lblText = new Label(labelText);
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
+            lblBox.getChildren().add(lblText);
+        }
 
-        box.getChildren().addAll(lbl, field);
+        box.getChildren().addAll(lblBox, field);
         return box;
     }
 
@@ -576,28 +613,41 @@ public class ThemSuaNhanVienDialog extends Stage {
         tf.setPromptText(prompt);
         tf.setPrefHeight(40);
         tf.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 8;" +
-            "-fx-background-radius: 8;" +
-            "-fx-font-size: 13px;" +
-            "-fx-padding: 8 12 8 12;"
-        );
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-padding: 8 12 8 12;");
         tf.focusedProperty().addListener((obs, o, focused) -> {
             if (focused) {
                 tf.setStyle(
-                    "-fx-background-color: white;" +
-                    "-fx-border-color: " + C_ACTIVE + ";" +
-                    "-fx-border-radius: 8;" +
-                    "-fx-background-radius: 8;" +
-                    "-fx-font-size: 13px;" +
-                    "-fx-padding: 8 12 8 12;" +
-                    "-fx-border-width: 2;"
-                );
+                        "-fx-background-color: white;" +
+                                "-fx-border-color: " + C_ACTIVE + ";" +
+                                "-fx-border-radius: 8;" +
+                                "-fx-background-radius: 8;" +
+                                "-fx-font-size: 13px;" +
+                                "-fx-padding: 8 12 8 12;" +
+                                "-fx-border-width: 2;");
             } else {
-                // Will be re-styled by validation
+                clearFieldError(null, tf); // restore normal on blur (validation will re-apply if needed)
             }
         });
+        return tf;
+    }
+
+    private TextField makeReadonlyField(String value) {
+        TextField tf = new TextField(value);
+        tf.setEditable(false);
+        tf.setPrefHeight(40);
+        tf.setStyle(
+                "-fx-background-color: #f3f4f6;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-padding: 8 12 8 12;" +
+                        "-fx-text-fill: #6b7280;");
         return tf;
     }
 
@@ -609,16 +659,59 @@ public class ThemSuaNhanVienDialog extends Stage {
         return l;
     }
 
+    private void showFieldError(Label errLabel, Control tf, String msg) {
+        if (errLabel != null)
+            errLabel.setText(msg);
+        tf.setStyle(
+                "-fx-background-color: #fef2f2;" +
+                        "-fx-border-color: " + C_ERROR + ";" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-padding: 8 12 8 12;");
+    }
+
+    private void clearFieldError(Label errLabel, Control tf) {
+        if (errLabel != null)
+            errLabel.setText("");
+        tf.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-padding: 8 12 8 12;");
+    }
+
     private void styleCombo(ComboBox<?> cb) {
         cb.setMaxWidth(Double.MAX_VALUE);
         cb.setPrefHeight(40);
         cb.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 8;" +
-            "-fx-background-radius: 8;" +
-            "-fx-font-size: 13px;"
-        );
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-font-size: 13px;");
+    }
+
+    private Button makeFooterBtn(String text, String bg, String fg, String border, String bgHover) {
+        Button btn = new Button(text);
+        btn.setPrefHeight(40);
+        btn.setPrefWidth(text.contains("Thêm") || text.contains("Cập") ? 140 : 100);
+        String baseStyle = "-fx-background-color: " + bg + ";" +
+                "-fx-text-fill: " + fg + ";" +
+                "-fx-font-size: 13px; -fx-font-weight: bold;" +
+                "-fx-background-radius: 8; -fx-cursor: hand;" +
+                (border.equals("transparent") ? "" : "-fx-border-color: " + border + "; -fx-border-radius: 8;");
+        String hoverStyle = "-fx-background-color: " + bgHover + ";" +
+                "-fx-text-fill: " + fg + ";" +
+                "-fx-font-size: 13px; -fx-font-weight: bold;" +
+                "-fx-background-radius: 8; -fx-cursor: hand;" +
+                (border.equals("transparent") ? "" : "-fx-border-color: " + border + "; -fx-border-radius: 8;");
+        btn.setStyle(baseStyle);
+        btn.setOnMouseEntered(e -> btn.setStyle(hoverStyle));
+        btn.setOnMouseExited(e -> btn.setStyle(baseStyle));
+        return btn;
     }
 
     private void showError(String msg) {

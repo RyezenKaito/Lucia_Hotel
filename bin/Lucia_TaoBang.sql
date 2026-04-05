@@ -8,7 +8,6 @@ GO
 
 USE LuciaHT;
 GO
-
 -- =============================
 -- 1. MASTER DATA
 -- =============================
@@ -16,26 +15,25 @@ GO
 CREATE TABLE KH (
     maKH VARCHAR(20) PRIMARY KEY,
     tenKH NVARCHAR(100) NOT NULL,
-    soDT VARCHAR(15),
+    soDT VARCHAR(10),
     ngaySinh DATE,
-    soCCCD VARCHAR(20)
+    soCCCD VARCHAR(12)
 );
 
 CREATE TABLE NV (
     maNV VARCHAR(9) PRIMARY KEY,
     hoTen NVARCHAR(100) NOT NULL,
-    soDT VARCHAR(15),
+    soDT VARCHAR(10),
+	soCCCD VARCHAR(12),
     diaChi NVARCHAR(200),
 	ngaySinh DATE,
     ngayVaoLam DATE,
     trinhDo NVARCHAR(20) CHECK (trinhDo IN (N'THCS', N'THPT', N'CAODANG', N'DAIHOC')),
-    heSoLuong DECIMAL(5,2),
-    luongCB DECIMAL(18,2),
     mk VARCHAR(100),
     role NVARCHAR(5) CHECK (role IN (N'NV', N'QL')),
     maQL VARCHAR(9) NULL,
     CONSTRAINT FK_NV_QL FOREIGN KEY (maQL) REFERENCES NV(maNV),
-    CONSTRAINT CK_MaNV_Chuan CHECK (maNV LIKE 'LUCIA[0-9][0-9][0-9][0-9]')
+    CONSTRAINT CK_MaNV_Chuan CHECK (maNV LIKE 'LUCIA[0-9]%')
 );
 
 CREATE TABLE LoaiPhong (

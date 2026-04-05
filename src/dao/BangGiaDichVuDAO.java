@@ -16,7 +16,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu> getAllBangGia() {
         List<BangGiaDichVu> list = new ArrayList<>();
-        String sql = "SELECT * FROM BGDichVu";
+        String sql = "SELECT * FROM BangGiaDV_Header";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -32,7 +32,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu_ChiTiet> getChiTietByMa(String maBG) {
         List<BangGiaDichVu_ChiTiet> list = new ArrayList<>();
-        String sql = "SELECT * FROM BG_ChiTiet WHERE maBG = ?";
+        String sql = "SELECT * FROM BangGiaDV_Detail WHERE maBangGia = ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maBG);
@@ -48,7 +48,7 @@ public class BangGiaDichVuDAO {
      * Thêm mới bảng giá thông tin
      */
     public boolean insertBangGia(BangGiaDichVu bg) {
-        String sql = "INSERT INTO BGDichVu (maBG, tenBG, ngayAD, ngayHet, trangThai) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, bg.getMaBangGia());
@@ -64,7 +64,7 @@ public class BangGiaDichVuDAO {
      * Thêm chi tiết bảng giá
      */
     public boolean insertChiTiet(BangGiaDichVu_ChiTiet ct) {
-        String sql = "INSERT INTO BG_ChiTiet (maBG, maDV, giaApDung) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV) VALUES (?, ?, ?)";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, ct.getMaBangGia().getMaBangGia());
@@ -78,8 +78,8 @@ public class BangGiaDichVuDAO {
      * Xóa bảng giá (Transaction: Xóa chi tiết trước)
      */
     public boolean deleteBangGia(String maBG) {
-        String sqlChiTiet = "DELETE FROM BG_ChiTiet WHERE maBG = ?";
-        String sqlThongTin = "DELETE FROM BGDichVu WHERE maBG = ?";
+        String sqlChiTiet = "DELETE FROM BangGiaDV_Detail WHERE maBangGia = ?";
+        String sqlThongTin = "DELETE FROM BangGiaDV_Header WHERE maBangGia = ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement ps1 = conn.prepareStatement(sqlChiTiet);
@@ -102,10 +102,10 @@ public class BangGiaDichVuDAO {
      */
     private BangGiaDichVu mapBangGia(ResultSet rs) throws SQLException {
         BangGiaDichVu bg = new BangGiaDichVu();
-        bg.setMaBangGia(rs.getString("maBG"));
-        bg.setTenBangGia(rs.getString("tenBG"));
-        bg.setNgayApDung(rs.getDate("ngayAD"));
-        bg.setNgayHetHieuLuc(rs.getDate("ngayHet"));
+        bg.setMaBangGia(rs.getString("maBangGia"));
+        bg.setTenBangGia(rs.getString("tenBangGia"));
+        bg.setNgayApDung(rs.getDate("ngayApDung"));
+        bg.setNgayHetHieuLuc(rs.getDate("ngayHetHieuLuc"));
         bg.setTrangThai(rs.getInt("trangThai"));
         return bg;
     }
@@ -115,9 +115,9 @@ public class BangGiaDichVuDAO {
      */
     private BangGiaDichVu_ChiTiet mapChiTiet(ResultSet rs) throws SQLException {
         BangGiaDichVu_ChiTiet ct = new BangGiaDichVu_ChiTiet();
-        ct.setMaBangGia(new BangGiaDichVu(rs.getString("maBG")));
+        ct.setMaBangGia(new BangGiaDichVu(rs.getString("maBangGia")));
         ct.setMaDichVu(new DichVu(rs.getString("maDV")));
-        ct.setGiaDichVu(rs.getDouble("giaApDung"));
+        ct.setGiaDichVu(rs.getDouble("giaDV"));
         return ct;
     }
     
@@ -130,7 +130,7 @@ public class BangGiaDichVuDAO {
             con = ConnectDatabase.getInstance().getConnection();
             con.setAutoCommit(false);
 
-            String sqlThongTin = "INSERT INTO BGDichVu (maBG, tenBG, ngayAD, ngayHet, trangThai) VALUES (?, ?, ?, ?, ?)";
+            String sqlThongTin = "INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement ps1 = con.prepareStatement(sqlThongTin)) {
                 ps1.setString(1, thongTin.getMaBangGia());
                 ps1.setString(2, thongTin.getTenBangGia());
@@ -140,7 +140,7 @@ public class BangGiaDichVuDAO {
                 ps1.executeUpdate();
             }
 
-            String sqlChiTiet = "INSERT INTO BG_ChiTiet (maBG, maDV, giaApDung) VALUES (?, ?, ?)";
+            String sqlChiTiet = "INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV) VALUES (?, ?, ?)";
             try (PreparedStatement ps2 = con.prepareStatement(sqlChiTiet)) {
                 for (BangGiaDichVu_ChiTiet ct : dsChiTiet) {
                     ps2.setString(1, thongTin.getMaBangGia());
@@ -169,7 +169,7 @@ public class BangGiaDichVuDAO {
             con = ConnectDatabase.getInstance().getConnection();
             con.setAutoCommit(false);
 
-            String sqlUpdateBG = "UPDATE BGDichVu SET tenBG = ?, ngayAD = ?, ngayHet = ? WHERE maBG = ?";
+            String sqlUpdateBG = "UPDATE BangGiaDV_Header SET tenBangGia = ?, ngayApDung = ?, ngayHetHieuLuc = ? WHERE maBangGia = ?";
             try (PreparedStatement ps1 = con.prepareStatement(sqlUpdateBG)) {
                 ps1.setString(1, bg.getTenBangGia());
                 ps1.setDate(2, new java.sql.Date(bg.getNgayApDung().getTime()));
@@ -178,13 +178,13 @@ public class BangGiaDichVuDAO {
                 ps1.executeUpdate();
             }
 
-            String sqlDeleteDetails = "DELETE FROM BG_ChiTiet WHERE maBG = ?";
+            String sqlDeleteDetails = "DELETE FROM BangGiaDV_Detail WHERE maBangGia = ?";
             try (PreparedStatement ps2 = con.prepareStatement(sqlDeleteDetails)) {
                 ps2.setString(1, bg.getMaBangGia());
                 ps2.executeUpdate();
             }
 
-            String sqlInsertDetails = "INSERT INTO BG_ChiTiet (maBG, maDV, giaApDung) VALUES (?, ?, ?)";
+            String sqlInsertDetails = "INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV) VALUES (?, ?, ?)";
             try (PreparedStatement ps3 = con.prepareStatement(sqlInsertDetails)) {
                 for (BangGiaDichVu_ChiTiet ct : dsChiTiet) {
                     ps3.setString(1, bg.getMaBangGia());
@@ -205,7 +205,7 @@ public class BangGiaDichVuDAO {
     }
 
     public BangGiaDichVu getBangGiaByMa(String maBG) {
-        String sql = "SELECT * FROM BGDichVu WHERE maBG = ?";
+        String sql = "SELECT * FROM BangGiaDV_Header WHERE maBangGia = ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maBG);

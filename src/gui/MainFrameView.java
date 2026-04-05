@@ -62,7 +62,9 @@ public class MainFrameView {
         this.primaryStage = stage;
         this.staff = staff;
         this.loginStage = loginStage;
-        this.isAdmin = (staff != null && staff.getRole() == ChucVu.QUAN_LY);
+        this.isAdmin = (staff != null &&
+                (staff.getRole() == ChucVu.QUAN_LY || staff.getRole() == ChucVu.ADMIN));
+
         build();
     }
 
@@ -80,7 +82,12 @@ public class MainFrameView {
         navigateTo("dashboard");
 
         Scene scene = new Scene(root, 1400, 800);
-        primaryStage.setTitle("Khách sạn Lucia Star – " + (isAdmin ? "Quản lý" : "Nhân viên"));
+        primaryStage.setTitle("Khách sạn Lucia Star – " +
+                (staff != null ? switch (staff.getRole()) {
+                    case ADMIN -> "Admin";
+                    case QUAN_LY -> "Quản lý";
+                    default -> "Nhân viên";
+                } : "Hệ thống"));
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(e -> {
             e.consume();
@@ -122,11 +129,16 @@ public class MainFrameView {
         right.setAlignment(Pos.CENTER_RIGHT);
         right.setPadding(new Insets(0, 28, 0, 0));
 
-        String displayName = (staff != null ? staff.getHoTen() : "Admin")
-                + (isAdmin ? "  [Quản lý]" : "  [Nhân viên]");
+        String roleTag = (staff != null) ? switch (staff.getRole()) {
+            case ADMIN -> "  [Admin]";
+            case QUAN_LY -> "  [Quản lý]";
+            default -> "  [Nhân viên]";
+        } : "";
+        String displayName = (staff != null ? staff.getHoTen() : "Admin") + roleTag;
         Label userLbl = new Label(displayName);
         userLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        userLbl.setTextFill(Color.web(isAdmin ? "#a07820" : C_SIDEBAR));
+        boolean isAdminRole = staff != null && staff.getRole() == ChucVu.ADMIN;
+        userLbl.setTextFill(Color.web(isAdminRole ? "#7c3aed" : isAdmin ? "#a07820" : C_SIDEBAR));
 
         Button btnLogout = outlinedBtn("Đăng xuất", "white", "#b03030", "#fde8e8");
         btnLogout.setOnAction(e -> handleLogout());
@@ -175,9 +187,21 @@ public class MainFrameView {
         sidebar.getChildren().addAll(spacer, hLine("#1e40af"));
 
         // FIX: dùng FontPosture từ import trực tiếp, bỏ inner class FontPosture
-        Label roleLbl = new Label(isAdmin ? "⚙  Chế độ: Quản lý" : "👤  Chế độ: Nhân viên");
+        String roleLabelText;
+        String roleLabelColor;
+        if (staff != null && staff.getRole() == ChucVu.ADMIN) {
+            roleLabelText = "☆  Chế độ: Admin";
+            roleLabelColor = "#c4b5fd";
+        } else if (isAdmin) {
+            roleLabelText = "⚙  Chế độ: Quản lý";
+            roleLabelColor = C_GOLD;
+        } else {
+            roleLabelText = "👤  Chế độ: Nhân viên";
+            roleLabelColor = C_TEXT_MUTED;
+        }
+        Label roleLbl = new Label(roleLabelText);
         roleLbl.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 13));
-        roleLbl.setTextFill(Color.web(isAdmin ? C_GOLD : C_TEXT_MUTED));
+        roleLbl.setTextFill(Color.web(roleLabelColor));
         roleLbl.setPadding(new Insets(12, 0, 14, 20));
         sidebar.getChildren().add(roleLbl);
 

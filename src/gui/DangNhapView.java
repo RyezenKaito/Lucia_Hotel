@@ -130,9 +130,16 @@ public class DangNhapView extends Application {
         VBox.setMargin(lblSub, new Insets(0, 0, 28, 0));
 
         // ===== FIELD: Mã nhân viên =====
-        String placeholder = "Ví dụ: LUCIA0001";
+        String placeholder = "Ví dụ: LUCIA001";
         VBox fieldUser = buildGlassField("Mã nhân viên", placeholder, "👤");
         txtUsername = (TextField) ((StackPane) fieldUser.getChildren().get(1)).getChildren().get(0);
+        
+        // Buộc in hoa khi nhập
+        txtUsername.textProperty().addListener((obs, oldVal, newVal) -> {
+        	if (newVal != null && !newVal.equals(newVal.toUpperCase())) {
+        		txtUsername.setText(newVal.toUpperCase());
+        	}
+        });
 
         VBox.setMargin(fieldUser, new Insets(0, 0, 16, 0));
 
