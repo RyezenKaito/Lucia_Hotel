@@ -267,10 +267,10 @@ public class NhanVienView extends BorderPane {
         colChucVu.setCellValueFactory(c -> {
             ChucVu role = c.getValue().getRole();
             if (role == ChucVu.ADMIN)
-                return new SimpleStringProperty("Admin");
+                return new SimpleStringProperty("ADMIN");
             if (role == ChucVu.QUAN_LY)
-                return new SimpleStringProperty("Quản lý");
-            return new SimpleStringProperty("Nhân viên");
+                return new SimpleStringProperty("QUẢN LÝ");
+            return new SimpleStringProperty("NHÂN VIÊN");
         });
         colChucVu.setMinWidth(100);
         colChucVu.setStyle("-fx-alignment: CENTER;");
@@ -286,11 +286,11 @@ public class NhanVienView extends BorderPane {
                 Label badge = new Label(item);
                 badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 switch (item) {
-                    case "Admin" -> badge.setStyle(
+                    case "ADMIN" -> badge.setStyle(
                             "-fx-background-color: #ede9fe;" +
                                     "-fx-text-fill: #5b21b6;" +
                                     "-fx-padding: 3 10 3 10; -fx-background-radius: 12;");
-                    case "Quản lý" -> badge.setStyle(
+                    case "QUẢN LÝ" -> badge.setStyle(
                             "-fx-background-color: #fef3c7;" +
                                     "-fx-text-fill: #92400e;" +
                                     "-fx-padding: 3 10 3 10; -fx-background-radius: 12;");
@@ -305,7 +305,36 @@ public class NhanVienView extends BorderPane {
             }
         });
 
-        table.getColumns().addAll(colSTT, colMa, colTen, colCCCD, colSDT, colNS, colNgayVao, colChucVu);
+        TableColumn<NhanVien, String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai.setCellValueFactory(c -> {
+            model.enums.TrangThaiNV tt = c.getValue().getTrangThai();
+            return new SimpleStringProperty(tt == model.enums.TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
+        });
+        colTrangThai.setMinWidth(100);
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+                Label badge = new Label(item);
+                badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+                if ("Còn làm".equals(item)) {
+                    badge.setStyle("-fx-background-color: #d1fae5; -fx-text-fill: #065f46; -fx-padding: 3 10 3 10; -fx-background-radius: 12;");
+                } else {
+                    badge.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-padding: 3 10 3 10; -fx-background-radius: 12;");
+                }
+                setGraphic(badge);
+                setText(null);
+                setAlignment(Pos.CENTER);
+            }
+        });
+
+        table.getColumns().addAll(colSTT, colMa, colTen, colCCCD, colSDT, colNS, colNgayVao, colChucVu, colTrangThai);
 
         // ── Context Menu (Click chuột phải) ──────────────────────── */
         table.setRowFactory(tv -> {
@@ -331,21 +360,22 @@ public class NhanVienView extends BorderPane {
             // Context Menu
             ContextMenu ctx = new ContextMenu();
 
-            MenuItem miEdit = new MenuItem("✏️  Sửa thông tin");
+            MenuItem miEdit = new MenuItem("✏ Cập nhật thông tin");
             miEdit.setOnAction(e -> {
                 NhanVien nv = row.getItem();
                 if (nv != null)
                     openEditDialog(nv);
             });
 
-            MenuItem miDelete = new MenuItem("🗑️  Xóa nhân viên");
+            MenuItem miDelete = new MenuItem("🗑 Xóa nhân viên");
+            miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miDelete.setOnAction(e -> {
                 NhanVien nv = row.getItem();
                 if (nv != null)
                     confirmDelete(nv);
             });
 
-            MenuItem miView = new MenuItem("👁️  Xem chi tiết");
+            MenuItem miView = new MenuItem("Xem chi tiết");
             miView.setOnAction(e -> {
                 NhanVien nv = row.getItem();
                 if (nv != null)
@@ -397,18 +427,23 @@ public class NhanVienView extends BorderPane {
         long totalStaff = 0, totalManager = 0, totalAdmin = 0;
 
         for (NhanVien nv : all) {
-            // Ẩn chính mình khỏi danh sách
-            if (currentUser != null && nv.getMaNV().equals(currentUser.getMaNV()))
-                continue;
-
-            masterData.add(nv);
-
+            // ── TÍNH THỐNG KÊ TOÀN BỘ ──
             if (nv.getRole() == ChucVu.ADMIN)
                 totalAdmin++;
             else if (nv.getRole() == ChucVu.QUAN_LY)
                 totalManager++;
             else
                 totalStaff++;
+
+            // Phân quyền: QUẢN LÝ chỉ được XEM role NHÂN VIÊN
+            if (!isCurrentUserAdmin && nv.getRole() != ChucVu.NHAN_VIEN)
+                continue;
+
+            // Ẩn chính mình khỏi danh sách hiển thị
+            if (currentUser != null && nv.getMaNV().equals(currentUser.getMaNV()))
+                continue;
+
+            masterData.add(nv);
         }
 
         filteredData = new FilteredList<>(masterData, p -> true);

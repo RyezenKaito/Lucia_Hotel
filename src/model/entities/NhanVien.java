@@ -5,11 +5,13 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import model.enums.ChucVu;
 import model.enums.trinhDo;
+import model.enums.TrangThaiNV;
 
 public class NhanVien {
     private String maNV, hoTen, diaChi, soDT, matKhau, cccd;
     private ChucVu role;
     private trinhDo trinhDo;
+    private TrangThaiNV trangThai;
     private LocalDate ngaySinh, ngayVaoLamDate;
     private String maQL;
 
@@ -27,6 +29,7 @@ public class NhanVien {
         this.cccd = "000000000000";
         this.role = ChucVu.NHAN_VIEN;
         this.trinhDo = trinhDo.THCS;
+        this.trangThai = TrangThaiNV.CON_LAM;
         this.ngaySinh = LocalDate.now().minusYears(19); // Đảm bảo > 18 tuổi
         this.ngayVaoLamDate = LocalDate.now();
     }
@@ -37,6 +40,7 @@ public class NhanVien {
         this.setHoTen(hoTen);
         this.setDiaChi(diaChi);
         this.setTrinhDo(trinhDo);
+        this.setTrangThai(TrangThaiNV.CON_LAM);
         this.setNgayVaoLamDate(ngayVaoLamDate);
         this.setRole(role);
     }
@@ -49,8 +53,8 @@ public class NhanVien {
 	// --- GETTERS & SETTERS ---
 
     public void setMaNV(String maNV) {
-        if (maNV == null || !maNV.matches("LUCIA\\d+"))
-            throw new IllegalArgumentException("Mã NV phải in hoa 'LUCIA' và đi kèm số (VD: LUCIA001)");
+        if (maNV == null || !(maNV.equals("ADMIN") || maNV.matches("LUCIA\\d+")))
+            throw new IllegalArgumentException("Mã NV phải in hoa 'LUCIA' và đi kèm số hoặc là 'ADMIN'");
         this.maNV = maNV;
     }
 
@@ -60,8 +64,8 @@ public class NhanVien {
 
     public void setMaQL(String maQL) {
         // Cho phép maQL null (vì Quản lý cấp cao nhất không có người quản lý)
-        if (maQL != null && !maQL.matches("LUCIA\\d+"))
-            throw new IllegalArgumentException("Mã QL phải in hoa 'LUCIA' và đi kèm số (VD: LUCIA001)");
+        if (maQL != null && !(maQL.equals("ADMIN") || maQL.matches("LUCIA\\d+")))
+            throw new IllegalArgumentException("Mã QL phải in hoa 'LUCIA' và đi kèm số (VD: LUCIA001) hoặc là 'ADMIN'");
         this.maQL = maQL;
     }
 
@@ -76,8 +80,7 @@ public class NhanVien {
     public LocalDate getNgaySinh() { return ngaySinh; }
 
     public void setNgaySinh(LocalDate ngaySinh) {
-        if (ngaySinh == null) throw new IllegalArgumentException("Ngày sinh không được để trống");
-        if (ChronoUnit.YEARS.between(ngaySinh, LocalDate.now()) < 18)
+        if (ngaySinh != null && ChronoUnit.YEARS.between(ngaySinh, LocalDate.now()) < 18)
             throw new IllegalArgumentException("Nhân viên phải từ 18 tuổi trở lên");
         this.ngaySinh = ngaySinh;
     }
@@ -85,9 +88,9 @@ public class NhanVien {
     public String getSoDT() { return soDT; }
 
     public void setSoDT(String soDT) {
-        if (soDT != null && soDT.matches("0\\d{9}"))
-        	this.soDT = soDT;
-        else throw new IllegalArgumentException("SĐT phải gồm 10 chữ số và bắt đầu bằng số 0");
+        if (soDT != null && !soDT.isBlank() && !soDT.matches("0\\d{9}"))
+            throw new IllegalArgumentException("SĐT phải gồm 10 chữ số và bắt đầu bằng số 0");
+        this.soDT = soDT;
     }
 
     public String getCccd() { return cccd; }
@@ -96,7 +99,7 @@ public class NhanVien {
      * CCCD hợp lệ: 9 chữ số (CMND cũ) hoặc 12 chữ số (CCCD mới).
      */
     public void setCccd(String cccd) {
-        if (cccd == null || !cccd.matches("\\d{9}(\\d{3})?"))
+        if (cccd != null && !cccd.isBlank() && !cccd.matches("\\d{9}(\\d{3})?"))
             throw new IllegalArgumentException("CCCD phải gồm 9 hoặc 12 chữ số");
         this.cccd = cccd;
     }
@@ -116,8 +119,14 @@ public class NhanVien {
     public trinhDo getTrinhDo() { return trinhDo; }
 
     public void setTrinhDo(trinhDo trinhDo) {
-        if (trinhDo == null) throw new IllegalArgumentException("Trình độ không được để trống");
         this.trinhDo = trinhDo;
+    }
+
+    public TrangThaiNV getTrangThai() { return trangThai; }
+
+    public void setTrangThai(TrangThaiNV trangThai) {
+        if (trangThai == null) throw new IllegalArgumentException("Trạng thái không được để trống");
+        this.trangThai = trangThai;
     }
 
     public ChucVu getRole() { return role; }
@@ -130,11 +139,7 @@ public class NhanVien {
     public LocalDate getNgayVaoLamDate() { return ngayVaoLamDate; }
 
     public void setNgayVaoLamDate(LocalDate ngayVaoLamDate) {
-        if (ngayVaoLamDate == null) {
-            this.ngayVaoLamDate = LocalDate.now();
-            return;
-        }
-        if (ngayVaoLamDate.isAfter(LocalDate.now())) {
+        if (ngayVaoLamDate != null && ngayVaoLamDate.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("Ngày vào làm không được sau ngày hiện tại");
         }
         this.ngayVaoLamDate = ngayVaoLamDate;

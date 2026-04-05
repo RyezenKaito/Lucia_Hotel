@@ -84,10 +84,10 @@ public class MainFrameView {
         Scene scene = new Scene(root, 1400, 800);
         primaryStage.setTitle("Khách sạn Lucia Star – " +
                 (staff != null ? switch (staff.getRole()) {
-                    case ADMIN -> "Admin";
-                    case QUAN_LY -> "Quản lý";
-                    default -> "Nhân viên";
-                } : "Hệ thống"));
+                    case ADMIN -> "ADMIN";
+                    case QUAN_LY -> "QUẢN LÝ";
+                    default -> "NHÂN VIÊN";
+                } : "HỆ THỐNG"));
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(e -> {
             e.consume();
@@ -115,7 +115,7 @@ public class MainFrameView {
         left.setPadding(new Insets(0, 0, 0, 28));
         HBox.setHgrow(left, Priority.ALWAYS);
 
-        Label title = new Label(isAdmin ? "QUẢN LÝ" : "NHÂN VIÊN");
+        Label title = new Label(staff != null && staff.getRole() == ChucVu.ADMIN ? "ADMIN" : isAdmin ? "QUẢN LÝ" : "NHÂN VIÊN");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
         title.setTextFill(Color.web(C_SIDEBAR));
 
@@ -130,11 +130,11 @@ public class MainFrameView {
         right.setPadding(new Insets(0, 28, 0, 0));
 
         String roleTag = (staff != null) ? switch (staff.getRole()) {
-            case ADMIN -> "  [Admin]";
-            case QUAN_LY -> "  [Quản lý]";
-            default -> "  [Nhân viên]";
+            case ADMIN -> "  [ADMIN]";
+            case QUAN_LY -> "  [QUẢN LÝ]";
+            default -> "  [NHÂN VIÊN]";
         } : "";
-        String displayName = (staff != null ? staff.getHoTen() : "Admin") + roleTag;
+        String displayName = (staff != null ? staff.getHoTen() : "ADMIN") + roleTag;
         Label userLbl = new Label(displayName);
         userLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         boolean isAdminRole = staff != null && staff.getRole() == ChucVu.ADMIN;
@@ -190,13 +190,13 @@ public class MainFrameView {
         String roleLabelText;
         String roleLabelColor;
         if (staff != null && staff.getRole() == ChucVu.ADMIN) {
-            roleLabelText = "☆  Chế độ: Admin";
+            roleLabelText = "☆  Chế độ: ADMIN";
             roleLabelColor = "#c4b5fd";
         } else if (isAdmin) {
-            roleLabelText = "⚙  Chế độ: Quản lý";
+            roleLabelText = "⚙  Chế độ: QUẢN LÝ";
             roleLabelColor = C_GOLD;
         } else {
-            roleLabelText = "👤  Chế độ: Nhân viên";
+            roleLabelText = "👤  Chế độ: NHÂN VIÊN";
             roleLabelColor = C_TEXT_MUTED;
         }
         Label roleLbl = new Label(roleLabelText);
@@ -228,7 +228,7 @@ public class MainFrameView {
         Label appName = new Label("Lucia Hotel");
         appName.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 15));
         appName.setTextFill(Color.WHITE);
-        Label staffName = new Label(staff != null ? staff.getHoTen() : "Admin");
+        Label staffName = new Label(staff != null ? staff.getHoTen() : "ADMIN");
         staffName.setFont(Font.font("Segoe UI", 12));
         staffName.setTextFill(Color.web(C_TEXT_MUTED));
         text.getChildren().addAll(appName, staffName);

@@ -76,7 +76,7 @@ public class ThemSuaKhachHangDialog {
         dialog.getDialogPane().setStyle("-fx-padding: 0;");
 
         ButtonType btnSubmit = new ButtonType(
-                isEdit ? "Lưu thay đổi" : "Thêm khách hàng",
+                isEdit ? "💾 Cập nhật" : "Thêm khách hàng",
                 ButtonBar.ButtonData.OK_DONE);
         ButtonType btnCancel = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(btnSubmit, btnCancel);
@@ -88,6 +88,28 @@ public class ThemSuaKhachHangDialog {
             if (!validateAndSubmit())
                 event.consume();
         });
+
+        // BẮT SỰ KIỆN THAY ĐỔI ĐỂ ENABLE NÚT CẬP NHẬT (CHỈ ÁP DỤNG KHI SỬA)
+        if (isEdit) {
+            okBtn.setDisable(true);
+            javafx.beans.value.ChangeListener<Object> changeListener = (obs, oldVal, newVal) -> {
+                boolean changed = false;
+                if (!java.util.Objects.equals(txtTen.getText().trim(), nvl(khachHang.getTenKH()).trim()))
+                    changed = true;
+                else if (!java.util.Objects.equals(txtCCCD.getText().trim(), nvl(khachHang.getSoCCCD()).trim()))
+                    changed = true;
+                else if (!java.util.Objects.equals(txtSDT.getText().trim(), nvl(khachHang.getSoDT()).trim()))
+                    changed = true;
+                else if (!java.util.Objects.equals(dpNgaySinh.getValue(), khachHang.getNgaySinh()))
+                    changed = true;
+
+                okBtn.setDisable(!changed);
+            };
+            txtTen.textProperty().addListener(changeListener);
+            txtCCCD.textProperty().addListener(changeListener);
+            txtSDT.textProperty().addListener(changeListener);
+            dpNgaySinh.valueProperty().addListener(changeListener);
+        }
 
         // BẮT SỰ KIỆN PHÍM ENTER ĐỂ KÍCH HOẠT NÚT SUBMIT
         dialog.getDialogPane().setOnKeyPressed(e -> {

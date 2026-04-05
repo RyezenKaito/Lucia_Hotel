@@ -20,6 +20,7 @@ import dao.NhanVienDAO;
 import model.entities.NhanVien;
 import model.enums.ChucVu;
 import model.enums.trinhDo;
+import model.enums.TrangThaiNV;
 
 /**
  * ThemSuaNhanVienDialog – JavaFX.
@@ -53,7 +54,9 @@ public class ThemSuaNhanVienDialog extends Stage {
     private TextField txtTen, txtSDT, txtCCCD, txtDiaChi;
     private ComboBox<String> cbChucVu;
     private ComboBox<trinhDo> cbTrinhDo;
+    private ComboBox<TrangThaiNV> cbTrangThai;
     private ComboBox<NhanVien> cbNguoiQuanLy;
+    private Button btnSave;
 
     private DatePicker dpNgaySinh;
     private Label lblErrTen, lblErrSDT, lblErrCCCD, lblErrDiaChi, lblErrNS;
@@ -206,10 +209,16 @@ public class ThemSuaNhanVienDialog extends Stage {
         styleCombo(cbChucVu);
 
         if (nvEdit != null) {
-            // SỬA: hiển thị chức vụ hiện tại, readonly
-            String roleLabel = getRoleLabel(nvEdit.getRole());
-            TextField txtCV = makeReadonlyField(roleLabel);
-            form.getChildren().add(comboRow("Chức vụ", txtCV));
+            if (isAdmin) {
+                // ADMIN sửa: cho phép thay đổi chức vụ
+                cbChucVu.getSelectionModel().select(getRoleLabel(nvEdit.getRole()));
+                form.getChildren().add(comboRow("Chức vụ *", cbChucVu));
+            } else {
+                // SỬA: QUẢN LÝ chỉ xem chức vụ hiện tại, readonly
+                String roleLabel = getRoleLabel(nvEdit.getRole());
+                TextField txtCV = makeReadonlyField(roleLabel);
+                form.getChildren().add(comboRow("Chức vụ", txtCV));
+            }
         } else if (isAdmin) {
             // THÊM + ADMIN: chọn tự do Quản lý / Nhân viên
             cbChucVu.getSelectionModel().select("Nhân viên");
@@ -218,6 +227,21 @@ public class ThemSuaNhanVienDialog extends Stage {
             // THÊM + QUAN_LY: gán cứng Nhân viên, không cho chọn
             TextField txtCV = makeReadonlyField("Nhân viên");
             form.getChildren().add(comboRow("Chức vụ", txtCV));
+        }
+        
+        /* ── Trạng thái (Chỉ hiện khi Sửa) ──────────────────────── */
+        if (nvEdit != null) {
+            cbTrangThai = new ComboBox<>();
+            cbTrangThai.getItems().addAll(TrangThaiNV.values());
+            styleCombo(cbTrangThai);
+            
+            if (isAdmin) {
+                cbTrangThai.getSelectionModel().select(nvEdit.getTrangThai());
+                form.getChildren().add(comboRow("Trạng thái", cbTrangThai));
+            } else {
+                TextField txtTT = makeReadonlyField(nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
+                form.getChildren().add(comboRow("Trạng thái", txtTT));
+            }
         }
 
         /* ── Người quản lý ──────────────────────────────────────── */
@@ -245,11 +269,22 @@ public class ThemSuaNhanVienDialog extends Stage {
         lblNQL.setTextFill(Color.web("#374151"));
         nguoiQuanLyBox.getChildren().addAll(lblNQL, cbNguoiQuanLy);
 
+        // Mặc định chọn chính mình nếu đang là QUAN_LY
+        if (!isAdmin && currentUser != null && currentUser.getRole() == ChucVu.QUAN_LY) {
+            for (int i = 0; i < cbNguoiQuanLy.getItems().size(); i++) {
+                if (Objects.equals(cbNguoiQuanLy.getItems().get(i).getMaNV(), currentUser.getMaNV())) {
+                    cbNguoiQuanLy.getSelectionModel().select(i);
+                    break;
+                }
+            }
+            cbNguoiQuanLy.setDisable(true); // disable luôn để khỏi chuyển cho ông quản lý khác
+        }
+
         updateNguoiQuanLyVisibility();
         form.getChildren().add(nguoiQuanLyBox);
 
         // Listener cập nhật visibility khi ADMIN đổi cbChucVu
-        if (nvEdit == null && isAdmin) {
+        if (isAdmin) {
             cbChucVu.setOnAction(e -> updateNguoiQuanLyVisibility());
         }
 
@@ -280,6 +315,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
         // Validation on focus lost
         setupValidation();
+        setupChangeListeners();
 
         ScrollPane scroll = new ScrollPane(form);
         scroll.setFitToWidth(true);
@@ -307,9 +343,13 @@ public class ThemSuaNhanVienDialog extends Stage {
         Button btnCancel = makeFooterBtn("Hủy", "white", "#374151", C_BORDER, "#f3f4f6");
         btnCancel.setOnAction(e -> close());
 
-        Button btnSave = makeFooterBtn(nvEdit == null ? "💾  Thêm mới" : "💾  Cập nhật",
+        btnSave = makeFooterBtn(nvEdit == null ? "💾  Thêm mới" : "💾  Cập nhật",
                 C_SIDEBAR, "white", "transparent", C_ACTIVE);
         btnSave.setOnAction(e -> handleSave());
+        
+        if (nvEdit != null) {
+            btnSave.setDisable(true); // Mặc định khoá nút khi sửa
+        }
 
         footer.getChildren().addAll(btnCancel, btnSave);
         return footer;
@@ -400,7 +440,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             showFieldError(lblErrCCCD, txtCCCD, "⚠ Phải gồm đúng 12 chữ số.");
             return false;
         }
-        if (model.utils.ValidationUtils.isValidProvinceCode(cccd)) {
+        if (!model.utils.ValidationUtils.isValidProvinceCode(cccd)) {
             showFieldError(lblErrCCCD, txtCCCD, "⚠ Mã tỉnh/thành phố không hợp lệ.");
             return false;
         }
@@ -433,6 +473,45 @@ public class ThemSuaNhanVienDialog extends Stage {
         return ok;
     }
 
+    private void setupChangeListeners() {
+        javafx.beans.value.ChangeListener<Object> changeListener = (obs, oldVal, newVal) -> checkChanges();
+        txtTen.textProperty().addListener(changeListener);
+        txtSDT.textProperty().addListener(changeListener);
+        txtCCCD.textProperty().addListener(changeListener);
+        txtDiaChi.textProperty().addListener(changeListener);
+        dpNgaySinh.valueProperty().addListener(changeListener);
+        cbTrinhDo.valueProperty().addListener(changeListener);
+        if (cbChucVu != null) cbChucVu.valueProperty().addListener(changeListener);
+        if (cbTrangThai != null) cbTrangThai.valueProperty().addListener(changeListener);
+        if (cbNguoiQuanLy != null) cbNguoiQuanLy.valueProperty().addListener(changeListener);
+    }
+
+    private void checkChanges() {
+        if (nvEdit == null || btnSave == null) return;
+        
+        boolean changed = false;
+        if (!Objects.equals(txtTen.getText().trim(), nvEdit.getHoTen() == null ? "" : nvEdit.getHoTen().trim())) changed = true;
+        else if (!Objects.equals(txtSDT.getText().trim(), nvEdit.getSoDT() == null ? "" : nvEdit.getSoDT().trim())) changed = true;
+        else if (!Objects.equals(txtCCCD.getText().trim(), nvEdit.getCccd() == null ? "" : nvEdit.getCccd().trim())) changed = true;
+        else if (!Objects.equals(txtDiaChi.getText().trim(), nvEdit.getDiaChi() == null ? "" : nvEdit.getDiaChi().trim())) changed = true;
+        else if (!Objects.equals(dpNgaySinh.getValue(), nvEdit.getNgaySinh())) changed = true;
+        else if (!Objects.equals(cbTrinhDo.getValue(), nvEdit.getTrinhDo())) changed = true;
+        
+        if (!changed && isAdmin) {
+             String oldRole = getRoleLabel(nvEdit.getRole());
+             if (!Objects.equals(cbChucVu.getValue(), oldRole)) changed = true;
+        }
+        if (!changed && isAdmin && cbTrangThai != null) {
+             if (!Objects.equals(cbTrangThai.getValue(), nvEdit.getTrangThai())) changed = true;
+        }
+        if (!changed && nguoiQuanLyBox != null && nguoiQuanLyBox.isVisible()) {
+             String currentQL = cbNguoiQuanLy.getValue() != null ? cbNguoiQuanLy.getValue().getMaNV() : null;
+             if (!Objects.equals(currentQL, nvEdit.getMaQL())) changed = true;
+        }
+        
+        btnSave.setDisable(!changed);
+    }
+
     /*
      * ════════════════════════════════════════════════════════════════
      * SAVE
@@ -447,12 +526,12 @@ public class ThemSuaNhanVienDialog extends Stage {
 
             // ── Xác định chức vụ target ──────────────────────────────
             ChucVu targetRole;
-            if (nvEdit != null) {
-                // Sửa: giữ nguyên role cũ
-                targetRole = nvEdit.getRole();
-            } else if (isAdmin) {
-                // ADMIN thêm: đọc từ ComboBox
+            if (isAdmin) {
+                // ADMIN thêm/sửa: đọc từ ComboBox
                 targetRole = "Quản lý".equals(cbChucVu.getValue()) ? ChucVu.QUAN_LY : ChucVu.NHAN_VIEN;
+            } else if (nvEdit != null) {
+                // QUAN_LY sửa: giữ nguyên role cũ
+                targetRole = nvEdit.getRole();
             } else {
                 // QUAN_LY thêm: gán cứng NV
                 targetRole = ChucVu.NHAN_VIEN;
@@ -464,6 +543,15 @@ public class ThemSuaNhanVienDialog extends Stage {
                 if (selectedTrinhDo != trinhDo.DAIHOC && selectedTrinhDo != trinhDo.TREN_DAIHOC) {
                     showError("Quản lý phải có trình độ Đại học hoặc Trên đại học!");
                     return;
+                }
+
+                // Kiểm tra tối đa 3 quản lý
+                if (nvEdit == null || nvEdit.getRole() != ChucVu.QUAN_LY) {
+                    long managerCount = dao.getAll().stream().filter(nv -> nv.getRole() == ChucVu.QUAN_LY).count();
+                    if (managerCount >= 3) {
+                        showError("Hệ thống chỉ cho phép tối đa 3 Quản lý!");
+                        return;
+                    }
                 }
             }
 
@@ -479,7 +567,7 @@ public class ThemSuaNhanVienDialog extends Stage {
                     } catch (NumberFormatException ignored) {
                     }
                 }
-                n.setMaNV(String.format("LUCIA%04d", maxId + 1));
+                n.setMaNV(String.format("LUCIA%03d", maxId + 1));
             }
 
             // ── Gán dữ liệu ────────────────────────────────────────
@@ -490,6 +578,13 @@ public class ThemSuaNhanVienDialog extends Stage {
             n.setNgaySinh(dpNgaySinh.getValue());
             n.setRole(targetRole);
             n.setTrinhDo(selectedTrinhDo);
+            n.setTrangThai((nvEdit != null && isAdmin) ? cbTrangThai.getValue() : (nvEdit != null ? nvEdit.getTrangThai() : TrangThaiNV.CON_LAM));
+
+            if (nvEdit != null) {
+                n.setNgayVaoLamDate(nvEdit.getNgayVaoLamDate());
+            } else {
+                n.setNgayVaoLamDate(java.time.LocalDate.now());
+            }
 
             if (n.getRole() == ChucVu.NHAN_VIEN && cbNguoiQuanLy.getValue() != null) {
                 n.setMaQL(cbNguoiQuanLy.getValue().getMaNV());
@@ -528,10 +623,10 @@ public class ThemSuaNhanVienDialog extends Stage {
      */
     private void updateNguoiQuanLyVisibility() {
         boolean showNQL;
-        if (nvEdit != null) {
-            showNQL = nvEdit.getRole() == ChucVu.NHAN_VIEN;
-        } else if (isAdmin) {
+        if (isAdmin) {
             showNQL = "Nhân viên".equals(cbChucVu.getValue());
+        } else if (nvEdit != null) {
+            showNQL = nvEdit.getRole() == ChucVu.NHAN_VIEN;
         } else {
             // QUAN_LY thêm → luôn hiển thị (vì target = NHAN_VIEN)
             showNQL = true;
@@ -545,7 +640,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         List<NhanVien> all = dao.getAll();
         if (all != null) {
             all.stream()
-                    .filter(n -> n.getRole() == ChucVu.QUAN_LY || n.getRole() == ChucVu.ADMIN)
+                    .filter(n -> n.getRole() == ChucVu.QUAN_LY)
                     .forEach(cbNguoiQuanLy.getItems()::add);
         }
     }
@@ -716,7 +811,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
     private void showError(String msg) {
         Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle("Lỗi");
+        a.setTitle("Thông báo");
         a.setHeaderText(null);
         a.setContentText(msg);
         a.initOwner(this);

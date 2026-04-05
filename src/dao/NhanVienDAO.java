@@ -12,6 +12,7 @@ import connectDatabase.ConnectDatabase;
 import model.entities.NhanVien;
 import model.enums.ChucVu;
 import model.enums.trinhDo;
+import model.enums.TrangThaiNV;
 
 public class NhanVienDAO {
 
@@ -41,6 +42,12 @@ public class NhanVienDAO {
         if (rs.getDate("ngaySinh") != null) {
             nv.setNgaySinh(rs.getDate("ngaySinh").toLocalDate());
         }
+        
+        try {
+            nv.setTrangThai(TrangThaiNV.valueOf(rs.getString("trangThai")));
+        } catch (Exception e) {
+            nv.setTrangThai(TrangThaiNV.CON_LAM);
+        }
 
         return nv;
     }
@@ -65,24 +72,24 @@ public class NhanVienDAO {
 
     private trinhDo parseTrinhDo(String value) {
         if (value == null)
-            return trinhDo.THCS;
+            return null;
         try {
             return trinhDo.valueOf(value.trim().toUpperCase());
         } catch (Exception e) {
-            return trinhDo.THCS;
+            return null;
         }
     }
 
     private String toVaiTroString(ChucVu cv) {
         if (cv == null)
-            return "NV";
+            return "NHAN_VIEN";
         switch (cv) {
             case QUAN_LY:
-                return "QL";
+                return "QUAN_LY";
             case ADMIN:
                 return "ADMIN";
             default:
-                return "NV";
+                return "NHAN_VIEN";
         }
     }
 
@@ -140,8 +147,8 @@ public class NhanVienDAO {
     // ── INSERT ────────────────────────────────────────────────────────────────
     public boolean insert(NhanVien nv) {
         String sql = "INSERT INTO NV "
-                + "(maNV, hoTen, soDT, ngayVaoLam, mk, role, diaChi, trinhDo, maQL, ngaySinh, soCCCD) "
-                + "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+                + "(maNV, hoTen, soDT, ngayVaoLam, mk, role, diaChi, trinhDo, trangThai, maQL, ngaySinh, soCCCD) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -155,10 +162,11 @@ public class NhanVienDAO {
             ps.setString(5, nv.getMatKhau() != null ? nv.getMatKhau() : "123");
             ps.setString(6, toVaiTroString(nv.getRole()));
             ps.setString(7, nv.getDiaChi());
-            ps.setString(8, nv.getTrinhDo() != null ? nv.getTrinhDo().name() : "THCS");
-            ps.setString(9, nv.getMaQL());
-            ps.setDate(10, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
-            ps.setString(11, nv.getCccd());
+            ps.setString(8, nv.getTrinhDo() != null ? nv.getTrinhDo().name() : null);
+            ps.setString(9, nv.getTrangThai() != null ? nv.getTrangThai().name() : "CON_LAM");
+            ps.setString(10, nv.getMaQL());
+            ps.setDate(11, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
+            ps.setString(12, nv.getCccd());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -171,7 +179,7 @@ public class NhanVienDAO {
     public boolean update(NhanVien nv) {
         String sql = "UPDATE NV SET "
                 + "hoTen=?, soDT=?, ngayVaoLam=?, "
-                + "role=?, maQL=?, diaChi=?, ngaySinh=?, soCCCD=? "
+                + "role=?, maQL=?, diaChi=?, ngaySinh=?, soCCCD=?, trinhDo=?, trangThai=? "
                 + "WHERE maNV=?";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -184,7 +192,9 @@ public class NhanVienDAO {
             ps.setString(6, nv.getDiaChi());
             ps.setDate(7, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
             ps.setString(8, nv.getCccd());
-            ps.setString(9, nv.getMaNV());
+            ps.setString(9, nv.getTrinhDo() != null ? nv.getTrinhDo().name() : null);
+            ps.setString(10, nv.getTrangThai() != null ? nv.getTrangThai().name() : "CON_LAM");
+            ps.setString(11, nv.getMaNV());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {

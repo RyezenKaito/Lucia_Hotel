@@ -3,60 +3,40 @@ package model.entities;
 public class ChiTietHoaDon {
     private String maCTHD;
     private HoaDon hoaDon;
-    private DichVu dichVu;
-    private int soLuong;
-    private double donGiaTaiThiemDiem;
+    private ChiTietDatPhong chiTietDatPhong;
+    private double thoiGianLuuTru;
+    private int soLuongPhong;
+    private double thanhTien;
 
     public ChiTietHoaDon() {
     }
 
-    public ChiTietHoaDon(String maCTHD, HoaDon hoaDon, DichVu dichVu, int soLuong, double donGiaTaiThiemDiem) {
+    public ChiTietHoaDon(String maCTHD, HoaDon hoaDon, ChiTietDatPhong chiTietDatPhong, double thoiGianLuuTru, int soLuongPhong, double thanhTien) {
         this.maCTHD = maCTHD;
         this.hoaDon = hoaDon;
-        this.dichVu = dichVu;
-        this.soLuong = soLuong;
-        this.donGiaTaiThiemDiem = donGiaTaiThiemDiem;
+        this.chiTietDatPhong = chiTietDatPhong;
+        this.thoiGianLuuTru = thoiGianLuuTru;
+        this.soLuongPhong = soLuongPhong;
+        this.thanhTien = thanhTien;
     }
 
-    public String getMaCTHD() {
-        return maCTHD;
-    }
+    public String getMaCTHD() { return maCTHD; }
+    public void setMaCTHD(String maCTHD) { this.maCTHD = maCTHD; }
 
-    public void setMaCTHD(String maCTHD) {
-        this.maCTHD = maCTHD;
-    }
+    public HoaDon getHoaDon() { return hoaDon; }
+    public void setHoaDon(HoaDon hoaDon) { this.hoaDon = hoaDon; }
 
-    public HoaDon getHoaDon() {
-        return hoaDon;
-    }
+    public ChiTietDatPhong getChiTietDatPhong() { return chiTietDatPhong; }
+    public void setChiTietDatPhong(ChiTietDatPhong chiTietDatPhong) { this.chiTietDatPhong = chiTietDatPhong; }
 
-    public void setHoaDon(HoaDon hoaDon) {
-        this.hoaDon = hoaDon;
-    }
+    public double getThoiGianLuuTru() { return thoiGianLuuTru; }
+    public void setThoiGianLuuTru(double thoiGianLuuTru) { this.thoiGianLuuTru = thoiGianLuuTru; }
 
-    public DichVu getDichVu() {
-        return dichVu;
-    }
+    public int getSoLuongPhong() { return soLuongPhong; }
+    public void setSoLuongPhong(int soLuongPhong) { this.soLuongPhong = soLuongPhong; }
 
-    public void setDichVu(DichVu dichVu) {
-        this.dichVu = dichVu;
-    }
-
-    public int getSoLuong() {
-        return soLuong;
-    }
-
-    public void setSoLuong(int soLuong) {
-        this.soLuong = soLuong;
-    }
-
-    public double getDonGiaTaiThiemDiem() {
-        return donGiaTaiThiemDiem;
-    }
-
-    public void setDonGiaTaiThiemDiem(double donGiaTaiThiemDiem) {
-        this.donGiaTaiThiemDiem = donGiaTaiThiemDiem;
-    }
+    public double getThanhTien() { return thanhTien; }
+    public void setThanhTien(double thanhTien) { this.thanhTien = thanhTien; }
 
     @Override
     public String toString() {
