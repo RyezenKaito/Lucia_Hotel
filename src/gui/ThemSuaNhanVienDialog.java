@@ -552,11 +552,11 @@ private void handleSave() {
             n.setHoTen(ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " ")));
             n.setDiaChi(txtDiaChi.getText().trim());
             n.setSoDT(txtSDT.getText().trim());
-            n.setCccd(txtCCCD.getText().trim());
             n.setNgaySinh(dpNgaySinh.getValue());
+            n.setCccd(txtCCCD.getText().trim());
             n.setRole(targetRole);
             n.setTrinhDo(selectedTrinhDo);
-            n.setTrangThai((nvEdit != null && isAdmin) ? cbTrangThai.getValue()
+            n.setTrangThai((nvEdit != null && cbTrangThai != null) ? cbTrangThai.getValue()
                     : (nvEdit != null ? nvEdit.getTrangThai() : TrangThaiNV.CON_LAM));
 
             if (nvEdit != null) {
@@ -618,6 +618,7 @@ private void handleSave() {
         if (all != null) {
             all.stream()
                     .filter(n -> n.getRole() == ChucVu.QUAN_LY)
+                    .filter(n -> nvEdit == null || !n.getMaNV().equals(nvEdit.getMaNV()))
                     .forEach(cbNguoiQuanLy.getItems()::add);
         }
     }

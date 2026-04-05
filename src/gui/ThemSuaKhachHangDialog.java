@@ -234,7 +234,7 @@ public class ThemSuaKhachHangDialog extends Stage {
             return false;
         }
         if (!ValidationUtils.isValidNameLength(ten)) {
-            showErrorField(txtTen, errTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
+            showErrorField(txtTen, errTen, "⚠ Họ và tên phải chứa ít nhất 1 ký tự");
             return false;
         }
         clearErrorField(txtTen, errTen);

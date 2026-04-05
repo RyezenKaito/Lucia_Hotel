@@ -166,15 +166,21 @@ public class MainFrameView {
 
         Button btnDashboard = navBtn("🏠", "Trang chủ", "dashboard");
         activateBtn(btnDashboard);
+        nav.getChildren().add(btnDashboard);
 
+        // ── Nhóm: NGHIỆP VỤ (Transaction Data) ──
+        nav.getChildren().add(navHeader("- Nghiệp vụ"));
         nav.getChildren().addAll(
-                btnDashboard,
                 navBtn("📅", "Đặt phòng", "booking"),
                 navBtn("✅", "Nhận phòng", "checkin"),
                 navBtn("🚪", " Trả phòng", "checkout"),
-                navBtn("🧾", " Hóa đơn", "invoices"),
-                navBtn("🛏", "Phòng", "rooms"),
                 buildServiceSection(),
+                navBtn("🧾", " Hóa đơn", "invoices"));
+
+        // ── Nhóm: QUẢN LÝ (Master Data) ──
+        nav.getChildren().add(navHeader("- Quản lý"));
+        nav.getChildren().addAll(
+                navBtn("🛏", "Phòng", "rooms"),
                 navBtn("👥", "Khách hàng", "customers"));
 
         if (isAdmin) {
@@ -286,6 +292,14 @@ public class MainFrameView {
         });
         setHover(btn);
         return btn;
+    }
+
+    private Label navHeader(String text) {
+        Label lbl = new Label(text.toUpperCase());
+        lbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+        lbl.setTextFill(Color.web(C_TEXT_MUTED));
+        lbl.setPadding(new Insets(12, 0, 5, 12));
+        return lbl;
     }
 
     private Button subNavBtn(String label, String card) {

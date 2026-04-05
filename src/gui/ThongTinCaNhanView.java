@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 
 import model.entities.NhanVien;
 import model.enums.ChucVu;
+import dao.NhanVienDAO;
 
 /**
  * ThongTinCaNhanView – Dialog xem chi tiết thông tin cá nhân nhân viên.
@@ -42,6 +43,7 @@ public class ThongTinCaNhanView extends Stage {
 
         private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+        private final NhanVienDAO dao = new dao.NhanVienDAO();
         private final NhanVien nv;
 
         /* ── Constructor ──────────────────────────────────────────────── */
@@ -220,7 +222,16 @@ public class ThongTinCaNhanView extends Stage {
                                 nv.getNgayVaoLamDate() != null ? nv.getNgayVaoLamDate().format(FMT) : "Chưa cập nhật"));
 
                 if (nv.getRole() == ChucVu.NHAN_VIEN && nv.getMaQL() != null) {
-                        body.getChildren().add(infoRow("Người quản lý", nv.getMaQL()));
+                        String qlId = nv.getMaQL();
+                        String qlVal = qlId;
+                        try {
+                                NhanVien ql = dao.getById(qlId);
+                                if (ql != null) {
+                                        qlVal = ql.getHoTen() + " (" + qlId + ")";
+                                }
+                        } catch (Exception ignored) {
+                        }
+                        body.getChildren().add(infoRow("Người quản lý", qlVal));
                 }
 
                 ScrollPane scroll = new ScrollPane(body);
