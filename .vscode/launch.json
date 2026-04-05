@@ -7,7 +7,7 @@
       "request": "launch",
       "mainClass": "main.App",
       "projectName": "quanlykhachsan",
-      "vmArgs": "--module-path \"D:\\Folder_HK2_2025_2026\\phat_trien_ung_dung\\quanlykhachsan_Lastest\\javafx-sdk-21.0.10\\lib;${workspaceFolder}/lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web,atlantafx.base"
+      "vmArgs": "--module-path \"G:/Code/javafx-sdk-21.0.11/lib;${workspaceFolder}/lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.media,javafx.swing,javafx.web,atlantafx.base"
     }
   ]
 }

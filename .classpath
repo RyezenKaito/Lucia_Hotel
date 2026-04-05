@@ -48,47 +48,47 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/Lucia_Hotel/lib/atlantafx-base-2.1.0.jar">
+	<classpathentry kind="lib" path="G:/Code/OOP/Lucia_Hotel/lib/atlantafx-base-2.1.0.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx-swt.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx-swt.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.base.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.base.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.controls.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.controls.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.fxml.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.fxml.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.graphics.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.graphics.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.media.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.media.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.swing.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.swing.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/Folder_HK2_2025_2026/phat_trien_ung_dung/quanlykhachsan_Lastest/javafx-sdk-21.0.10/lib/javafx.web.jar">
+	<classpathentry kind="lib" path="G:/Code/javafx-sdk-21.0.11/lib/javafx.web.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
