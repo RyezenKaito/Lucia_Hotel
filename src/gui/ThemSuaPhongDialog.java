@@ -5,7 +5,7 @@ import dao.PhongDAO;
 import model.entities.LoaiPhong;
 import model.entities.Phong;
 import model.enums.TrangThaiPhong;
-
+import model.utils.DimOverlay;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;

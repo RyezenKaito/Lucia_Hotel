@@ -19,6 +19,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import model.enums.TrangThaiPhong;
+import model.utils.DimOverlay;
 
 /**
  * ChiTietPhongDialog – JavaFX

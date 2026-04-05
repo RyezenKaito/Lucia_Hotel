@@ -3,7 +3,11 @@ package gui;
 import dao.KhachHangDAO;
 import model.entities.KhachHang;
 import model.utils.ValidationUtils;
+import model.utils.EventUtils;
+import model.utils.DatePicker;
+import model.utils.DimOverlay;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -36,7 +40,7 @@ public class ThemSuaKhachHangDialog extends Stage {
     private final Runnable onSuccess;
     private final boolean isEdit;
 
-    private TextField txtMaKH, txtTen, txtCCCD, txtSDT;
+    private TextField  txtTen, txtCCCD, txtSDT;
     private DatePicker dpNgaySinh;
     private Label errTen, errNS, errCCCD, errSDT;
     private Button btnSave;
@@ -58,6 +62,25 @@ public class ThemSuaKhachHangDialog extends Stage {
         scene.setFill(Color.TRANSPARENT);
         setScene(scene);
         centerOnScreen();
+
+        initEvents();
+
+        Platform.runLater(() -> {
+            if (txtTen != null) {
+                txtTen.requestFocus();
+                txtTen.positionCaret(txtTen.getText().length());
+            }
+        });
+    }
+
+    private void initEvents() {
+        // 1. Chuyển ô bằng nút Enter (Bỏ qua dpNgaySinh vì là Popup Node)
+        EventUtils.setupEnterNavigation(this::handleSave, txtTen, txtCCCD, txtSDT);
+
+        // 2. Theo dõi form: Tự động khóa nút Cập nhật nếu chưa thay đổi gì (Chỉ áp dụng chế độ Sửa)
+        if (isEdit && btnSave != null) {
+            EventUtils.setupDirtyTracking(btnSave, txtTen, txtCCCD, txtSDT, dpNgaySinh);
+        }
     }
 
     public void showDialog() {
@@ -88,7 +111,7 @@ public class ThemSuaKhachHangDialog extends Stage {
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 17));
         lblTitle.setTextFill(Color.WHITE);
 
-        Label lblSub = new Label(isEdit ? "Mã KH: " + khachHang.getMaKH() : "Điền đầy đủ thông tin bên dưới");
+        Label lblSub = new Label(isEdit ? "Chỉnh sửa thông tin khách hàng: " + khachHang.getMaKH() : "Điền đầy đủ thông tin bên dưới");
         lblSub.setFont(Font.font("Segoe UI", 12));
         lblSub.setTextFill(Color.web("#93c5fd"));
         titleBox.getChildren().addAll(lblTitle, lblSub);
@@ -123,22 +146,15 @@ public class ThemSuaKhachHangDialog extends Stage {
         formList.setPadding(new Insets(22, 32, 10, 32));
         formList.setStyle("-fx-background-color: white;");
 
-        txtMaKH = new TextField(isEdit ? khachHang.getMaKH() : dao.getNextMaKH());
-        txtMaKH.setEditable(false);
-        txtMaKH.setStyle(
-                fieldStyle() + "-fx-background-color: #e5e7eb; -fx-text-fill: #6b7280; -fx-font-weight: bold;");
-
         txtTen = makeField(isEdit ? nvl(khachHang.getTenKH()) : "", "Nhập họ và tên");
         errTen = errLabel();
 
-        dpNgaySinh = new DatePicker();
-        dpNgaySinh.setPromptText("Chọn ngày sinh");
-        dpNgaySinh.setPrefHeight(40);
+        int curYear = LocalDate.now().getYear();
+        dpNgaySinh = new DatePicker(curYear - 100, curYear + 25);
         dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
-        dpNgaySinh.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
-                + "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;");
-        if (isEdit && khachHang.getNgaySinh() != null)
+        if (isEdit && khachHang.getNgaySinh() != null) {
             dpNgaySinh.setValue(khachHang.getNgaySinh());
+        }
         errNS = errLabel();
 
         txtCCCD = makeField(isEdit ? nvl(khachHang.getSoCCCD()) : "", "Nhập CCCD (12 số)");
@@ -146,15 +162,14 @@ public class ThemSuaKhachHangDialog extends Stage {
         errCCCD = errLabel();
 
         txtSDT = makeField(isEdit ? nvl(khachHang.getSoDT()) : "", "Nhập SDT (10 số)");
-        ValidationUtils.applyNumericOnlyFilter(txtSDT, 11);
+        ValidationUtils.applyNumericOnlyFilter(txtSDT, 10);
         errSDT = errLabel();
 
         setupValidation();
 
         formList.getChildren().addAll(
-                fieldBlock("Mã khách hàng", txtMaKH, null, "Mã sẽ được tự động tạo"),
                 fieldBlock("Họ và tên *", txtTen, errTen, "Vui lòng nhập họ và tên"),
-                fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh khách hàng (từ đủ 16 tuổi)"),
+                fieldBlockDate("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh khách hàng (từ đủ 16 tuổi)"),
                 fieldBlock("Số CCCD *", txtCCCD, errCCCD, "Vui lòng nhập số CCCD (12 số)"),
                 fieldBlock("Số điện thoại *", txtSDT, errSDT, "Vui lòng nhập số điện thoại (10 số)"));
 
@@ -185,22 +200,6 @@ public class ThemSuaKhachHangDialog extends Stage {
         return footer;
     }
 
-    private Button makeFooterBtn(String text, String bg, String textFill, String border, String hoverBg) {
-        Button b = new Button(text);
-        b.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        b.setPrefHeight(40);
-        b.setPrefWidth(text.contains("Thêm") || text.contains("Cập") ? 140 : 100);
-        b.setCursor(javafx.scene.Cursor.HAND);
-        String style = "-fx-background-color: " + bg + "; -fx-text-fill: " + textFill
-                + "; -fx-background-radius: 8; -fx-border-color: " + border + "; -fx-border-radius: 8;";
-        String hover = "-fx-background-color: " + hoverBg + "; -fx-text-fill: " + textFill
-                + "; -fx-background-radius: 8; -fx-border-color: " + border + "; -fx-border-radius: 8;";
-        b.setStyle(style);
-        b.setOnMouseEntered(e -> b.setStyle(hover));
-        b.setOnMouseExited(e -> b.setStyle(style));
-        return b;
-    }
-
     private void setupValidation() {
         txtTen.focusedProperty().addListener((o, ov, nv) -> {
             if (!nv)
@@ -218,26 +217,6 @@ public class ThemSuaKhachHangDialog extends Stage {
             if (!nv)
                 validateNS();
         });
-
-        if (isEdit) {
-            javafx.beans.value.ChangeListener<Object> changeListener = (obs, oldVal, newVal) -> {
-                boolean changed = false;
-                if (!java.util.Objects.equals(txtTen.getText().trim(), nvl(khachHang.getTenKH()).trim()))
-                    changed = true;
-                else if (!java.util.Objects.equals(txtCCCD.getText().trim(), nvl(khachHang.getSoCCCD()).trim()))
-                    changed = true;
-                else if (!java.util.Objects.equals(txtSDT.getText().trim(), nvl(khachHang.getSoDT()).trim()))
-                    changed = true;
-                else if (!java.util.Objects.equals(dpNgaySinh.getValue(), khachHang.getNgaySinh()))
-                    changed = true;
-                if (btnSave != null)
-                    btnSave.setDisable(!changed);
-            };
-            txtTen.textProperty().addListener(changeListener);
-            txtCCCD.textProperty().addListener(changeListener);
-            txtSDT.textProperty().addListener(changeListener);
-            dpNgaySinh.valueProperty().addListener(changeListener);
-        }
     }
 
     private boolean validateTen() {
@@ -331,14 +310,19 @@ public class ThemSuaKhachHangDialog extends Stage {
             ok = false;
         if (!validateCCCD())
             ok = false;
-        if (!ok)
+        if (!ok){
+            EventUtils.focusFirstError(
+                new javafx.scene.Node[]{txtTen, dpNgaySinh, txtCCCD, txtSDT},
+                new Label[]{errTen, errNS, errCCCD, errSDT}
+            );
             return;
+        }
+
 
         String ten = ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " "));
         String cccd = txtCCCD.getText().trim();
         String sdt = txtSDT.getText().trim();
         LocalDate ns = dpNgaySinh.getValue();
-        String maKH = txtMaKH.getText().trim();
 
         if (isEdit) {
             khachHang.setTenKH(ten);
@@ -353,7 +337,7 @@ public class ThemSuaKhachHangDialog extends Stage {
             } else
                 showError("Cập nhật thất bại");
         } else {
-            KhachHang newKH = new KhachHang(maKH, ten, cccd, sdt, ns);
+            KhachHang newKH = new KhachHang(ten, cccd, sdt, ns);
             if (dao.insert(newKH)) {
                 showInfo("Thêm thành công!");
                 if (onSuccess != null)
@@ -364,7 +348,7 @@ public class ThemSuaKhachHangDialog extends Stage {
         }
     }
 
-    private VBox fieldBlock(String label, Control field, Label errLbl, String hint) {
+    private VBox fieldBlockDate(String label, javafx.scene.Node field, Label errLbl, String hint) {
         VBox b = new VBox(4);
         b.setPadding(new Insets(0, 0, 2, 0));
         HBox lblBox = new HBox(4);
@@ -383,8 +367,10 @@ public class ThemSuaKhachHangDialog extends Stage {
             lblBox.getChildren().add(lblText);
         }
         b.getChildren().add(lblBox);
-        field.setMaxWidth(Double.MAX_VALUE);
+
+        if (field instanceof Region r) r.setMaxWidth(Double.MAX_VALUE);
         b.getChildren().add(field);
+
         if (errLbl != null) {
             errLbl.setMaxWidth(Double.MAX_VALUE);
             b.getChildren().add(errLbl);
@@ -396,6 +382,10 @@ public class ThemSuaKhachHangDialog extends Stage {
             b.getChildren().add(h);
         }
         return b;
+    }
+
+    private VBox fieldBlock(String label, Control field, Label errLbl, String hint) {
+        return fieldBlockDate(label, field, errLbl, hint); 
     }
 
     private String fieldStyle() {
@@ -419,16 +409,32 @@ public class ThemSuaKhachHangDialog extends Stage {
         return l;
     }
 
-    private void showErrorField(Control tf, Label errLabel, String msg) {
+    private void showErrorField(javafx.scene.Node tf, Label errLabel, String msg) {
         if (errLabel != null)
             errLabel.setText(msg);
         tf.setStyle(fieldStyle() + "-fx-border-color: " + C_RED + "; -fx-background-color: #fef2f2;");
     }
 
-    private void clearErrorField(Control tf, Label errLabel) {
+    private void clearErrorField(javafx.scene.Node tf, Label errLabel) {
         if (errLabel != null)
             errLabel.setText("");
         tf.setStyle(fieldStyle());
+    }
+
+    private Button makeFooterBtn(String text, String bg, String textFill, String border, String hoverBg) {
+        Button b = new Button(text);
+        b.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        b.setPrefHeight(40);
+        b.setPrefWidth(text.contains("Thêm") || text.contains("Cập") ? 140 : 100);
+        b.setCursor(javafx.scene.Cursor.HAND);
+        String style = "-fx-background-color: " + bg + "; -fx-text-fill: " + textFill
+                + "; -fx-background-radius: 8; -fx-border-color: " + border + "; -fx-border-radius: 8;";
+        String hover = "-fx-background-color: " + hoverBg + "; -fx-text-fill: " + textFill
+                + "; -fx-background-radius: 8; -fx-border-color: " + border + "; -fx-border-radius: 8;";
+        b.setStyle(style);
+        b.setOnMouseEntered(e -> b.setStyle(hover));
+        b.setOnMouseExited(e -> b.setStyle(style));
+        return b;
     }
 
     private void showInfo(String msg) {

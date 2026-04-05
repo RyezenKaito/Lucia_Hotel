@@ -1,5 +1,16 @@
 package gui;
 
+import dao.NhanVienDAO;
+import model.entities.NhanVien;
+import model.enums.ChucVu;
+import model.enums.trinhDo;
+import model.enums.TrangThaiNV;
+import model.utils.DatePicker;
+import model.utils.DimOverlay;
+import model.utils.EventUtils;
+import model.utils.ValidationUtils;
+
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,14 +24,9 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
-
-import dao.NhanVienDAO;
-import model.entities.NhanVien;
-import model.enums.ChucVu;
-import model.enums.trinhDo;
-import model.enums.TrangThaiNV;
 
 /**
  * ThemSuaNhanVienDialog – JavaFX.
@@ -35,22 +41,23 @@ public class ThemSuaNhanVienDialog extends Stage {
 
     /* ── Bảng màu ─────────────────────────────────────────────────── */
     private static final String C_SIDEBAR = "#1e3a8a";
+    private static final String C_TEXT_GRAY = "#6b7280";
     private static final String C_ACTIVE = "#1d4ed8";
-    private static final String C_CONTENT_BG = "#f8f9fa";
     private static final String C_BORDER = "#e9ecef";
-    private static final String C_GOLD = "#d4af37";
     private static final String C_ERROR = "#dc2626";
 
     /* ── State ────────────────────────────────────────────────────── */
     private double xOffset = 0;
     private double yOffset = 0;
+
+    private final Window owner;
     private final NhanVienDAO dao = new NhanVienDAO();
     private final NhanVien nvEdit; // null = thêm mới
     private final NhanVien currentUser; // người đang đăng nhập
     private final NhanVienView parentView; // để reload
+    private final boolean isAdmin;     /** Có phải ADMIN không (toàn quyền) */
 
-    /** Có phải ADMIN không (toàn quyền) */
-    private final boolean isAdmin;
+    private Region overlay;
 
     /* ── Form fields ──────────────────────────────────────────────── */
     private TextField txtTen, txtSDT, txtCCCD, txtDiaChi;
@@ -61,12 +68,12 @@ public class ThemSuaNhanVienDialog extends Stage {
     private Button btnSave;
 
     private DatePicker dpNgaySinh;
-    private Label lblErrTen, lblErrSDT, lblErrCCCD, lblErrDiaChi, lblErrNS;
+    private Label errTen, errSDT, errCCCD, errDiaChi, errNS;
     private VBox nguoiQuanLyBox;
 
     /* ── Constructor ──────────────────────────────────────────────── */
-    public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit,
-            NhanVien currentUser, NhanVienView parentView) {
+    public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit, NhanVien currentUser, NhanVienView parentView) {
+        this.owner = owner;
         this.nvEdit = nvEdit;
         this.currentUser = currentUser;
         this.parentView = parentView;
@@ -80,6 +87,39 @@ public class ThemSuaNhanVienDialog extends Stage {
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         setScene(scene);
         centerOnScreen();
+        
+        initEvents();
+
+        Platform.runLater(() -> {
+            if (txtTen != null) {
+                txtTen.requestFocus();
+                txtTen.positionCaret(txtTen.getText().length());
+            }
+        });
+    }
+
+    public void showDialog() {
+        this.overlay = DimOverlay.show(owner);
+        showAndWait();
+        DimOverlay.hide(owner, this.overlay);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       SỰ KIỆN LOGIC (EventUtils)
+    ════════════════════════════════════════════════════════════════ */
+    private void initEvents() {
+        // 1. Chuyển ô bằng nút Enter (Bỏ qua DatePicker, ComboBox vì là Node đặc thù)
+        EventUtils.setupEnterNavigation(this::handleSave, txtTen, txtDiaChi, txtSDT, txtCCCD);
+
+        // 2. Theo dõi form (Dirty Tracking): Tự động khóa/mở nút Cập nhật
+        if (nvEdit != null && btnSave != null) {
+            if (isAdmin) {
+                EventUtils.setupDirtyTracking(btnSave, txtTen, txtDiaChi, txtSDT, txtCCCD, dpNgaySinh, cbTrinhDo, cbChucVu, cbTrangThai, cbNguoiQuanLy);
+            } else {
+                // Nếu là Quản lý thì Chức vụ và Trạng thái bị Readonly, không cần track
+                EventUtils.setupDirtyTracking(btnSave, txtTen, txtDiaChi, txtSDT, txtCCCD, dpNgaySinh, cbTrinhDo, cbNguoiQuanLy);
+            }
+        }
     }
 
     /*
@@ -95,7 +135,7 @@ public class ThemSuaNhanVienDialog extends Stage {
                         "-fx-border-radius: 16;" +
                         "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0, 0, 6);");
         root.getChildren().addAll(
-                buildDialogHeader(),
+                buildHeader(),
                 buildFormBody(),
                 buildFooter());
         return root;
@@ -106,7 +146,7 @@ public class ThemSuaNhanVienDialog extends Stage {
      * HEADER
      * ════════════════════════════════════════════════════════════════
      */
-    private HBox buildDialogHeader() {
+    private HBox buildHeader() {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(18, 24, 18, 24));
@@ -174,46 +214,47 @@ public class ThemSuaNhanVienDialog extends Stage {
         form.setPadding(new Insets(22, 32, 10, 32));
         form.setStyle("-fx-background-color: white;");
 
-        /* ── Họ và tên ─────────────────────────────────────────────── */
-        txtTen = makeField("Nhập họ và tên");
-        lblErrTen = makeErrLabel();
-        form.getChildren().add(fieldRow("Họ và tên *", txtTen, lblErrTen, "Vui lòng nhập họ và tên"));
+/* ── Họ và tên ─────────────────────────────────────────────── */
+        txtTen = makeField(nvEdit != null ? nvl(nvEdit.getHoTen()) : "", "Nhập họ và tên");
+        errTen = errLabel();
+        form.getChildren().add(fieldBlock("Họ và tên *", txtTen, errTen, "Vui lòng nhập họ và tên"));
 
         /* ── Địa chỉ ────────────────────────────────────────────── */
-        txtDiaChi = makeField("Nhập địa chỉ");
-        lblErrDiaChi = makeErrLabel();
-        form.getChildren().add(fieldRow("Địa chỉ", txtDiaChi, lblErrDiaChi, "Vui lòng nhập địa chỉ hiện tại (nếu có)"));
-
-        /* ── SĐT ────────────────────────────────────────────────── */
-        txtSDT = makeField("VD: 0901234567");
-        lblErrSDT = makeErrLabel();
-        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT, "Vui lòng nhập số điện thoại (10 số"));
-
-        txtCCCD = makeField("VD: 001234567890 (Mã định danh 12 số)");
-        model.utils.ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
-        lblErrCCCD = makeErrLabel();
-        form.getChildren().add(fieldRow("Số CCCD *", txtCCCD, lblErrCCCD, "Vui lòng nhập số CCCD (12 số)"));
+        txtDiaChi = makeField(nvEdit != null ? nvl(nvEdit.getDiaChi()) : "", "Nhập địa chỉ cư trú");
+        errDiaChi = errLabel();
+        form.getChildren().add(fieldBlock("Địa chỉ", txtDiaChi, errDiaChi, null));
 
         /* ── Ngày sinh ──────────────────────────────────────────── */
-        dpNgaySinh = new DatePicker();
-        dpNgaySinh.setPromptText("Chọn ngày sinh");
-        dpNgaySinh.setPrefHeight(40);
+        int curYear = LocalDate.now().getYear();
+        dpNgaySinh = new DatePicker(curYear - 100, curYear + 25);
         dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
-        dpNgaySinh.setStyle(
-                "-fx-background-color: white;" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 8; -fx-background-radius: 8;" +
-                        "-fx-font-size: 13px;");
-        lblErrNS = makeErrLabel();
-        form.getChildren()
-                .add(fieldRow("Ngày sinh *", dpNgaySinh, lblErrNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
+        if (nvEdit != null && nvEdit.getNgaySinh() != null) {
+            dpNgaySinh.setValue(nvEdit.getNgaySinh());
+        }
+        errNS = errLabel();
+        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh khách hàng (từ đủ 16 tuổi)"));
+
+        /* ── CCCD ───────────────────────────────────────────────── */
+        txtCCCD = makeField(nvEdit != null ? nvl(nvEdit.getCccd()) : "", "Nhập CCCD (12 số)");
+        ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
+        errCCCD = errLabel();
+        form.getChildren().add(fieldBlock("Số CCCD *", txtCCCD, errCCCD, "Vui lòng nhập số CCCD (12 số)"));
+
+        /* ── SĐT ────────────────────────────────────────────────── */
+        txtSDT = makeField(nvEdit != null ? nvl(nvEdit.getSoDT()) : "", "Nhập số điện thoại");
+        ValidationUtils.applyNumericOnlyFilter(txtSDT, 10);
+        errSDT = errLabel();
+        form.getChildren().add(fieldBlock("Số điện thoại *", txtSDT, errSDT, "Vui lòng nhập số điện thoại (10 số)"));
 
         /* ── Trình độ ───────────────────────────────────────────── */
         cbTrinhDo = new ComboBox<>();
         cbTrinhDo.getItems().addAll(trinhDo.values());
         cbTrinhDo.getSelectionModel().selectFirst();
         styleCombo(cbTrinhDo);
-        form.getChildren().add(comboRow("Trình độ *", cbTrinhDo, "Vui lòng chọn trình độ học vấn"));
+        if (nvEdit != null && nvEdit.getTrinhDo() != null) {
+            cbTrinhDo.getSelectionModel().select(nvEdit.getTrinhDo());
+        }
+        form.getChildren().add(fieldBlock("Trình độ *", cbTrinhDo, null, null));
 
         /* ── Chức vụ ────────────────────────────────────────────── */
         cbChucVu = new ComboBox<>();
@@ -222,23 +263,18 @@ public class ThemSuaNhanVienDialog extends Stage {
 
         if (nvEdit != null) {
             if (isAdmin) {
-                // ADMIN sửa: cho phép thay đổi chức vụ
                 cbChucVu.getSelectionModel().select(getRoleLabel(nvEdit.getRole()));
-                form.getChildren().add(comboRow("Chức vụ *", cbChucVu, null));
+                form.getChildren().add(fieldBlock("Chức vụ *", cbChucVu, null, null));
             } else {
-                // SỬA: QUẢN LÝ chỉ xem chức vụ hiện tại, readonly
-                String roleLabel = getRoleLabel(nvEdit.getRole());
-                TextField txtCV = makeReadonlyField(roleLabel);
-                form.getChildren().add(comboRow("Chức vụ", txtCV, null));
+                TextField txtCV = makeReadonlyField(getRoleLabel(nvEdit.getRole()));
+                form.getChildren().add(fieldBlock("Chức vụ", txtCV, null, null));
             }
         } else if (isAdmin) {
-            // THÊM + ADMIN: chọn tự do Quản lý / Nhân viên
             cbChucVu.getSelectionModel().select("Nhân viên");
-            form.getChildren().add(comboRow("Chức vụ *", cbChucVu, null));
+            form.getChildren().add(fieldBlock("Chức vụ *", cbChucVu, null, null));
         } else {
-            // THÊM + QUAN_LY: gán cứng Nhân viên, không cho chọn
             TextField txtCV = makeReadonlyField("Nhân viên");
-            form.getChildren().add(comboRow("Chức vụ", txtCV, null));
+            form.getChildren().add(fieldBlock("Chức vụ", txtCV, null, null));
         }
 
         /* ── Trạng thái (Chỉ hiện khi Sửa) ──────────────────────── */
@@ -249,11 +285,10 @@ public class ThemSuaNhanVienDialog extends Stage {
 
             if (isAdmin) {
                 cbTrangThai.getSelectionModel().select(nvEdit.getTrangThai());
-                form.getChildren().add(comboRow("Trạng thái", cbTrangThai, "Vui lòng chọn trạng thái làm việc"));
+                form.getChildren().add(fieldBlock("Trạng thái", cbTrangThai, null, null));
             } else {
-                TextField txtTT = makeReadonlyField(
-                        nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
-                form.getChildren().add(comboRow("Trạng thái", txtTT, "Hệ thống tự động cập nhật"));
+                TextField txtTT = makeReadonlyField(nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
+                form.getChildren().add(fieldBlock("Trạng thái", txtTT, null, "Hệ thống tự động cập nhật"));
             }
         }
 
@@ -276,13 +311,9 @@ public class ThemSuaNhanVienDialog extends Stage {
             }
         });
 
-        nguoiQuanLyBox = new VBox(4);
-        Label lblNQL = new Label("Người quản lý");
-        lblNQL.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-        lblNQL.setTextFill(Color.web("#374151"));
-        nguoiQuanLyBox.getChildren().addAll(lblNQL, cbNguoiQuanLy);
+        nguoiQuanLyBox = fieldBlock("Người quản lý", cbNguoiQuanLy, null, null);
 
-        // Mặc định chọn chính mình nếu đang là QUAN_LY
+        // Mặc định chọn chính mình nếu đang là QUAN_LY tự tạo nhân viên
         if (!isAdmin && currentUser != null && currentUser.getRole() == ChucVu.QUAN_LY) {
             for (int i = 0; i < cbNguoiQuanLy.getItems().size(); i++) {
                 if (Objects.equals(cbNguoiQuanLy.getItems().get(i).getMaNV(), currentUser.getMaNV())) {
@@ -290,45 +321,29 @@ public class ThemSuaNhanVienDialog extends Stage {
                     break;
                 }
             }
-            cbNguoiQuanLy.setDisable(true); // disable luôn để khỏi chuyển cho ông quản lý khác
+            cbNguoiQuanLy.setDisable(true); // Khóa không cho chuyển QL khác
         }
 
         updateNguoiQuanLyVisibility();
         form.getChildren().add(nguoiQuanLyBox);
 
-        // Listener cập nhật visibility khi ADMIN đổi cbChucVu
         if (isAdmin) {
             cbChucVu.setOnAction(e -> updateNguoiQuanLyVisibility());
         }
 
-        /* ── Load dữ liệu khi sửa ──────────────────────────────── */
-        if (nvEdit != null) {
-            txtTen.setText(nvEdit.getHoTen());
-            txtDiaChi.setText(nvEdit.getDiaChi() != null ? nvEdit.getDiaChi() : "");
-            txtSDT.setText(nvEdit.getSoDT());
-            txtCCCD.setText(nvEdit.getCccd() != null ? nvEdit.getCccd() : "");
-
-            if (nvEdit.getNgaySinh() != null)
-                dpNgaySinh.setValue(nvEdit.getNgaySinh());
-
-            if (nvEdit.getTrinhDo() != null)
-                cbTrinhDo.getSelectionModel().select(nvEdit.getTrinhDo());
-
-            if (nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getMaQL() != null) {
-                nguoiQuanLyBox.setVisible(true);
-                nguoiQuanLyBox.setManaged(true);
-                for (int i = 0; i < cbNguoiQuanLy.getItems().size(); i++) {
-                    if (Objects.equals(cbNguoiQuanLy.getItems().get(i).getMaNV(), nvEdit.getMaQL())) {
-                        cbNguoiQuanLy.getSelectionModel().select(i);
-                        break;
-                    }
+        // Load NQL khi sửa
+        if (nvEdit != null && nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getMaQL() != null) {
+            nguoiQuanLyBox.setVisible(true);
+            nguoiQuanLyBox.setManaged(true);
+            for (int i = 0; i < cbNguoiQuanLy.getItems().size(); i++) {
+                if (Objects.equals(cbNguoiQuanLy.getItems().get(i).getMaNV(), nvEdit.getMaQL())) {
+                    cbNguoiQuanLy.getSelectionModel().select(i);
+                    break;
                 }
             }
         }
 
-        // Validation on focus lost
         setupValidation();
-        setupChangeListeners();
 
         ScrollPane scroll = new ScrollPane(form);
         scroll.setFitToWidth(true);
@@ -360,10 +375,6 @@ public class ThemSuaNhanVienDialog extends Stage {
                 C_SIDEBAR, "white", "transparent", C_ACTIVE);
         btnSave.setOnAction(e -> handleSave());
 
-        if (nvEdit != null) {
-            btnSave.setDisable(true); // Mặc định khoá nút khi sửa
-        }
-
         footer.getChildren().addAll(btnCancel, btnSave);
         return footer;
     }
@@ -392,151 +403,85 @@ public class ThemSuaNhanVienDialog extends Stage {
         });
     }
 
-    private boolean validateTen() {
+private boolean validateTen() {
         String ten = txtTen.getText().trim().replaceAll("\\s+", " ");
         if (ten.isEmpty()) {
-            showFieldError(lblErrTen, txtTen, "⚠ Vui lòng nhập họ và tên.");
+            showErrorField(txtTen, errTen, "⚠ Vui lòng nhập họ và tên.");
             return false;
         }
-        if (!ten.matches(model.utils.ValidationUtils.REGEX_NAME)) {
-            showFieldError(lblErrTen, txtTen, "⚠ Chỉ được chứa chữ cái và khoảng trắng.");
+        if (!ten.matches(ValidationUtils.REGEX_NAME)) {
+            showErrorField(txtTen, errTen, "⚠ Chỉ được chứa chữ cái và khoảng trắng.");
             return false;
         }
-        if (ten.matches(model.utils.ValidationUtils.REGEX_SPAM_CHAR)) {
-            showFieldError(lblErrTen, txtTen, "⚠ Tên có chứa ký tự lặp lại bất thường.");
+        if (ten.matches(ValidationUtils.REGEX_SPAM_CHAR)) {
+            showErrorField(txtTen, errTen, "⚠ Tên có chứa ký tự lặp lại bất thường.");
             return false;
         }
-        if (!model.utils.ValidationUtils.isValidNameLength(ten)) {
-            showFieldError(lblErrTen, txtTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
+        if (!ValidationUtils.isValidNameLength(ten)) {
+            showErrorField(txtTen, errTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
             return false;
         }
-        clearFieldError(lblErrTen, txtTen);
+        clearErrorField(txtTen, errTen);
         return true;
     }
 
     private boolean validateNS() {
-        java.time.LocalDate ns = dpNgaySinh.getValue();
+        LocalDate ns = dpNgaySinh.getValue();
         if (ns == null) {
-            showFieldError(lblErrNS, dpNgaySinh, "⚠ Vui lòng chọn ngày sinh.");
+            showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh.");
             return false;
         }
-        if (java.time.LocalDate.now().minusYears(16).isBefore(ns)) {
-            showFieldError(lblErrNS, dpNgaySinh, "⚠ Khách hàng phải từ đủ 16 tuổi.");
+        if (LocalDate.now().minusYears(16).isBefore(ns)) {
+            showErrorField(dpNgaySinh, errNS, "⚠ Khách hàng phải từ đủ 16 tuổi.");
             return false;
         }
-        clearFieldError(lblErrNS, dpNgaySinh);
+        clearErrorField(dpNgaySinh, errNS);
         return true;
     }
 
     private boolean validateSDT() {
         String sdt = txtSDT.getText().trim();
         if (sdt.isEmpty()) {
-            showFieldError(lblErrSDT, txtSDT, "⚠ Vui lòng nhập số điện thoại (10 số).");
+            showErrorField(txtSDT, errSDT, "⚠ Vui lòng nhập số điện thoại (10 số).");
             return false;
         }
-        if (!sdt.matches(model.utils.ValidationUtils.REGEX_PHONE_VN)) {
-            showFieldError(lblErrSDT, txtSDT, "⚠ Sai đầu số nhà mạng Việt Nam (03x, 05x, 07x, 08x, 09x).");
+        if (!sdt.matches(ValidationUtils.REGEX_PHONE_VN)) {
+            showErrorField(txtSDT, errSDT, "⚠ Sai đầu số nhà mạng Việt Nam (03x, 05x, 07x, 08x, 09x).");
             return false;
         }
-        clearFieldError(lblErrSDT, txtSDT);
+        clearErrorField(txtSDT, errSDT);
         return true;
     }
 
     private boolean validateCCCD() {
         String cccd = txtCCCD.getText().trim();
-        java.time.LocalDate ns = dpNgaySinh.getValue();
+        LocalDate ns = dpNgaySinh.getValue();
         if (cccd.isEmpty()) {
-            showFieldError(lblErrCCCD, txtCCCD, "⚠ Vui lòng nhập số CCCD (12 số).");
+            showErrorField(txtCCCD, errCCCD, "⚠ Vui lòng nhập số CCCD.");
             return false;
         }
-        if (!cccd.matches(model.utils.ValidationUtils.REGEX_CCCD_FORMAT)) {
-            showFieldError(lblErrCCCD, txtCCCD, "⚠ Phải gồm đúng 12 chữ số.");
+        if (!cccd.matches(ValidationUtils.REGEX_CCCD_FORMAT)) {
+            showErrorField(txtCCCD, errCCCD, "⚠ Phải gồm đúng 12 chữ số.");
             return false;
         }
-        if (!model.utils.ValidationUtils.isValidProvinceCode(cccd)) {
-            showFieldError(lblErrCCCD, txtCCCD, "⚠ Mã tỉnh/thành phố không hợp lệ.");
+        if (!ValidationUtils.isValidProvinceCode(cccd)) {
+            showErrorField(txtCCCD, errCCCD, "⚠ Mã tỉnh/thành phố không hợp lệ.");
             return false;
         }
         if (ns != null) {
             int namSinh = ns.getYear();
-            if (!model.utils.ValidationUtils.isValidCCCDCenturyAndGender(cccd, namSinh)) {
-                showFieldError(lblErrCCCD, txtCCCD,
+            if (!ValidationUtils.isValidCCCDCenturyAndGender(cccd, namSinh)) {
+                showErrorField(txtCCCD, errCCCD,
                         "⚠ số thứ 4 không khớp (dưới năm 2000 0:nam 1:nữ, từ năm 2000 2:nam, 3:nữ ).");
                 return false;
             }
-            if (!model.utils.ValidationUtils.isValidCCCDBirthYear(cccd, namSinh)) {
-                showFieldError(lblErrCCCD, txtCCCD, "⚠ 2 số năm sinh trên CCCD bị sai (số 5,6).");
+            if (!ValidationUtils.isValidCCCDBirthYear(cccd, namSinh)) {
+                showErrorField(txtCCCD, errCCCD, "⚠ 2 số năm sinh trên CCCD bị sai (số 5,6).");
                 return false;
             }
         }
-        clearFieldError(lblErrCCCD, txtCCCD);
+        clearErrorField(txtCCCD, errCCCD);
         return true;
-    }
-
-    private boolean validateAll() {
-        boolean ok = true;
-        if (!validateTen())
-            ok = false;
-        if (!validateSDT())
-            ok = false;
-        if (!validateCCCD())
-            ok = false;
-        if (!validateNS())
-            ok = false;
-        return ok;
-    }
-
-    private void setupChangeListeners() {
-        javafx.beans.value.ChangeListener<Object> changeListener = (obs, oldVal, newVal) -> checkChanges();
-        txtTen.textProperty().addListener(changeListener);
-        txtSDT.textProperty().addListener(changeListener);
-        txtCCCD.textProperty().addListener(changeListener);
-        txtDiaChi.textProperty().addListener(changeListener);
-        dpNgaySinh.valueProperty().addListener(changeListener);
-        cbTrinhDo.valueProperty().addListener(changeListener);
-        if (cbChucVu != null)
-            cbChucVu.valueProperty().addListener(changeListener);
-        if (cbTrangThai != null)
-            cbTrangThai.valueProperty().addListener(changeListener);
-        if (cbNguoiQuanLy != null)
-            cbNguoiQuanLy.valueProperty().addListener(changeListener);
-    }
-
-    private void checkChanges() {
-        if (nvEdit == null || btnSave == null)
-            return;
-
-        boolean changed = false;
-        if (!Objects.equals(txtTen.getText().trim(), nvEdit.getHoTen() == null ? "" : nvEdit.getHoTen().trim()))
-            changed = true;
-        else if (!Objects.equals(txtSDT.getText().trim(), nvEdit.getSoDT() == null ? "" : nvEdit.getSoDT().trim()))
-            changed = true;
-        else if (!Objects.equals(txtCCCD.getText().trim(), nvEdit.getCccd() == null ? "" : nvEdit.getCccd().trim()))
-            changed = true;
-        else if (!Objects.equals(txtDiaChi.getText().trim(),
-                nvEdit.getDiaChi() == null ? "" : nvEdit.getDiaChi().trim()))
-            changed = true;
-        else if (!Objects.equals(dpNgaySinh.getValue(), nvEdit.getNgaySinh()))
-            changed = true;
-        else if (!Objects.equals(cbTrinhDo.getValue(), nvEdit.getTrinhDo()))
-            changed = true;
-
-        if (!changed && isAdmin) {
-            String oldRole = getRoleLabel(nvEdit.getRole());
-            if (!Objects.equals(cbChucVu.getValue(), oldRole))
-                changed = true;
-        }
-        if (!changed && isAdmin && cbTrangThai != null) {
-            if (!Objects.equals(cbTrangThai.getValue(), nvEdit.getTrangThai()))
-                changed = true;
-        }
-        if (!changed && nguoiQuanLyBox != null && nguoiQuanLyBox.isVisible()) {
-            String currentQL = cbNguoiQuanLy.getValue() != null ? cbNguoiQuanLy.getValue().getMaNV() : null;
-            if (!Objects.equals(currentQL, nvEdit.getMaQL()))
-                changed = true;
-        }
-
-        btnSave.setDisable(!changed);
     }
 
     /*
@@ -544,9 +489,21 @@ public class ThemSuaNhanVienDialog extends Stage {
      * SAVE
      * ════════════════════════════════════════════════════════════════
      */
-    private void handleSave() {
-        if (!validateAll())
+private void handleSave() {
+        boolean ok = true;
+        if (!validateTen()) ok = false;
+        if (!validateNS()) ok = false;
+        if (!validateSDT()) ok = false;
+        if (!validateCCCD()) ok = false;
+
+        // Nếu có lỗi -> Tự động Focus ô lỗi đầu tiên
+        if (!ok) {
+            EventUtils.focusFirstError(
+                new javafx.scene.Node[]{txtTen, dpNgaySinh, txtCCCD, txtSDT},
+                new Label[]{errTen, errNS, errCCCD, errSDT}
+            );
             return;
+        }
 
         try {
             NhanVien n = (nvEdit != null) ? nvEdit : new NhanVien();
@@ -554,13 +511,10 @@ public class ThemSuaNhanVienDialog extends Stage {
             // ── Xác định chức vụ target ──────────────────────────────
             ChucVu targetRole;
             if (isAdmin) {
-                // ADMIN thêm/sửa: đọc từ ComboBox
                 targetRole = "Quản lý".equals(cbChucVu.getValue()) ? ChucVu.QUAN_LY : ChucVu.NHAN_VIEN;
             } else if (nvEdit != null) {
-                // QUAN_LY sửa: giữ nguyên role cũ
                 targetRole = nvEdit.getRole();
             } else {
-                // QUAN_LY thêm: gán cứng NV
                 targetRole = ChucVu.NHAN_VIEN;
             }
 
@@ -572,7 +526,6 @@ public class ThemSuaNhanVienDialog extends Stage {
                     return;
                 }
 
-                // Kiểm tra tối đa 3 quản lý
                 if (nvEdit == null || nvEdit.getRole() != ChucVu.QUAN_LY) {
                     long managerCount = dao.getAll().stream().filter(nv -> nv.getRole() == ChucVu.QUAN_LY).count();
                     if (managerCount >= 3) {
@@ -582,23 +535,21 @@ public class ThemSuaNhanVienDialog extends Stage {
                 }
             }
 
-            // ── Tự động sinh mã khi thêm mới ───────────────────────
+            // ── Tự động sinh mã ───────────────────────
             if (nvEdit == null) {
                 List<NhanVien> all = dao.getAll();
                 int maxId = 0;
                 for (NhanVien item : all) {
                     try {
                         int id = Integer.parseInt(item.getMaNV().replace("LUCIA", ""));
-                        if (id > maxId)
-                            maxId = id;
-                    } catch (NumberFormatException ignored) {
-                    }
+                        if (id > maxId) maxId = id;
+                    } catch (NumberFormatException ignored) {}
                 }
                 n.setMaNV(String.format("LUCIA%03d", maxId + 1));
             }
 
             // ── Gán dữ liệu ────────────────────────────────────────
-            n.setHoTen(model.utils.ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " ")));
+            n.setHoTen(ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " ")));
             n.setDiaChi(txtDiaChi.getText().trim());
             n.setSoDT(txtSDT.getText().trim());
             n.setCccd(txtCCCD.getText().trim());
@@ -611,7 +562,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             if (nvEdit != null) {
                 n.setNgayVaoLamDate(nvEdit.getNgayVaoLamDate());
             } else {
-                n.setNgayVaoLamDate(java.time.LocalDate.now());
+                n.setNgayVaoLamDate(LocalDate.now());
             }
 
             if (n.getRole() == ChucVu.NHAN_VIEN && cbNguoiQuanLy.getValue() != null) {
@@ -620,18 +571,16 @@ public class ThemSuaNhanVienDialog extends Stage {
                 n.setMaQL(null);
             }
 
-            // ── Insert / Update ─────────────────────────────────────
-            boolean ok = (nvEdit == null) ? dao.insert(n) : dao.update(n);
+            boolean isSuccess = (nvEdit == null) ? dao.insert(n) : dao.update(n);
 
-            if (ok) {
+            if (isSuccess) {
                 showInfo("Thành công!", nvEdit == null
                         ? "Đã thêm nhân viên " + n.getMaNV() + " thành công."
                         : "Đã cập nhật thông tin nhân viên " + n.getMaNV() + ".");
-                if (parentView != null)
-                    parentView.loadData();
+                if (parentView != null) parentView.loadData();
                 close();
             } else {
-                showError("Thao tác thất bại.");
+                showError("Thao tác thất bại. Vui lòng kiểm tra lại kết nối.");
             }
 
         } catch (Exception ex) {
@@ -683,154 +632,85 @@ public class ThemSuaNhanVienDialog extends Stage {
         };
     }
 
-    private VBox fieldRow(String labelText, Control field, Label errLabel, String hint) {
-        VBox box = new VBox(4);
-        box.setPadding(new Insets(0, 0, 2, 0));
-
+ private VBox fieldBlock(String label, javafx.scene.Node field, Label errLbl, String hint) {
+        VBox b = new VBox(4);
+        b.setPadding(new Insets(0, 0, 2, 0));
         HBox lblBox = new HBox(4);
-        if (labelText.endsWith("*")) {
-            Label lblText = new Label(labelText.substring(0, labelText.length() - 1).trim());
+        
+        if (label.endsWith("*")) {
+            Label lblText = new Label(label.substring(0, label.length() - 1).trim());
             lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
             lblText.setTextFill(Color.web("#374151"));
             Label lblStar = new Label("*");
-            lblStar.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblStar.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
             lblStar.setTextFill(Color.web(C_ERROR));
             lblBox.getChildren().addAll(lblText, lblStar);
         } else {
-            Label lblText = new Label(labelText);
+            Label lblText = new Label(label);
             lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
             lblText.setTextFill(Color.web("#374151"));
             lblBox.getChildren().add(lblText);
         }
+        b.getChildren().add(lblBox);
 
-        box.getChildren().addAll(lblBox, field);
-        if (errLabel != null) {
-            errLabel.setMaxWidth(Double.MAX_VALUE);
-            box.getChildren().add(errLabel);
+        if (field instanceof Region r) r.setMaxWidth(Double.MAX_VALUE);
+        b.getChildren().add(field);
+
+        if (errLbl != null) {
+            errLbl.setMaxWidth(Double.MAX_VALUE);
+            b.getChildren().add(errLbl);
         }
-        if (hint != null && !hint.isEmpty()) {
-            Label lblHint = new Label(hint);
-            lblHint.setFont(Font.font("Segoe UI", 11));
-            lblHint.setTextFill(Color.web("#6b7280"));
-            box.getChildren().add(lblHint);
+        if (hint != null) {
+            Label h = new Label(hint);
+            h.setFont(Font.font("Segoe UI", 11));
+            h.setTextFill(Color.web(C_TEXT_GRAY));
+            b.getChildren().add(h);
         }
-        return box;
+        return b;
     }
 
-    private VBox comboRow(String labelText, Control field, String hint) {
-        VBox box = new VBox(4);
-        box.setPadding(new Insets(0, 0, 2, 0));
-
-        HBox lblBox = new HBox(4);
-        if (labelText.endsWith("*")) {
-            Label lblText = new Label(labelText.substring(0, labelText.length() - 1).trim());
-            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-            lblText.setTextFill(Color.web("#374151"));
-            Label lblStar = new Label("*");
-            lblStar.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-            lblStar.setTextFill(Color.web(C_ERROR));
-            lblBox.getChildren().addAll(lblText, lblStar);
-        } else {
-            Label lblText = new Label(labelText);
-            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-            lblText.setTextFill(Color.web("#374151"));
-            lblBox.getChildren().add(lblText);
-        }
-
-        box.getChildren().addAll(lblBox, field);
-        if (hint != null && !hint.isEmpty()) {
-            Label lblHint = new Label(hint);
-            lblHint.setFont(Font.font("Segoe UI", 11));
-            lblHint.setTextFill(Color.web("#6b7280"));
-            box.getChildren().add(lblHint);
-        }
-        return box;
+    private String fieldStyle() {
+        return "-fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-pref-height: 40; -fx-background-color: white; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: "
+                + C_BORDER + "; -fx-padding: 8 12 8 12;";
     }
 
-    private TextField makeField(String prompt) {
-        TextField tf = new TextField();
+    private TextField makeField(String value, String prompt) {
+        TextField tf = new TextField(value);
         tf.setPromptText(prompt);
-        tf.setPrefHeight(40);
-        tf.setStyle(
-                "-fx-background-color: white;" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-font-size: 13px;" +
-                        "-fx-padding: 8 12 8 12;");
-        tf.focusedProperty().addListener((obs, o, focused) -> {
-            if (focused) {
-                tf.setStyle(
-                        "-fx-background-color: white;" +
-                                "-fx-border-color: " + C_ACTIVE + ";" +
-                                "-fx-border-radius: 8;" +
-                                "-fx-background-radius: 8;" +
-                                "-fx-font-size: 13px;" +
-                                "-fx-padding: 8 12 8 12;" +
-                                "-fx-border-width: 2;");
-            } else {
-                clearFieldError(null, tf); // restore normal on blur (validation will re-apply if needed)
-            }
-        });
+        tf.setStyle(fieldStyle());
         return tf;
     }
 
     private TextField makeReadonlyField(String value) {
         TextField tf = new TextField(value);
         tf.setEditable(false);
-        tf.setPrefHeight(40);
-        tf.setStyle(
-                "-fx-background-color: #f3f4f6;" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-font-size: 13px;" +
-                        "-fx-padding: 8 12 8 12;" +
-                        "-fx-text-fill: #6b7280;");
+        tf.setStyle(fieldStyle() + "-fx-background-color: #f3f4f6; -fx-text-fill: #6b7280;");
         return tf;
-    }
-
-    private Label makeErrLabel() {
-        Label l = new Label("");
-        l.setFont(Font.font("Segoe UI", 11));
-        l.setTextFill(Color.web(C_ERROR));
-        l.setMinHeight(14);
-        return l;
-    }
-
-    private void showFieldError(Label errLabel, Control tf, String msg) {
-        if (errLabel != null)
-            errLabel.setText(msg);
-        tf.setStyle(
-                "-fx-background-color: #fef2f2;" +
-                        "-fx-border-color: " + C_ERROR + ";" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-font-size: 13px;" +
-                        "-fx-padding: 8 12 8 12;");
-    }
-
-    private void clearFieldError(Label errLabel, Control tf) {
-        if (errLabel != null)
-            errLabel.setText("");
-        tf.setStyle(
-                "-fx-background-color: white;" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-font-size: 13px;" +
-                        "-fx-padding: 8 12 8 12;");
     }
 
     private void styleCombo(ComboBox<?> cb) {
         cb.setMaxWidth(Double.MAX_VALUE);
         cb.setPrefHeight(40);
-        cb.setStyle(
-                "-fx-background-color: white;" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 8;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-font-size: 13px;");
+        cb.setStyle(fieldStyle());
+    }
+
+    private Label errLabel() {
+        Label l = new Label("");
+        l.setFont(Font.font("Segoe UI", 11));
+        l.setTextFill(Color.web(C_ERROR));
+        l.setWrapText(true);
+        l.setMinHeight(14);
+        return l;
+    }
+
+    private void showErrorField(javafx.scene.Node tf, Label errLabel, String msg) {
+        if (errLabel != null) errLabel.setText(msg);
+        tf.setStyle(fieldStyle() + "-fx-border-color: " + C_ERROR + "; -fx-background-color: #fef2f2;");
+    }
+
+    private void clearErrorField(javafx.scene.Node tf, Label errLabel) {
+        if (errLabel != null) errLabel.setText("");
+        tf.setStyle(fieldStyle());
     }
 
     private Button makeFooterBtn(String text, String bg, String fg, String border, String bgHover) {
@@ -855,10 +735,8 @@ public class ThemSuaNhanVienDialog extends Stage {
 
     private void showError(String msg) {
         Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle("Thông báo");
         a.setHeaderText(null);
         a.setContentText(msg);
-        a.initOwner(this);
         a.showAndWait();
     }
 
@@ -867,7 +745,10 @@ public class ThemSuaNhanVienDialog extends Stage {
         a.setTitle(title);
         a.setHeaderText(null);
         a.setContentText(msg);
-        a.initOwner(this);
         a.showAndWait();
+    }
+
+    private static String nvl(String s) {
+        return s != null ? s : "";
     }
 }

@@ -2,7 +2,7 @@ package gui;
 
 import dao.KhachHangDAO;
 import model.entities.KhachHang;
-
+import model.utils.DimOverlay;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

@@ -2,7 +2,7 @@ package gui;
 
 import dao.DichVuDAO;
 import model.entities.DichVu;
-
+import model.utils.DimOverlay;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;

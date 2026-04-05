@@ -29,6 +29,13 @@ public class KhachHang {
         this.ngaySinh = ngaySinh;
     }
 
+    public KhachHang(String tenKH, String soCCCD, String soDT, LocalDate ngaySinh) {
+        this.tenKH = tenKH;
+        this.soCCCD = soCCCD;
+        this.soDT = soDT;
+        this.ngaySinh = ngaySinh;
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
     /** Hôm nay có phải sinh nhật không */
     public boolean isBirthdayToday() {

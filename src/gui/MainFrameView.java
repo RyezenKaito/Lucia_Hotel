@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 
 import model.entities.NhanVien;
 import model.enums.ChucVu;
+import model.utils.DimOverlay;
 
 /**
  * MainFrameView – JavaFX

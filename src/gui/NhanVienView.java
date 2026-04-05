@@ -20,8 +20,10 @@ import java.util.Optional;
 import dao.NhanVienDAO;
 import model.entities.NhanVien;
 import model.enums.ChucVu;
+import model.utils.DimOverlay;
 
 /**
+ * 
  * NhanVienView – JavaFX (thay thế NhanVienPanel Swing).
  *
  * Quy tắc phân quyền:

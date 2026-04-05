@@ -5,7 +5,7 @@ import dao.DichVuDAO;
 import model.entities.BangGiaDichVu;
 import model.entities.BangGiaDichVu_ChiTiet;
 import model.entities.DichVu;
-
+import model.utils.DimOverlay;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
