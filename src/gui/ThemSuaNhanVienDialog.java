@@ -184,17 +184,6 @@ public class ThemSuaNhanVienDialog extends Stage {
         lblErrDiaChi = makeErrLabel();
         form.getChildren().add(fieldRow("Địa chỉ", txtDiaChi, lblErrDiaChi, "Vui lòng nhập địa chỉ hiện tại (nếu có)"));
 
-        /* ── SĐT ────────────────────────────────────────────────── */
-        txtSDT = makeField("VD: 0901234567");
-        model.utils.ValidationUtils.applyNumericOnlyFilter(txtSDT, 10);
-        lblErrSDT = makeErrLabel();
-        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT, "Vui lòng nhập số điện thoại (10 số)"));
-
-        txtCCCD = makeField("VD: 001234567890 (Mã định danh 12 số)");
-        model.utils.ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
-        lblErrCCCD = makeErrLabel();
-        form.getChildren().add(fieldRow("Số CCCD *", txtCCCD, lblErrCCCD, "Vui lòng nhập số CCCD (12 số)"));
-
         /* ── Ngày sinh ──────────────────────────────────────────── */
         dpNgaySinh = new DatePicker();
         dpNgaySinh.setPromptText("Chọn ngày sinh");
@@ -207,7 +196,19 @@ public class ThemSuaNhanVienDialog extends Stage {
                         "-fx-font-size: 13px;");
         lblErrNS = makeErrLabel();
         form.getChildren()
-                .add(fieldRow("Ngày sinh *", dpNgaySinh, lblErrNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
+                .add(fieldRow("Ngày sinh *", dpNgaySinh, lblErrNS, "Vui lòng chọn ngày sinh (từ đủ 18 tuổi)"));
+
+        /* Số CCCD */
+        txtCCCD = makeField("VD: 001234567890 (Mã định danh 12 số)");
+        model.utils.ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
+        lblErrCCCD = makeErrLabel();
+        form.getChildren().add(fieldRow("Số CCCD *", txtCCCD, lblErrCCCD, "Vui lòng nhập số CCCD (12 số)"));
+
+        /* ── SĐT ────────────────────────────────────────────────── */
+        txtSDT = makeField("VD: 0901234567");
+        model.utils.ValidationUtils.applyNumericOnlyFilter(txtSDT, 10);
+        lblErrSDT = makeErrLabel();
+        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT, "Vui lòng nhập số điện thoại (10 số)"));
 
         /* ── Trình độ ───────────────────────────────────────────── */
         cbTrinhDo = new ComboBox<>();
@@ -429,8 +430,8 @@ public class ThemSuaNhanVienDialog extends Stage {
             showFieldError(lblErrNS, dpNgaySinh, "⚠ Vui lòng chọn ngày sinh.");
             return false;
         }
-        if (java.time.LocalDate.now().minusYears(16).isBefore(ns)) {
-            showFieldError(lblErrNS, dpNgaySinh, "⚠ Khách hàng phải từ đủ 16 tuổi.");
+        if (java.time.LocalDate.now().minusYears(18).isBefore(ns)) {
+            showFieldError(lblErrNS, dpNgaySinh, "⚠ Nhân viên phải từ đủ 18 tuổi.");
             return false;
         }
         clearFieldError(lblErrNS, dpNgaySinh);
@@ -610,8 +611,8 @@ public class ThemSuaNhanVienDialog extends Stage {
             n.setHoTen(model.utils.ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " ")));
             n.setDiaChi(txtDiaChi.getText().trim());
             n.setSoDT(txtSDT.getText().trim());
-            n.setCccd(txtCCCD.getText().trim());
             n.setNgaySinh(dpNgaySinh.getValue());
+            n.setCccd(txtCCCD.getText().trim());
             n.setRole(targetRole);
             n.setTrinhDo(selectedTrinhDo);
             n.setTrangThai((nvEdit != null && cbTrangThai != null) ? cbTrangThai.getValue()
@@ -627,6 +628,19 @@ public class ThemSuaNhanVienDialog extends Stage {
                 n.setMaQL(cbNguoiQuanLy.getValue().getMaNV());
             } else {
                 n.setMaQL(null);
+            }
+
+            // ── [TOÀN DIỆN] Ràng buộc ít nhất 1 Quản lý đang làm việc ───────────────────
+            long othersActiveManagerCount = dao.getAll().stream()
+                    .filter(nv -> nv.getRole() == ChucVu.QUAN_LY && nv.getTrangThai() == TrangThaiNV.CON_LAM)
+                    .filter(nv -> nvEdit == null || !nv.getMaNV().equals(nvEdit.getMaNV()))
+                    .count();
+
+            boolean currentWillBeActiveManager = (n.getRole() == ChucVu.QUAN_LY && n.getTrangThai() == TrangThaiNV.CON_LAM);
+
+            if (othersActiveManagerCount + (currentWillBeActiveManager ? 1 : 0) == 0) {
+                showError("Hệ thống phải có nhất 1 Quản lý đang làm việc!");
+                return;
             }
 
             // ── Insert / Update ─────────────────────────────────────
@@ -678,6 +692,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         if (all != null) {
             all.stream()
                     .filter(n -> n.getRole() == ChucVu.QUAN_LY)
+                    .filter(n -> nvEdit == null || !n.getMaNV().equals(nvEdit.getMaNV()))
                     .forEach(cbNguoiQuanLy.getItems()::add);
         }
     }

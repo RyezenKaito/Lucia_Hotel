@@ -531,6 +531,18 @@ public class NhanVienView extends BorderPane {
         if (nv.getTrangThai() == status)
             return;
 
+        // Ràng buộc ít nhất 1 Quản lý đang làm việc
+        if (nv.getRole() == ChucVu.QUAN_LY && nv.getTrangThai() == model.enums.TrangThaiNV.CON_LAM
+                && status == model.enums.TrangThaiNV.DA_NGHI) {
+            long activeManagerCount = dao.getAll().stream()
+                    .filter(n -> n.getRole() == ChucVu.QUAN_LY && n.getTrangThai() == model.enums.TrangThaiNV.CON_LAM)
+                    .count();
+            if (activeManagerCount <= 1) {
+                showAlert("Không thể cập nhật", "Hệ thống phải có ít nhất 1 Quản lý đang làm việc!");
+                return;
+            }
+        }
+
         nv.setTrangThai(status);
         if (dao.update(nv)) {
             loadData(); // Refresh table và thống kê
@@ -564,6 +576,16 @@ public class NhanVienView extends BorderPane {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
+            // Ràng buộc ít nhất 1 quản lý (tổng số)
+            if (nv.getRole() == ChucVu.QUAN_LY) {
+                long managerCount = dao.getAll().stream()
+                        .filter(n -> n.getRole() == ChucVu.QUAN_LY)
+                        .count();
+                if (managerCount <= 1) {
+                    showAlert("Không thể xóa", "Hệ thống phải có ít nhất 1 Quản lý!");
+                    return;
+                }
+            }
             dao.delete(nv.getMaNV());
             loadData();
         }
