@@ -180,10 +180,10 @@ public class ThemBangGiaDialog extends JDialog {
         java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
         for (DichVu dv : ds) {
             model.addRow(new Object[]{
-                dv.getMaDichVu(), 
-                dv.getTenDichVu(), 
-                dv.getLoaiDichVu(), 
-                df.format(dv.getGiaDichVu()), 
+                dv.getMaDV(), 
+                dv.getTenDV(), 
+                dv.getLoaiDV(), 
+                df.format(dv.getGia()), 
                 "" 
             });
         }
@@ -216,7 +216,7 @@ public class ThemBangGiaDialog extends JDialog {
                     BangGiaDichVu_ChiTiet ct = new BangGiaDichVu_ChiTiet();
                     
                     DichVu dv = new DichVu();
-                    dv.setMaDichVu(model.getValueAt(i, 0).toString());
+                    dv.setMaDV(model.getValueAt(i, 0).toString());
                     ct.setMaDichVu(dv);
                     
                     ct.setGiaDichVu(giaApDung);

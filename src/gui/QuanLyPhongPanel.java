@@ -346,8 +346,8 @@ public class QuanLyPhongPanel extends JPanel {
                 else if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) { s = "Đã có khách"; ck++; }
                 else { s = "Đang bảo trì"; bt++; }
                 
-                String loai = p.getLoaiPhong().getTenLoaiPhong().toString();
-                double gia = p.getLoaiPhong().getDonGia();
+                String loai = p.getLoaiPhong().getMaLoaiPhong();
+                double gia = p.getLoaiPhong().getGia();
                 int sucChua = p.getLoaiPhong().getSucChua();
                 
                 dtmPhong.addRow(new Object[]{

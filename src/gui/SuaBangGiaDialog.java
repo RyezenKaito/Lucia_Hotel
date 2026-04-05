@@ -68,11 +68,11 @@ public class SuaBangGiaDialog extends JDialog {
         // Đổ dữ liệu chi tiết vào bảng
         DichVuDAO dvDao = new DichVuDAO();
         for (BangGiaDichVu_ChiTiet ct : dsChiTiet) {
-            DichVu dv = dvDao.getServiceByID(ct.getMaDichVu().getMaDichVu());
+            DichVu dv = dvDao.getServiceByID(ct.getMaDichVu().getMaDV());
             if (dv != null) {
                 model.addRow(new Object[]{
-                    dv.getMaDichVu(), dv.getTenDichVu(), dv.getLoaiDichVu(), 
-                    dv.getGiaDichVu(), ct.getGiaDichVu()
+                    dv.getMaDV(), dv.getTenDV(), dv.getLoaiDV(), 
+                    dv.getGia(), ct.getGiaDichVu()
                 });
             }
         }
@@ -157,11 +157,11 @@ public class SuaBangGiaDialog extends JDialog {
         for (DichVu dv : dsTatCa) {
             boolean exists = false;
             for (int i = 0; i < model.getRowCount(); i++) {
-                if (model.getValueAt(i, 0).equals(dv.getMaDichVu())) {
+                if (model.getValueAt(i, 0).equals(dv.getMaDV())) {
                     exists = true; break;
                 }
             }
-            if (!exists) modelChon.addRow(new Object[]{dv.getMaDichVu(), dv.getTenDichVu(), dv.getGiaDichVu()});
+            if (!exists) modelChon.addRow(new Object[]{dv.getMaDV(), dv.getTenDV(), dv.getGia()});
         }
 
         JTable tblChon = new JTable(modelChon);

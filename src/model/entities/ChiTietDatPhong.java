@@ -1,51 +1,75 @@
 package model.entities;
 
-import java.time.LocalDateTime;
-
 public class ChiTietDatPhong {
-	private DatPhong datPhong;
-	private Phong phong;
-	private LocalDateTime ngayCheckInThucTe;
-	private LocalDateTime ngayCheckOutThucTe;
-	
-	
-	
-	public ChiTietDatPhong(DatPhong datPhong, Phong phong) {
-		super();
-		this.datPhong = datPhong;
-		this.phong = phong;
-	}
-	public ChiTietDatPhong(DatPhong datPhong, Phong phong, LocalDateTime ngayCheckInThucTe,
-			LocalDateTime ngayCheckOutThucTe) {
-		super();
-		this.datPhong = datPhong;
-		this.phong = phong;
-		this.ngayCheckInThucTe = ngayCheckInThucTe;
-		this.ngayCheckOutThucTe = ngayCheckOutThucTe;
-	}
-	public ChiTietDatPhong(LocalDateTime ngayCheckInThucTe, LocalDateTime ngayCheckOutThucTe) {
-		super();
-		this.ngayCheckInThucTe = ngayCheckInThucTe;
-		this.ngayCheckOutThucTe = ngayCheckOutThucTe;
-	}
-	public LocalDateTime getNgayCheckInThucTe() {
-		return ngayCheckInThucTe;
-	}
-	public void setNgayCheckInThucTe(LocalDateTime ngayCheckInThucTe) {
-		this.ngayCheckInThucTe = ngayCheckInThucTe;
-	}
-	public LocalDateTime getNgayCheckOutThucTe() {
-		return ngayCheckOutThucTe;
-	}
-	public void setNgayCheckOutThucTe(LocalDateTime ngayCheckOutThucTe) {
-		this.ngayCheckOutThucTe = ngayCheckOutThucTe;
-	}
-	public DatPhong getDatPhong() {
-		return datPhong;
-	}
-	public Phong getPhong() {
-		return phong;
-	}
-	
-	
+    private String maCTDP;
+    private Phong phong;
+    private DatPhong datPhong;
+    private double giaCoc;
+    private int soNguoi;
+    private String ghiChu;
+
+    public ChiTietDatPhong() {
+    }
+
+    public ChiTietDatPhong(String maCTDP, Phong phong, DatPhong datPhong, double giaCoc, int soNguoi, String ghiChu) {
+        this.maCTDP = maCTDP;
+        this.phong = phong;
+        this.datPhong = datPhong;
+        this.giaCoc = giaCoc;
+        this.soNguoi = soNguoi;
+        this.ghiChu = ghiChu;
+    }
+
+    public String getMaCTDP() {
+        return maCTDP;
+    }
+
+    public void setMaCTDP(String maCTDP) {
+        this.maCTDP = maCTDP;
+    }
+
+    public Phong getPhong() {
+        return phong;
+    }
+
+    public void setPhong(Phong phong) {
+        this.phong = phong;
+    }
+
+    public DatPhong getDatPhong() {
+        return datPhong;
+    }
+
+    public void setDatPhong(DatPhong datPhong) {
+        this.datPhong = datPhong;
+    }
+
+    public double getGiaCoc() {
+        return giaCoc;
+    }
+
+    public void setGiaCoc(double giaCoc) {
+        this.giaCoc = giaCoc;
+    }
+
+    public int getSoNguoi() {
+        return soNguoi;
+    }
+
+    public void setSoNguoi(int soNguoi) {
+        this.soNguoi = soNguoi;
+    }
+
+    public String getGhiChu() {
+        return ghiChu;
+    }
+
+    public void setGhiChu(String ghiChu) {
+        this.ghiChu = ghiChu;
+    }
+
+    @Override
+    public String toString() {
+        return maCTDP;
+    }
 }

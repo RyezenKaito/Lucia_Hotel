@@ -94,11 +94,11 @@ public class ThemDichVuDialog extends JDialog {
         // 2. Tạo đối tượng Entity
         try {
             DichVu dv = new DichVu();
-            dv.setMaDichVu(txtMaDV.getText().trim());
-            dv.setTenDichVu(txtTenDV.getText().trim());
-            dv.setLoaiDichVu(cbLoaiDV.getSelectedItem().toString());
-            dv.setGiaDichVu(Double.parseDouble(txtGiaGoc.getText().trim()));
-            // dv.setDonViTinh(txtDonVi.getText().trim()); // Nếu Model có field này
+            dv.setMaDV(txtMaDV.getText().trim());
+            dv.setTenDV(txtTenDV.getText().trim());
+            dv.setLoaiDV(cbLoaiDV.getSelectedItem().toString());
+            dv.setGia(Double.parseDouble(txtGiaGoc.getText().trim()));
+            dv.setDonVi(txtDonVi.getText().trim()); 
 
             // 3. Gọi DAO để lưu
             DichVuDAO dao = new DichVuDAO();

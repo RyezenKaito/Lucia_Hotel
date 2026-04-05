@@ -194,7 +194,7 @@ public class TaoDonDatPhongPanel extends JPanel implements ActionListener, Focus
         JPanel pnlInfoRoomType = new JPanel(new GridLayout(1,3,20,0));
         pnlInfoRoomType.setOpaque(false);
 
-        pnlInfoRoomType.add(createBox("TÊN LOẠI PHÒNG", bgp.getLoaiPhong().getTenLoaiPhong().toString()));
+        pnlInfoRoomType.add(createBox("TÊN LOẠI PHÒNG", bgp.getLoaiPhong().getTenLoai().toString()));
         pnlInfoRoomType.add(createBox("GIÁ CƠ BẢN",bgp.getDonGia() +"đ/Đêm"));
         lblSumRoomPrice.setText(bgp.getDonGia()+"");
         pnlInfoRoomType.add(createBox("SỐ KHÁCH TỐI ĐA", bgp.getLoaiPhong().getSucChua() +" người"));
@@ -908,7 +908,7 @@ public class TaoDonDatPhongPanel extends JPanel implements ActionListener, Focus
 
         for (Phong p : ds) {
             String soPhongHienThi = p.getMaPhong().substring(1);
-            roomSelection.add(createRoomCard(soPhongHienThi, p.getLoaiPhong().getTenLoaiPhong().toString()));
+            roomSelection.add(createRoomCard(soPhongHienThi, p.getLoaiPhong().getTenLoai().toString()));
         }
 
         roomSelection.revalidate();

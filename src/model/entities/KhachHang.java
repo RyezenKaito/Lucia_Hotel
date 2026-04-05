@@ -3,29 +3,29 @@ package model.entities;
 import java.time.LocalDate;
 
 public class KhachHang {
-    private String maKhachHang;
-    private String hoTen;
-    private String CCCD;            // ánh xạ cột soCanCuocCongDan trong DB
-    private String soDienThoai;
+    private String maKH;
+    private String tenKH;
+    private String soCCCD;
+    private String soDT;
     private LocalDate ngaySinh;
 
     // ─── Constructors ────────────────────────────────────────────────────────
     public KhachHang() {}
 
-    public KhachHang(String maKhachHang) {
-        this.maKhachHang = maKhachHang;
+    public KhachHang(String maKH) {
+        this.maKH = maKH;
     }
 
-    public KhachHang(String maKhachHang, String hoTen, String CCCD, String soDienThoai) {
-        this.maKhachHang = maKhachHang;
-        this.hoTen       = hoTen;
-        this.CCCD        = CCCD;
-        this.soDienThoai = soDienThoai;
+    public KhachHang(String maKH, String tenKH, String soCCCD, String soDT) {
+        this.maKH = maKH;
+        this.tenKH  = tenKH;
+        this.soCCCD   = soCCCD;
+        this.soDT = soDT;
     }
 
-    public KhachHang(String maKhachHang, String hoTen, String CCCD,
-                     String soDienThoai, LocalDate ngaySinh) {
-        this(maKhachHang, hoTen, CCCD, soDienThoai);
+    public KhachHang(String maKH, String tenKH, String soCCCD,
+                     String soDT, LocalDate ngaySinh) {
+        this(maKH, tenKH, soCCCD, soDT);
         this.ngaySinh = ngaySinh;
     }
 
@@ -45,18 +45,18 @@ public class KhachHang {
     }
 
     // ─── Getters / Setters ───────────────────────────────────────────────────
-    public String getMaKhachHang()             { return maKhachHang; }
-    public void   setMaKhachHang(String v)     { this.maKhachHang = v; }
+    public String getMaKH()             { return maKH; }
+    public void   setMaKH(String v)     { this.maKH = v; }
 
-    public String getHoTen()                   { return hoTen; }
-    public void   setHoTen(String v)           { this.hoTen = v; }
+    public String getTenKH()            { return tenKH; }
+    public void   setTenKH(String v)    { this.tenKH = v; }
 
-    public String getCCCD()                    { return CCCD; }
-    public void   setCCCD(String v)            { this.CCCD = v; }
+    public String getSoCCCD()           { return soCCCD; }
+    public void   setSoCCCD(String v)   { this.soCCCD = v; }
 
-    public String getSoDienThoai()             { return soDienThoai; }
-    public void   setSoDienThoai(String v)     { this.soDienThoai = v; }
+    public String getSoDT()             { return soDT; }
+    public void   setSoDT(String v)     { this.soDT = v; }
 
-    public LocalDate getNgaySinh()             { return ngaySinh; }
+    public LocalDate getNgaySinh()      { return ngaySinh; }
     public void       setNgaySinh(LocalDate v) { this.ngaySinh = v; }
 }

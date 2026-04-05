@@ -6,11 +6,13 @@ import java.util.List;
 import connectDatabase.ConnectDatabase;
 import model.entities.LoaiPhong;
 import model.entities.Phong;
-import model.enums.TenLoaiPhong;
 import model.enums.TrangThaiPhong;
 
 public class PhongDAO {
 
+    /**
+     * Chuyển đổi từ text (DB) sang Enum
+     */
     private TrangThaiPhong findEnumByString(String text) {
         if (text == null) return TrangThaiPhong.CONTRONG;
         text = text.trim().toUpperCase();
@@ -20,6 +22,9 @@ public class PhongDAO {
         return TrangThaiPhong.CONTRONG; 
     }
 
+    /**
+     * Chuyển đổi từ Enum sang text (DB)
+     */
     private String trangThaiToString(TrangThaiPhong ttp) {
         if (ttp == TrangThaiPhong.CONTRONG) return "CONTRONG"; 
         if (ttp == TrangThaiPhong.DACOKHACH) return "DANGSUDUNG";
@@ -28,19 +33,27 @@ public class PhongDAO {
 
     public List<Phong> getAll() {
         List<Phong> ds = new ArrayList<>();
-        String sql = "SELECT p.maPhong, p.tinhTrang, p.soTang, l.tenLoaiPhong, l.sucChua, l.donGia " +
-                     "FROM Phong p JOIN LoaiPhong l ON p.tenLoaiPhong = l.tenLoaiPhong";
+        String sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.tinhTrang, p.soPhong, p.soTang, " +
+                     "       l.gia, l.sucChua " +
+                     "FROM Phong p JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong";
         
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              Statement stmt = con.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
              
             while (rs.next()) {
-                TenLoaiPhong tenLoai = TenLoaiPhong.valueOf(rs.getString("tenLoaiPhong").trim());
-                LoaiPhong lp = new LoaiPhong(tenLoai, rs.getInt("sucChua"), rs.getDouble("donGia"));
-                TrangThaiPhong tt = findEnumByString(rs.getString("tinhTrang"));
-                
-                Phong p = new Phong(rs.getString("maPhong"), lp, tt, rs.getInt("soTang"));
+                LoaiPhong lp = new LoaiPhong();
+                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
+                lp.setGia(rs.getDouble("gia"));
+                lp.setSucChua(rs.getInt("sucChua"));
+
+                Phong p = new Phong();
+                p.setMaPhong(rs.getString("maPhong"));
+                p.setTenPhong(rs.getString("tenPhong"));
+                p.setLoaiPhong(lp);
+                p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
+                p.setSoPhong(rs.getInt("soPhong"));
+                p.setSoTang(rs.getInt("soTang"));
                 ds.add(p);
             }
         } catch (Exception e) {
@@ -50,13 +63,15 @@ public class PhongDAO {
     }
 
     public boolean insert(Phong p) {
-        String sql = "INSERT INTO Phong(maPhong, tenLoaiPhong, tinhTrang, soTang) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Phong(maPhong, tenPhong, loaiPhong, tinhTrang, soPhong, soTang) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
-            pstmt.setString(1, p.getMaPhong().trim());
-            pstmt.setString(2, p.getLoaiPhong().getTenLoaiPhong().toString().trim());
-            pstmt.setString(3, trangThaiToString(p.getTrangThai()));
-            pstmt.setInt(4, p.getSoTang());
+            pstmt.setString(1, p.getMaPhong());
+            pstmt.setString(2, p.getTenPhong());
+            pstmt.setString(3, p.getLoaiPhong().getMaLoaiPhong());
+            pstmt.setString(4, trangThaiToString(p.getTinhTrang()));
+            pstmt.setInt(5, p.getSoPhong());
+            pstmt.setInt(6, p.getSoTang());
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) { 
             e.printStackTrace();
@@ -65,13 +80,15 @@ public class PhongDAO {
     }
 
     public boolean update(Phong p) {
-        String sql = "UPDATE Phong SET tenLoaiPhong=?, tinhTrang=?, soTang=? WHERE maPhong=?";
+        String sql = "UPDATE Phong SET tenPhong=?, loaiPhong=?, tinhTrang=?, soPhong=?, soTang=? WHERE maPhong=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
-            pstmt.setString(1, p.getLoaiPhong().getTenLoaiPhong().toString().trim());
-            pstmt.setString(2, trangThaiToString(p.getTrangThai()));
-            pstmt.setInt(3, p.getSoTang());
-            pstmt.setString(4, p.getMaPhong().trim());
+            pstmt.setString(1, p.getTenPhong());
+            pstmt.setString(2, p.getLoaiPhong().getMaLoaiPhong());
+            pstmt.setString(3, trangThaiToString(p.getTinhTrang()));
+            pstmt.setInt(4, p.getSoPhong());
+            pstmt.setInt(5, p.getSoTang());
+            pstmt.setString(6, p.getMaPhong());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) { 
             e.printStackTrace();
@@ -83,11 +100,53 @@ public class PhongDAO {
         String sql = "DELETE FROM Phong WHERE maPhong=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
-            pstmt.setString(1, maPhong.trim());
+            pstmt.setString(1, maPhong);
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) { 
             e.printStackTrace();
             return false; 
         }
+    }
+
+    /**
+     * Lấy danh sách phòng trống theo loại và khoảng thời gian
+     */
+    public List<Phong> getDanhSachPhongTrong(String maLoaiPhong, java.sql.Date dIn, java.sql.Date dOut) {
+        List<Phong> ds = new ArrayList<>();
+        String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
+                     "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
+                     "WHERE l.maLoaiPhong = ? AND p.maPhong NOT IN (" +
+                     "    SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
+                     "    JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
+                     "    WHERE (dp.ngayCheckIn < ? AND dp.ngayCheckOut > ?)" +
+                     ")";
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            
+            pstmt.setString(1, maLoaiPhong);
+            pstmt.setDate(2, dOut);
+            pstmt.setDate(3, dIn);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                LoaiPhong lp = new LoaiPhong();
+                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
+                lp.setGia(rs.getDouble("gia"));
+                lp.setSucChua(rs.getInt("sucChua"));
+
+                Phong p = new Phong();
+                p.setMaPhong(rs.getString("maPhong"));
+                p.setTenPhong(rs.getString("tenPhong"));
+                p.setLoaiPhong(lp);
+                p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
+                p.setSoPhong(rs.getInt("soPhong"));
+                p.setSoTang(rs.getInt("soTang"));
+                ds.add(p);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
     }
 }

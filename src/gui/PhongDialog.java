@@ -18,7 +18,7 @@ import dao.LoaiPhongDAO;
 
 public class PhongDialog extends JDialog {
     private JTextField txtMaPhong, txtSucChua;
-    private JComboBox<TenLoaiPhong> cbLoaiPhong;
+    private JComboBox<String> cbLoaiPhong;
     private JComboBox<String> cbTrangThai;
     private JComboBox<Integer> cbSoTang;
     private JButton btnSave, btnCancel;
@@ -54,7 +54,7 @@ public class PhongDialog extends JDialog {
         txtMaPhong.setText(maPhong.trim());
         
         try {
-            cbLoaiPhong.setSelectedItem(TenLoaiPhong.valueOf(loaiPhong.trim()));
+            cbLoaiPhong.setSelectedItem(loaiPhong.trim());
             updateSucChua();
         } catch (Exception e) {
             System.err.println("Không thể parse loại phòng: " + loaiPhong);
@@ -135,7 +135,7 @@ public class PhongDialog extends JDialog {
 
         txtMaPhong = createReadOnlyTextField();
 
-        cbLoaiPhong = new JComboBox<>(TenLoaiPhong.values());
+        cbLoaiPhong = new JComboBox<>(new LoaiPhongDAO().fetchAllRoomTypeNames());
         cbLoaiPhong.setPreferredSize(new Dimension(Integer.MAX_VALUE, 35));
         cbLoaiPhong.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         cbLoaiPhong.setBackground(Color.WHITE);
@@ -180,14 +180,13 @@ public class PhongDialog extends JDialog {
         btnSave.addActionListener(e -> savePhong());
     }
 
-    // LOAD SỨC CHỨA TỪ DB
     private void updateSucChua() {
-        TenLoaiPhong loaiDuocChon = (TenLoaiPhong) cbLoaiPhong.getSelectedItem();
+        String loaiDuocChon = (String) cbLoaiPhong.getSelectedItem();
         if (loaiDuocChon != null) {
             LoaiPhongDAO lpDAO = new LoaiPhongDAO();
             List<model.entities.LoaiPhong> listLP = lpDAO.getAll();
             for (model.entities.LoaiPhong lp : listLP) {
-                if (lp.getTenLoaiPhong() == loaiDuocChon) {
+                if (lp.getMaLoaiPhong().equals(loaiDuocChon)) {
                     txtSucChua.setText(lp.getSucChua() + " người");
                     txtSucChua.setForeground(Color.BLACK);
                     break;
@@ -222,12 +221,12 @@ public class PhongDialog extends JDialog {
             return;
         }
 
-        TenLoaiPhong loai = (TenLoaiPhong) cbLoaiPhong.getSelectedItem();
+        String loai = (String) cbLoaiPhong.getSelectedItem();
         String ttStr = cbTrangThai.getSelectedItem().toString().trim();
         TrangThaiPhong tt = ttStr.equals("Còn trống") ? TrangThaiPhong.CONTRONG :
                             (ttStr.equals("Đã có khách") ? TrangThaiPhong.DACOKHACH : TrangThaiPhong.BAN);
 
-        Phong p = new Phong(ma, new LoaiPhong(loai), tt, tang);
+        Phong p = new Phong(ma, ma, new LoaiPhong(loai), tt, Integer.parseInt(ma.substring(2)), tang);
         
         if (isEditMode) {
             if (phongDAO.update(p)) {

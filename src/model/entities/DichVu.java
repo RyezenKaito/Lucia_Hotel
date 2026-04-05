@@ -3,64 +3,62 @@ package model.entities;
 import java.util.Objects;
 
 /**
- * Class thực thể đại diện cho bảng DichVu trong Database
+ * Class thực thể đại diện cho bảng DV trong Database LuciaHT
  */
 public class DichVu {
-    private String maDichVu;    // maDichVu (Primary Key)
-    private String tenDichVu;   // tenDichVu
-    private double giaDichVu;   // giaDichVu (Tương ứng cột giaDichVu trong DB)
-    private String loaiDichVu;  // loaiDichVu (Dùng để lọc theo Tab: NUOCUONG, THUCAN, ...)
-    private String mieuTa;      // mieuTa
+    private String maDV;
+    private String tenDV;
+    private double gia;
+    private String loaiDV;
+    private String mieuTa;
+    private String donVi;
 
-    // Constructor không tham số
     public DichVu() {
     }
 
-    // THÊM MỚI: Constructor chỉ nhận 1 tham số là maDichVu
-    public DichVu(String maDichVu) {
-        this.maDichVu = maDichVu;
+    public DichVu(String maDV) {
+        this.maDV = maDV;
     }
 
-    // Constructor đầy đủ tham số
-    public DichVu(String maDichVu, String tenDichVu, double giaDichVu, String loaiDichVu, String mieuTa) {
-        this.maDichVu = maDichVu;
-        this.tenDichVu = tenDichVu;
-        this.giaDichVu = giaDichVu;
-        this.loaiDichVu = loaiDichVu;
+    public DichVu(String maDV, String tenDV, double gia, String loaiDV, String mieuTa, String donVi) {
+        this.maDV = maDV;
+        this.tenDV = tenDV;
+        this.gia = gia;
+        this.loaiDV = loaiDV;
         this.mieuTa = mieuTa;
+        this.donVi = donVi;
     }
 
-    // Getter và Setter
-    public String getMaDichVu() {
-        return maDichVu;
+    public String getMaDV() {
+        return maDV;
     }
 
-    public void setMaDichVu(String maDichVu) {
-        this.maDichVu = maDichVu;
+    public void setMaDV(String maDV) {
+        this.maDV = maDV;
     }
 
-    public String getTenDichVu() {
-        return tenDichVu;
+    public String getTenDV() {
+        return tenDV;
     }
 
-    public void setTenDichVu(String tenDichVu) {
-        this.tenDichVu = tenDichVu;
+    public void setTenDV(String tenDV) {
+        this.tenDV = tenDV;
     }
 
-    public double getGiaDichVu() {
-        return giaDichVu;
+    public double getGia() {
+        return gia;
     }
 
-    public void setGiaDichVu(double giaDichVu) {
-        this.giaDichVu = giaDichVu;
+    public void setGia(double gia) {
+        this.gia = gia;
     }
 
-    public String getLoaiDichVu() {
-        return loaiDichVu;
+    public String getLoaiDV() {
+        return loaiDV;
     }
 
-    public void setLoaiDichVu(String loaiDichVu) {
-        this.loaiDichVu = loaiDichVu;
+    public void setLoaiDV(String loaiDV) {
+        this.loaiDV = loaiDV;
     }
 
     public String getMieuTa() {
@@ -71,28 +69,35 @@ public class DichVu {
         this.mieuTa = mieuTa;
     }
 
-    // Ghi đè phương thức equals và hashCode để hỗ trợ lưu trữ trong Map/Set (như biến cart trong GUI)
+    public String getDonVi() {
+        return donVi;
+    }
+
+    public void setDonVi(String donVi) {
+        this.donVi = donVi;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DichVu dichVu = (DichVu) o;
-        return Objects.equals(maDichVu, dichVu.maDichVu);
+        return Objects.equals(maDV, dichVu.maDV);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(maDichVu);
+        return Objects.hash(maDV);
     }
 
-    // Phương thức toString hỗ trợ debug
     @Override
     public String toString() {
-        return "DichVu{" +
-                "maDichVu='" + maDichVu + '\'' +
-                ", tenDichVu='" + tenDichVu + '\'' +
-                ", giaDichVu=" + giaDichVu +
-                ", loaiDichVu='" + loaiDichVu + '\'' +
-                '}';
+        return tenDV != null ? tenDV : maDV;
     }
+
+    // --- Legacy compatibility ---
+    public String getMaDichVu() { return maDV; }
+    public String getTenDichVu() { return tenDV; }
+    public double getDonGia() { return gia; }
+    public String getDonViTinh() { return donVi; }
 }

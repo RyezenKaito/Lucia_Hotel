@@ -10,25 +10,18 @@ import model.entities.DichVu;
 public class DichVuDAO {
 
     /**
-     * Lấy tất cả dịch vụ từ bảng DichVu
+     * Lấy tất cả dịch vụ từ bảng DV
      */
     public List<DichVu> getAll() {
         List<DichVu> ds = new ArrayList<>();
-        // Truy vấn trực tiếp từ bảng DichVu theo cấu trúc mới
-        String sql = "SELECT maDichVu, tenDichVu, giaDichVu, loaiDichVu, mieuTa FROM DichVu";
+        String sql = "SELECT * FROM DV";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              Statement stmt = con.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                ds.add(new DichVu(
-                    rs.getString("maDichVu"),
-                    rs.getString("tenDichVu"),
-                    rs.getDouble("giaDichVu"),
-                    rs.getString("loaiDichVu"),
-                    rs.getString("mieuTa")
-                ));
+                ds.add(mapRow(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -37,35 +30,20 @@ public class DichVuDAO {
     }
 
     /**
-     * Lấy dịch vụ theo loại (NUOCUONG, THUCAN, MAYGIAT...) cho giao diện Tab
-     * Kết nối với BangGiaDichVu_ChiTiet để lấy giá đang áp dụng (TrangThai = 1)
+     * Lấy danh sách dịch vụ theo loại
      */
-    public List<DichVu> getByType(String type) {
+    public List<DichVu> getByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
-        // JOIN với bảng giá để lấy đơn giá mới nhất đang có hiệu lực (trangThai = 1)
-        String sql = "SELECT dv.maDichVu, dv.tenDichVu, bgct.giaDichVu, dv.loaiDichVu, dv.mieuTa " +
-                     "FROM DichVu dv " +
-                     "JOIN BangGiaDichVu_ChiTiet bgct ON dv.maDichVu = bgct.maDichVu " +
-                     "JOIN BangGiaDichVu_ThongTin bgtt ON bgct.maBangGia = bgtt.maBangGia " +
-                     "WHERE dv.loaiDichVu = ? AND bgtt.trangThai = 1"; 
-
+        String sql = "SELECT * FROM DV WHERE loaiDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            
-            ps.setString(1, type);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                ds.add(new DichVu(
-                    rs.getString("maDichVu"),
-                    rs.getString("tenDichVu"),
-                    rs.getDouble("giaDichVu"),
-                    rs.getString("loaiDichVu"),
-                    rs.getString("mieuTa")
-                ));
+            ps.setString(1, loaiDV);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ds.add(mapRow(rs));
+                }
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi khi lấy dịch vụ theo loại: " + type);
             e.printStackTrace();
         }
         return ds;
@@ -75,15 +53,16 @@ public class DichVuDAO {
      * Cập nhật thông tin dịch vụ
      */
     public boolean update(DichVu dv) {
-        String sql = "UPDATE DichVu SET tenDichVu = ?, giaDichVu = ?, loaiDichVu = ?, mieuTa = ? WHERE maDichVu = ?";
+        String sql = "UPDATE DV SET tenDV = ?, gia = ?, loaiDV = ?, mieuTa = ?, donVi = ? WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
             
-            pstmt.setString(1, dv.getTenDichVu());
-            pstmt.setDouble(2, dv.getGiaDichVu());
-            pstmt.setString(3, dv.getLoaiDichVu());
+            pstmt.setString(1, dv.getTenDV());
+            pstmt.setDouble(2, dv.getGia());
+            pstmt.setString(3, dv.getLoaiDV());
             pstmt.setString(4, dv.getMieuTa());
-            pstmt.setString(5, dv.getMaDichVu());
+            pstmt.setString(5, dv.getDonVi());
+            pstmt.setString(6, dv.getMaDV());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -96,15 +75,16 @@ public class DichVuDAO {
      * Thêm mới dịch vụ
      */
     public boolean insert(DichVu dv) {
-        String sql = "INSERT INTO DichVu (maDichVu, tenDichVu, giaDichVu, loaiDichVu, mieuTa) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
             
-            pstmt.setString(1, dv.getMaDichVu());
-            pstmt.setString(2, dv.getTenDichVu());
-            pstmt.setDouble(3, dv.getGiaDichVu());
-            pstmt.setString(4, dv.getLoaiDichVu());
+            pstmt.setString(1, dv.getMaDV());
+            pstmt.setString(2, dv.getTenDV());
+            pstmt.setDouble(3, dv.getGia());
+            pstmt.setString(4, dv.getLoaiDV());
             pstmt.setString(5, dv.getMieuTa());
+            pstmt.setString(6, dv.getDonVi());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -115,36 +95,32 @@ public class DichVuDAO {
     
     /**
      * Lấy thông tin dịch vụ theo mã dịch vụ (ID)
-     * Kết nối với BangGiaDichVu_ChiTiet để lấy đơn giá đang có hiệu lực
      */
     public DichVu getServiceByID(String ma) {
-        DichVu dv = null;
-        // Sử dụng JOIN tương tự hàm getByType để lấy đơn giá từ bảng giá đang áp dụng (trangThai = 1)
-        String sql = "SELECT dv.maDichVu, dv.tenDichVu, bgct.giaDichVu, dv.loaiDichVu, dv.mieuTa " +
-                     "FROM DichVu dv " +
-                     "LEFT JOIN BangGiaDichVu_ChiTiet bgct ON dv.maDichVu = bgct.maDichVu " +
-                     "LEFT JOIN BangGiaDichVu_ThongTin bgtt ON bgct.maBangGia = bgtt.maBangGia " +
-                     "WHERE dv.maDichVu = ? AND (bgtt.trangThai = 1 OR bgtt.trangThai IS NULL)"; 
-
+        String sql = "SELECT * FROM DV WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             
             ps.setString(1, ma);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    dv = new DichVu(
-                        rs.getString("maDichVu"),
-                        rs.getString("tenDichVu"),
-                        rs.getDouble("giaDichVu"),
-                        rs.getString("loaiDichVu"),
-                        rs.getString("mieuTa")
-                    );
+                    return mapRow(rs);
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi khi lấy dịch vụ theo mã: " + ma);
             e.printStackTrace();
         }
+        return null;
+    }
+
+    private DichVu mapRow(ResultSet rs) throws SQLException {
+        DichVu dv = new DichVu();
+        dv.setMaDV(rs.getString("maDV"));
+        dv.setTenDV(rs.getString("tenDV"));
+        dv.setGia(rs.getDouble("gia"));
+        dv.setLoaiDV(rs.getString("loaiDV"));
+        dv.setMieuTa(rs.getString("mieuTa"));
+        dv.setDonVi(rs.getString("donVi"));
         return dv;
     }
 }

@@ -303,12 +303,12 @@ public class CheckInPanel extends JPanel {
         DatPhong data = datPhongDAO.findDatPhongDetail(key);
         if (data != null) {
             // Hiển thị thông tin khách hàng
-            lblName.setText(data.getKhachHang().getHoTen());
-            lblPhone.setText(data.getKhachHang().getSoDienThoai());
-            lblID.setText(data.getKhachHang().getCCCD());
+            lblName.setText(data.getKhachHang().getTenKH());
+            lblPhone.setText(data.getKhachHang().getSoDT());
+            lblID.setText(data.getKhachHang().getSoCCCD());
             
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            lblCheckIn.setText(data.getNgayCheckInDuKien().format(dtf));
+            lblCheckIn.setText(data.getNgayCheckIn().format(dtf));
 
             // 👉 HIỆN STEP 3 VÀ CẬP NHẬT UI
             step3.setVisible(true);

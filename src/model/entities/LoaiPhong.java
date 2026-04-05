@@ -1,39 +1,54 @@
 package model.entities;
 
-import model.enums.TenLoaiPhong;
-
 public class LoaiPhong {
-    private TenLoaiPhong tenLoaiPhong;
+    private String maLoaiPhong;
+    private double gia;
     private int sucChua;
-    private double donGia;
 
     public LoaiPhong() {
     }
 
-    public LoaiPhong(TenLoaiPhong tenLoaiPhong, int sucChua, double donGia) {
-        this.tenLoaiPhong = tenLoaiPhong;
+    public LoaiPhong(String maLoaiPhong, double gia, int sucChua) {
+        this.maLoaiPhong = maLoaiPhong;
+        this.gia = gia;
         this.sucChua = sucChua;
-        this.donGia = donGia;
     }
 
-    public LoaiPhong(TenLoaiPhong tenLoaiPhong) {
-        this.tenLoaiPhong = tenLoaiPhong;
+    public LoaiPhong(String maLoaiPhong) {
+        this.maLoaiPhong = maLoaiPhong;
     }
 
-    
+    public String getMaLoaiPhong() {
+        return maLoaiPhong;
+    }
 
-	public LoaiPhong(TenLoaiPhong tenLoaiPhong, int sucChua) {
-		super();
-		this.tenLoaiPhong = tenLoaiPhong;
-		this.sucChua = sucChua;
-	}
+    public void setMaLoaiPhong(String maLoaiPhong) {
+        this.maLoaiPhong = maLoaiPhong;
+    }
 
-	public TenLoaiPhong getTenLoaiPhong() { return tenLoaiPhong; }
-    public void setTenLoaiPhong(TenLoaiPhong tenLoaiPhong) { this.tenLoaiPhong = tenLoaiPhong; }
+    public double getGia() {
+        return gia;
+    }
 
-    public int getSucChua() { return sucChua; }
-    public void setSucChua(int sucChua) { this.sucChua = sucChua; }
+    public void setGia(double gia) {
+        this.gia = gia;
+    }
 
-    public double getDonGia() { return donGia; }
-    public void setDonGia(double donGia) { this.donGia = donGia; }
+    public int getSucChua() {
+        return sucChua;
+    }
+
+    public void setSucChua(int sucChua) {
+        this.sucChua = sucChua;
+    }
+
+    @Override
+    public String toString() {
+        return maLoaiPhong;
+    }
+
+    // --- Legacy compatibility ---
+    public String getMaLoai() { return maLoaiPhong; }
+    public String getTenLoai() { return maLoaiPhong; }
+    public double getGiaPerNgay() { return gia; }
 }

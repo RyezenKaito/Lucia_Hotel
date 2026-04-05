@@ -7,11 +7,11 @@ import java.sql.SQLException;
 public class ConnectDatabase {
 	private static Connection con = null;
 	private static ConnectDatabase instance = new ConnectDatabase();
-	
-	private final String URL = "jdbc:sqlserver://localhost:1433;databaseName=QuanLyDatPhong;encrypt=false";
-	private final String USER="sa";
-	private final String PASSWORD ="sapassword";
-	
+
+	private final String URL = "jdbc:sqlserver://localhost:1433;databaseName=LuciaHT;encrypt=true;trustServerCertificate=true;";
+	private final String USER = "sa";
+	private final String PASSWORD = "sapassword";
+
 	private ConnectDatabase() {
 		try {
 			con = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -20,14 +20,14 @@ public class ConnectDatabase {
 			System.err.println("Lỗi kết nối Database: " + e.getMessage());
 		}
 	}
-	
+
 	public static ConnectDatabase getInstance() {
 		return instance;
 	}
-	
+
 	public Connection getConnection() {
 		try {
-			if(con== null || con.isClosed()) {
+			if (con == null || con.isClosed()) {
 				con = DriverManager.getConnection(URL, USER, PASSWORD);
 				System.out.println("Kết nối database thành công.");
 			}
@@ -35,11 +35,12 @@ public class ConnectDatabase {
 			// TODO: handle exception
 			System.err.println("Lỗi kết nối Database: " + e.getMessage());
 		}
-		
+
 		return con;
 	}
-	public  void disconnect() {
-		if(con!= null) {
+
+	public void disconnect() {
+		if (con != null) {
 			try {
 				con.close();
 				System.out.println("Đã ngắt kết nối Database.");

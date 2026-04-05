@@ -1,42 +1,65 @@
 package model.entities;
 
 public class ChiTietHoaDon {
-	private HoaDon maHoaDon;
-	private DichVu maDichVu;
-	private Phong phong;
-	public ChiTietHoaDon(HoaDon maHoaDon, DichVu maDichVu, Phong phong) {
-		this.maHoaDon = maHoaDon;
-		this.maDichVu = maDichVu;
-		this.phong = phong;
-	}
-	public ChiTietHoaDon(HoaDon maHoaDon) {
-		super();
-		this.maHoaDon = maHoaDon;
-	}
-	public ChiTietHoaDon(DichVu maDichVu, Phong phong) {
-		super();
-		this.maDichVu = maDichVu;
-		this.phong = phong;
-	}
-	public HoaDon getMaHoaDon() {
-		return maHoaDon;
-	}
-	public void setMaHoaDon(HoaDon maHoaDon) {
-		this.maHoaDon = maHoaDon;
-	}
-	public DichVu getMaDichVu() {
-		return maDichVu;
-	}
-	public void setMaDichVu(DichVu maDichVu) {
-		this.maDichVu = maDichVu;
-	}
-	public Phong getPhong() {
-		return phong;
-	}
-	public void setPhong(Phong phong) {
-		this.phong = phong;
-	}
-	
-	
-	
+    private String maCTHD;
+    private HoaDon hoaDon;
+    private DichVu dichVu;
+    private int soLuong;
+    private double donGiaTaiThiemDiem;
+
+    public ChiTietHoaDon() {
+    }
+
+    public ChiTietHoaDon(String maCTHD, HoaDon hoaDon, DichVu dichVu, int soLuong, double donGiaTaiThiemDiem) {
+        this.maCTHD = maCTHD;
+        this.hoaDon = hoaDon;
+        this.dichVu = dichVu;
+        this.soLuong = soLuong;
+        this.donGiaTaiThiemDiem = donGiaTaiThiemDiem;
+    }
+
+    public String getMaCTHD() {
+        return maCTHD;
+    }
+
+    public void setMaCTHD(String maCTHD) {
+        this.maCTHD = maCTHD;
+    }
+
+    public HoaDon getHoaDon() {
+        return hoaDon;
+    }
+
+    public void setHoaDon(HoaDon hoaDon) {
+        this.hoaDon = hoaDon;
+    }
+
+    public DichVu getDichVu() {
+        return dichVu;
+    }
+
+    public void setDichVu(DichVu dichVu) {
+        this.dichVu = dichVu;
+    }
+
+    public int getSoLuong() {
+        return soLuong;
+    }
+
+    public void setSoLuong(int soLuong) {
+        this.soLuong = soLuong;
+    }
+
+    public double getDonGiaTaiThiemDiem() {
+        return donGiaTaiThiemDiem;
+    }
+
+    public void setDonGiaTaiThiemDiem(double donGiaTaiThiemDiem) {
+        this.donGiaTaiThiemDiem = donGiaTaiThiemDiem;
+    }
+
+    @Override
+    public String toString() {
+        return maCTHD;
+    }
 }

@@ -1,116 +1,74 @@
 package model.entities;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 public class DatPhong {
-	private String maDatPhong;
-	private LocalDateTime ngayDat;
-	private LocalDateTime ngayCheckInDuKien;
-	private LocalDateTime ngayCheckOutDuKien;
-	private LocalDateTime ngayCheckIn;
-	private LocalDateTime ngayCheckOut;
-	private double tienDatCoc;
-	private KhachHang khachHang;
-	private NhanVien nhanVien;
-	private ChiTietDatPhong ctDatPhong;
-	
-	
-	
-	public LocalDateTime getNgayCheckIn() {
-		return ngayCheckIn;
-	}
-	public void setNgayCheckIn(LocalDateTime ngayCheckIn) {
-		this.ngayCheckIn = ngayCheckIn;
-	}
-	public DatPhong(String maDatPhong, LocalDateTime ngayDat, LocalDateTime ngayCheckInDuKien,
-			LocalDateTime ngayCheckOutDuKien, LocalDateTime ngayCheckIn, LocalDateTime ngayCheckOut,
-			KhachHang khachHang) {
-		super();
-		this.maDatPhong = maDatPhong;
-		this.ngayDat = ngayDat;
-		this.ngayCheckInDuKien = ngayCheckInDuKien;
-		this.ngayCheckOutDuKien = ngayCheckOutDuKien;
-		this.ngayCheckIn = ngayCheckIn;
-		this.ngayCheckOut = ngayCheckOut;
-		this.khachHang = khachHang;
-	}
-	public LocalDateTime getNgayCheckOut() {
-		return ngayCheckOut;
-	}
-	public void setNgayCheckOut(LocalDateTime ngayCheckOut) {
-		this.ngayCheckOut = ngayCheckOut;
-	}
-	public DatPhong(String maDatPhong, KhachHang khachHang) {
-		super();
-		this.maDatPhong = maDatPhong;
-		this.khachHang = khachHang;
-	}
-	public DatPhong(String maDatPhong) {
-		this.maDatPhong = maDatPhong;
-	}
-	public DatPhong(String maDatPhong, LocalDateTime ngayDat, LocalDateTime ngayCheckInDuKien,
-			LocalDateTime ngayCheckOutDuKien, double tienDatCoc, KhachHang khachHang, NhanVien nhanVien,
-			ChiTietDatPhong ctDatPhong) {
-		super();
-		this.maDatPhong = maDatPhong;
-		this.ngayDat = ngayDat;
-		this.ngayCheckInDuKien = ngayCheckInDuKien;
-		this.ngayCheckOutDuKien = ngayCheckOutDuKien;
-		this.tienDatCoc = tienDatCoc;
-		this.khachHang = khachHang;
-		this.nhanVien = nhanVien;
-		this.ctDatPhong= ctDatPhong;
-	}
-	public LocalDateTime getNgayDat() {
-		return ngayDat;
-	}
-	public void setNgayDat(LocalDateTime ngayDat) {
-		this.ngayDat = ngayDat;
-	}
-	public LocalDateTime getNgayCheckInDuKien() {
-		return ngayCheckInDuKien;
-	}
-	public void setNgayCheckInDuKien(LocalDateTime ngayCheckInDuKien) {
-		this.ngayCheckInDuKien = ngayCheckInDuKien;
-	}
-	public LocalDateTime getNgayCheckOutDuKien() {
-		return ngayCheckOutDuKien;
-	}
-	public void setNgayCheckOutDuKien(LocalDateTime ngayCheckOutDuKien) {
-		this.ngayCheckOutDuKien = ngayCheckOutDuKien;
-	}
-	public double getTienDatCoc() {
-		return tienDatCoc;
-	}
-	public void setTienDatCoc(double tienDatCoc) {
-		this.tienDatCoc = tienDatCoc;
-	}
-	public KhachHang getKhachHang() {
-		return khachHang;
-	}
-	public void setKhachHang(KhachHang khachHang) {
-		this.khachHang = khachHang;
-	}
-	public NhanVien getNhanVien() {
-		return nhanVien;
-	}
-	public void setNhanVien(NhanVien nhanVien) {
-		this.nhanVien = nhanVien;
-	}
-	public String getMaDatPhong() {
-		return maDatPhong;
-	}
-	public ChiTietDatPhong getCtDatPhong() {
-		return ctDatPhong;
-	}
-	public void setCtDatPhong(ChiTietDatPhong ctDatPhong) {
-		this.ctDatPhong = ctDatPhong;
-	}
-	
-	public int tinhSoNgay() {
-		return (int) ChronoUnit.DAYS.between(ngayCheckInDuKien, ngayCheckOutDuKien);
-	}
-	
-	
+    private String maDat;
+    private LocalDateTime ngayDat;
+    private KhachHang khachHang;
+    private LocalDateTime ngayCheckIn;
+    private LocalDateTime ngayCheckOut;
+
+    public DatPhong() {
+    }
+
+    public DatPhong(String maDat) {
+        this.maDat = maDat;
+    }
+
+    public DatPhong(String maDat, LocalDateTime ngayDat, KhachHang khachHang, LocalDateTime ngayCheckIn, LocalDateTime ngayCheckOut) {
+        this.maDat = maDat;
+        this.ngayDat = ngayDat;
+        this.khachHang = khachHang;
+        this.ngayCheckIn = ngayCheckIn;
+        this.ngayCheckOut = ngayCheckOut;
+    }
+
+    public String getMaDat() {
+        return maDat;
+    }
+
+    public void setMaDat(String maDat) {
+        this.maDat = maDat;
+    }
+
+    public LocalDateTime getNgayDat() {
+        return ngayDat;
+    }
+
+    public void setNgayDat(LocalDateTime ngayDat) {
+        this.ngayDat = ngayDat;
+    }
+
+    public KhachHang getKhachHang() {
+        return khachHang;
+    }
+
+    public void setKhachHang(KhachHang khachHang) {
+        this.khachHang = khachHang;
+    }
+
+    public LocalDateTime getNgayCheckIn() {
+        return ngayCheckIn;
+    }
+
+    public void setNgayCheckIn(LocalDateTime ngayCheckIn) {
+        this.ngayCheckIn = ngayCheckIn;
+    }
+
+    public LocalDateTime getNgayCheckOut() {
+        return ngayCheckOut;
+    }
+
+    public void setNgayCheckOut(LocalDateTime ngayCheckOut) {
+        this.ngayCheckOut = ngayCheckOut;
+    }
+
+    @Override
+    public String toString() {
+        return maDat;
+    }
+
+    // --- Legacy compatibility getters ---
+    public String getMaDatPhong() { return maDat; }
 }

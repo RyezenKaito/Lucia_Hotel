@@ -10,10 +10,7 @@ import connectDatabase.ConnectDatabase;
 import model.entities.KhachHang;
 
 /**
- * DAO cho bảng KhachHang.
- *
- * Tên cột DB (quanlydatphong_taobang.sql):
- *   maKhachHang | hoTen | soDienThoai | ngaySinh | soCanCuocCongDan
+ * DAO cho bảng KH (KhachHang).
  */
 public class KhachHangDAO {
 
@@ -28,10 +25,10 @@ public class KhachHangDAO {
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             ResultSet rs   = con.createStatement()
-                               .executeQuery("SELECT * FROM KhachHang");
+                               .executeQuery("SELECT * FROM KH");
             while (rs.next()) ds.add(mapRow(rs));
         } catch (SQLException e) {
-            System.err.println("getAll KhachHang: " + e.getMessage());
+            System.err.println("getAll KH: " + e.getMessage());
         }
         return ds;
     }
@@ -40,48 +37,48 @@ public class KhachHangDAO {
     //  THÊM
     // ─────────────────────────────────────────────────────────────────────────
     public boolean insert(KhachHang kh) {
-        String sql = "INSERT INTO KhachHang "
-                   + "(maKhachHang, hoTen, soDienThoai, ngaySinh, soCanCuocCongDan) "
+        String sql = "INSERT INTO KH "
+                   + "(maKH, tenKH, soDT, ngaySinh, soCCCD) "
                    + "VALUES (?,?,?,?,?)";
         try {
             Connection con         = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, kh.getMaKhachHang());
-            pstmt.setString(2, kh.getHoTen());
-            pstmt.setString(3, kh.getSoDienThoai());
+            pstmt.setString(1, kh.getMaKH());
+            pstmt.setString(2, kh.getTenKH());
+            pstmt.setString(3, kh.getSoDT());
             if (kh.getNgaySinh() != null)
                 pstmt.setDate(4, Date.valueOf(kh.getNgaySinh()));
             else
                 pstmt.setNull(4, Types.DATE);
-            pstmt.setString(5, kh.getCCCD());
+            pstmt.setString(5, kh.getSoCCCD());
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
-            System.err.println("insert KhachHang: " + e.getMessage());
+            System.err.println("insert KH: " + e.getMessage());
             return false;
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  CẬP NHẬT  (đã sửa đúng tên cột & thứ tự param)
+    //  CẬP NHẬT
     // ─────────────────────────────────────────────────────────────────────────
     public boolean update(KhachHang kh) {
-        String sql = "UPDATE KhachHang "
-                   + "SET hoTen=?, soDienThoai=?, ngaySinh=?, soCanCuocCongDan=? "
-                   + "WHERE maKhachHang=?";
+        String sql = "UPDATE KH "
+                   + "SET tenKH=?, soDT=?, ngaySinh=?, soCCCD=? "
+                   + "WHERE maKH=?";
         try {
             Connection con         = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, kh.getHoTen());
-            pstmt.setString(2, kh.getSoDienThoai());
+            pstmt.setString(1, kh.getTenKH());
+            pstmt.setString(2, kh.getSoDT());
             if (kh.getNgaySinh() != null)
                 pstmt.setDate(3, Date.valueOf(kh.getNgaySinh()));
             else
                 pstmt.setNull(3, Types.DATE);
-            pstmt.setString(4, kh.getCCCD());
-            pstmt.setString(5, kh.getMaKhachHang());
+            pstmt.setString(4, kh.getSoCCCD());
+            pstmt.setString(5, kh.getMaKH());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("update KhachHang: " + e.getMessage());
+            System.err.println("update KH: " + e.getMessage());
             return false;
         }
     }    
@@ -90,24 +87,23 @@ public class KhachHangDAO {
     //  XÓA
     // ─────────────────────────────────────────────────────────────────────────
     public boolean delete(String maKH) {
-    	String sql = "DELETE from KhachHang WHERE maKhachHang = ?";
+    	String sql = "DELETE from KH WHERE maKH = ?";
     	try {
     		Connection con = ConnectDatabase.getInstance().getConnection();
     		PreparedStatement pstmt = con.prepareStatement(sql);
     		pstmt.setString(1, maKH);
     		return pstmt.executeUpdate() > 0;
     	} catch(SQLException e) {
-    		System.err.println("delete Khachhang: " + e.getMessage());
+    		System.err.println("delete KH: " + e.getMessage());
     		return false;
     	}
     }
     
-
     // ─────────────────────────────────────────────────────────────────────────
     //  TÌM THEO MÃ (LIKE)
     // ─────────────────────────────────────────────────────────────────────────
     public KhachHang findKhachHangByID(String keyword) {
-        String sql = "SELECT * FROM KhachHang WHERE maKhachHang LIKE ?";
+        String sql = "SELECT * FROM KH WHERE maKH LIKE ?";
         try {
             Connection con         = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
@@ -121,15 +117,15 @@ public class KhachHangDAO {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  SINH MÃ KH TIẾP THEO  → KH00000001, KH00000002, ...
+    //  SINH MÃ KH TIẾP THEO
     // ─────────────────────────────────────────────────────────────────────────
     public String getNextMaKH() {
-        String sql = "SELECT MAX(maKhachHang) FROM KhachHang";
+        String sql = "SELECT MAX(maKH) FROM KH";
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             ResultSet  rs  = con.createStatement().executeQuery(sql);
             if (rs.next() && rs.getString(1) != null) {
-                String last = rs.getString(1);           // VD: "KH00000005"
+                String last = rs.getString(1);
                 int    num  = Integer.parseInt(last.substring(2)) + 1;
                 return String.format("KH%08d", num);
             }
@@ -143,7 +139,7 @@ public class KhachHangDAO {
     //  ĐẾM KHÁCH CÓ SINH NHẬT HÔM NAY
     // ─────────────────────────────────────────────────────────────────────────
     public int getBirthdayTodayCount() {
-        String sql = "SELECT COUNT(*) FROM KhachHang "
+        String sql = "SELECT COUNT(*) FROM KH "
                    + "WHERE DAY(ngaySinh)   = DAY(GETDATE()) "
                    + "  AND MONTH(ngaySinh) = MONTH(GETDATE())";
         try {
@@ -158,22 +154,20 @@ public class KhachHangDAO {
 
     // ─────────────────────────────────────────────────────────────────────────
     //  DANH SÁCH KHÁCH SINH NHẬT HÔM NAY + PHÒNG ĐANG Ở
-    //  Trả về List<String[]>: [maKH, hoTen, soDienThoai, ngaySinh, dsPhong]
     // ─────────────────────────────────────────────────────────────────────────
     public List<String[]> getBirthdayTodayWithRoom() {
-        // Dùng LinkedHashMap để giữ thứ tự chèn
         Map<String, String[]>    custMap = new LinkedHashMap<>();
         Map<String, List<String>> roomMap = new HashMap<>();
 
         String sql =
-            "SELECT kh.maKhachHang, kh.hoTen, kh.soDienThoai, kh.ngaySinh, " +
+            "SELECT kh.maKH, kh.tenKH, kh.soDT, kh.ngaySinh, " +
             "       p.maPhong " +
-            "FROM   KhachHang kh " +
+            "FROM   KH kh " +
             "LEFT JOIN DatPhong dp " +
-            "       ON  kh.maKhachHang        = dp.maKhachHang " +
-            "       AND dp.ngayCheckInThucTe  IS NOT NULL " +
-            "       AND dp.ngayCheckOutThucTe IS NULL " +
-            "LEFT JOIN ChiTietDatPhong ctdp ON dp.maDatPhong = ctdp.maDatPhong " +
+            "       ON  kh.maKH        = dp.maKH " +
+            "       AND dp.ngayCheckIn  IS NOT NULL " +
+            "       AND dp.ngayCheckOut IS NULL " +
+            "LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
             "LEFT JOIN Phong           p    ON ctdp.maPhong  = p.maPhong " +
             "WHERE DAY(kh.ngaySinh)   = DAY(GETDATE()) " +
             "  AND MONTH(kh.ngaySinh) = MONTH(GETDATE())";
@@ -182,15 +176,15 @@ public class KhachHangDAO {
             Connection con = ConnectDatabase.getInstance().getConnection();
             ResultSet  rs  = con.createStatement().executeQuery(sql);
             while (rs.next()) {
-                String maKH = rs.getString("maKhachHang");
+                String maKH = rs.getString("maKH");
                 if (!custMap.containsKey(maKH)) {
                     Date d = rs.getDate("ngaySinh");
                     String nsStr = d != null
                             ? d.toLocalDate().format(DATE_FMT) : "";
                     custMap.put(maKH, new String[]{
                             maKH,
-                            rs.getString("hoTen"),
-                            rs.getString("soDienThoai"),
+                            rs.getString("tenKH"),
+                            rs.getString("soDT"),
                             nsStr
                     });
                     roomMap.put(maKH, new ArrayList<>());
@@ -218,14 +212,13 @@ public class KhachHangDAO {
     // ─────────────────────────────────────────────────────────────────────────
     private KhachHang mapRow(ResultSet rs) throws SQLException {
         KhachHang kh = new KhachHang(
-                rs.getString("maKhachHang"),
-                rs.getString("hoTen"),
-                rs.getString("soCanCuocCongDan"),
-                rs.getString("soDienThoai")
+                rs.getString("maKH"),
+                rs.getString("tenKH"),
+                rs.getString("soCCCD"),
+                rs.getString("soDT")
         );
         Date d = rs.getDate("ngaySinh");
         if (d != null) kh.setNgaySinh(d.toLocalDate());
         return kh;
     }
-    
 }

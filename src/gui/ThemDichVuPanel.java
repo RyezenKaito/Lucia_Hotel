@@ -99,7 +99,7 @@ public class ThemDichVuPanel extends JPanel {
         JPanel tabs = new JPanel(new GridLayout(1, 4, 8, 0));
         tabs.setOpaque(false);
         tabs.setPreferredSize(new Dimension(0, 40));
-        String[] cats = {"Minibar", "Giặt ủi", "Spa", "Ăn tối"};
+        String[] cats = {"Ẩm thực", "Giải trí", "Sức khỏe", "Tiện ích"};
         for (String c : cats) tabs.add(createTabButton(c));
 
         serviceContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -135,7 +135,7 @@ public class ThemDichVuPanel extends JPanel {
                 refreshServices(name);
                 Container parent = btn.getParent();
                 parent.removeAll();
-                for (String c : new String[]{"Minibar", "Giặt ủi", "Spa", "Ăn tối"}) 
+                for (String c : new String[]{"Ẩm thực", "Giải trí", "Sức khỏe", "Tiện ích"}) 
                     parent.add(createTabButton(c));
                 parent.revalidate(); parent.repaint();
             }
@@ -194,10 +194,10 @@ public class ThemDichVuPanel extends JPanel {
         info.setOpaque(false);
         info.setBorder(new EmptyBorder(10, 12, 10, 5));
         
-        JLabel name = new JLabel("<html><body style='width: 80px'><b>" + dv.getTenDichVu() + "</b></body></html>");
+        JLabel name = new JLabel("<html><body style='width: 80px'><b>" + dv.getTenDV() + "</b></body></html>");
         name.setFont(new Font("SansSerif", Font.PLAIN, 13));
         
-        JLabel price = new JLabel(String.format("%,.0f đ", dv.getGiaDichVu()));
+        JLabel price = new JLabel(String.format("%,.0f đ", dv.getGia()));
         price.setForeground(new Color(160, 100, 60));
         price.setFont(new Font("SansSerif", Font.BOLD, 12));
 
@@ -255,7 +255,7 @@ public class ThemDichVuPanel extends JPanel {
         for (Map.Entry<DichVu, Integer> entry : cart.entrySet()) {
             DichVu dv = entry.getKey();
             int qty = entry.getValue();
-            double sub = dv.getGiaDichVu() * qty;
+            double sub = dv.getGia() * qty;
             total += sub;
 
             JPanel item = new JPanel(new BorderLayout());
@@ -263,7 +263,7 @@ public class ThemDichVuPanel extends JPanel {
             item.setMaximumSize(new Dimension(1000, 40));
             item.setBorder(new EmptyBorder(8, 5, 8, 5));
 
-            JLabel left = new JLabel(qty + " x " + dv.getTenDichVu());
+            JLabel left = new JLabel(qty + " x " + dv.getTenDV());
             JLabel right = new JLabel(String.format("%,.0f đ", sub));
             
             item.add(left, BorderLayout.WEST);
@@ -277,18 +277,14 @@ public class ThemDichVuPanel extends JPanel {
     private void refreshRooms() {
         roomContainer.removeAll();
         for (Phong p : phongDAO.getAll()) {
-            if ("COKHACH".equals(p.getTrangThai())) roomContainer.add(createRoomCard(p));
+            if (p.getTinhTrang() == model.enums.TrangThaiPhong.DACOKHACH) roomContainer.add(createRoomCard(p));
         }
         roomContainer.revalidate(); roomContainer.repaint();
     }
 
     private void refreshServices(String cat) {
         serviceContainer.removeAll();
-        Map<String, String> map = new HashMap<>();
-        map.put("Minibar", "NUOCUONG"); map.put("Laundry", "MAYGIAT");
-        map.put("Spa", "SPA"); map.put("Room Dining", "THUCAN");
-
-        List<DichVu> list = dichVuDAO.getByType(map.getOrDefault(cat, cat));
+        List<DichVu> list = dichVuDAO.getByType(cat);
         for (DichVu dv : list) serviceContainer.add(createServiceCard(dv));
         
         serviceContainer.revalidate(); serviceContainer.repaint();
