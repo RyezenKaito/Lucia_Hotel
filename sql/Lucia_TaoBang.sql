@@ -28,7 +28,7 @@ CREATE TABLE NV (
     diaChi NVARCHAR(200),
 	ngaySinh DATE,
     ngayVaoLam DATE,
-    trinhDo NVARCHAR(20) CHECK (trinhDo IN (N'THCS', N'THPT', N'CAODANG', N'DAIHOC')),
+    trinhDo NVARCHAR(20) CHECK (trinhDo IN (N'THCS', N'THPT', N'CAODANG', N'DAIHOC',N'TREN_DAIHOC')),
     mk VARCHAR(100),
     role NVARCHAR(20) CHECK (role IN (N'NHAN_VIEN', N'QUAN_LY', N'ADMIN')),
     trangThai NVARCHAR(20) DEFAULT 'CON_LAM' CHECK (trangThai IN ('CON_LAM', 'DA_NGHI')),
@@ -59,7 +59,7 @@ CREATE TABLE DV (
 CREATE TABLE Phong (
     maPhong VARCHAR(10) PRIMARY KEY,
     tenPhong NVARCHAR(50),
-    loaiPhong VARCHAR(20),
+    loaiPhong VARCHAR(20) CHECK(loaiPhong IN ('DOUBLE','SINGLE','TRIPLE','TWIN','FAMILY')),
     tinhTrang NVARCHAR(20) CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG')),
     soPhong INT,
 	soTang INT,

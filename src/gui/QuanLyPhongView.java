@@ -51,7 +51,6 @@ public class QuanLyPhongView extends BorderPane {
     /* ── Controls ───────────────────────────────────────────────────── */
     private TableView<Phong> table;
     private TextField txtSearch;
-    private Label lblTongPhong, lblPhongTrong, lblCoKhach, lblBaoTri;
 
     /* ── PHÂN QUYỀN ────────────────────────────────────────────── */
     private final boolean isAdmin;
@@ -97,25 +96,6 @@ public class QuanLyPhongView extends BorderPane {
             titleRow.getChildren().add(btnAdd);
         }
 
-        /* ── Dòng 2: Thẻ thống kê ────────────────────────────────── */
-        HBox statsRow = new HBox(20);
-        statsRow.setAlignment(Pos.CENTER_LEFT);
-
-        lblTongPhong = new Label("0");
-        lblPhongTrong = new Label("0");
-        lblCoKhach = new Label("0");
-        lblBaoTri = new Label("0");
-
-        VBox c1 = createStatCard("🏢", "TỔNG SỐ PHÒNG", lblTongPhong, C_NAVY);
-        VBox c2 = createStatCard("✅", "PHÒNG TRỐNG", lblPhongTrong, C_GREEN);
-        VBox c3 = createStatCard("🛏", "ĐANG CÓ KHÁCH", lblCoKhach, C_GOLD);
-        VBox c4 = createStatCard("🔧", "ĐANG BẢO TRÌ", lblBaoTri, C_RED);
-
-        HBox.setHgrow(c1, Priority.ALWAYS);
-        HBox.setHgrow(c2, Priority.ALWAYS);
-        HBox.setHgrow(c3, Priority.ALWAYS);
-        HBox.setHgrow(c4, Priority.ALWAYS);
-        statsRow.getChildren().addAll(c1, c2, c3, c4);
 
         /* ── Dòng 3: Thanh tìm kiếm ──────────────────────────────── */
         txtSearch = new TextField();
@@ -130,7 +110,7 @@ public class QuanLyPhongView extends BorderPane {
                         "-fx-padding: 0 16 0 16;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter(n));
 
-        header.getChildren().addAll(titleRow, statsRow, txtSearch);
+        header.getChildren().addAll(titleRow, txtSearch);
         return header;
     }
 
@@ -168,7 +148,7 @@ public class QuanLyPhongView extends BorderPane {
         TableColumn<Phong, String> colLoai = new TableColumn<>("Loại phòng");
         colLoai.setMinWidth(150);
         colLoai.setStyle("-fx-alignment: CENTER;");
-        colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getLoaiPhong() != null ? nvl(p.getValue().getLoaiPhong().getMaLoaiPhong()) : ""));
+        colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getLoaiPhong() != null ? p.getValue().getLoaiPhong().toString() : ""));
 
         // Cột Đơn giá
         TableColumn<Phong, String> colGia = new TableColumn<>("Đơn giá");
@@ -211,11 +191,29 @@ public class QuanLyPhongView extends BorderPane {
                 if (empty || item == null) {
                     setText(null);
                     setStyle("");
+                    setOnMouseClicked(null);
                 } else {
                     setText(item);
-                    if (item.equals("Còn trống")) setStyle("-fx-text-fill: " + C_GREEN + "; -fx-alignment: CENTER; -fx-font-weight: bold;");
-                    else if (item.equals("Đã có khách")) setStyle("-fx-text-fill: " + C_GOLD + "; -fx-alignment: CENTER; -fx-font-weight: bold;");
-                    else setStyle("-fx-text-fill: " + C_RED + "; -fx-alignment: CENTER; -fx-font-weight: bold;");
+                    String baseStyle = "-fx-alignment: CENTER; -fx-font-weight: bold; -fx-cursor: hand; ";
+                    if (item.equals("Còn trống")) setStyle(baseStyle + "-fx-text-fill: " + C_GREEN + ";");
+                    else if (item.equals("Đã có khách")) setStyle(baseStyle + "-fx-text-fill: " + C_GOLD + ";");
+                    else setStyle(baseStyle + "-fx-text-fill: " + C_RED + ";");
+
+                    ContextMenu statusMenu = new ContextMenu();
+                    MenuItem m1 = new MenuItem("✅  Còn trống");
+                    m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
+                    MenuItem m2 = new MenuItem("🛏  Đã có khách");
+                    m2.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.DACOKHACH));
+                    MenuItem m3 = new MenuItem("🔧  Đang bảo trì");
+                    m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
+                    
+                    statusMenu.getItems().addAll(m1, m2, m3);
+
+                    setOnMouseClicked(e -> {
+                        if (e.getButton() == MouseButton.PRIMARY) {
+                            statusMenu.show(this, e.getScreenX(), e.getScreenY());
+                        }
+                    });
                 }
             }
         });
@@ -280,22 +278,8 @@ public class QuanLyPhongView extends BorderPane {
             filteredData = new FilteredList<>(masterData, p -> true);
             table.setItems(filteredData);
 
-            int tr = 0, ck = 0, bt = 0;
-            for (Phong p : ds) {
-                if (p.getTrangThai() == TrangThaiPhong.CONTRONG) tr++;
-                else if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) ck++;
-                else bt++;
-            }
-
-            lblTongPhong.setText(String.valueOf(ds.size()));
-            lblPhongTrong.setText(String.valueOf(tr));
-            lblCoKhach.setText(String.valueOf(ck));
-            lblBaoTri.setText(String.valueOf(bt));
         } catch (Exception ex) {
-            lblTongPhong.setText("—");
-            lblPhongTrong.setText("—");
-            lblCoKhach.setText("—");
-            lblBaoTri.setText("—");
+            // Không làm gì nếu lỗi db
         }
     }
 
@@ -304,14 +288,25 @@ public class QuanLyPhongView extends BorderPane {
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         filteredData.setPredicate(p -> {
             if (kw.isEmpty()) return true;
-            String lp = p.getLoaiPhong() != null ? nvl(p.getLoaiPhong().getMaLoaiPhong()).toLowerCase() : "";
+            String lp = p.getLoaiPhong() != null ? p.getLoaiPhong().toString().toLowerCase() : "";
             return nvl(p.getMaPhong()).toLowerCase().contains(kw) || lp.contains(kw);
         });
     }
 
     private void openDialog(Phong p) {
-        Window owner = getScene() != null ? getScene().getWindow() : null;
-        new ThemSuaPhongDialog(owner, p, dao, this::loadData).show();
+        Window owner = getScene().getWindow();
+        new ThemSuaPhongDialog(owner, p, dao, this::loadData).showDialog();
+    }
+
+    private void updateStatus(Phong p, TrangThaiPhong newStatus) {
+        if (p == null || p.getTrangThai() == newStatus) return;
+        p.setTrangThai(newStatus);
+        if (dao.update(p)) {
+            loadData();
+        } else {
+            showAlert(Alert.AlertType.ERROR, "Cập nhật thất bại", "Không thể cập nhật trạng thái phòng này.");
+            loadData(); // reload to revert local change if db failed
+        }
     }
 
     private void handleDelete(Phong p) {
@@ -333,46 +328,7 @@ public class QuanLyPhongView extends BorderPane {
 
     /* ── Utilities ──────────────────────────────────────────────────── */
 
-    private VBox createStatCard(String icon, String title, Label valueLbl, String accentHex) {
-        VBox card = new VBox(8);
-        card.setPadding(new Insets(20));
-        card.setStyle(
-                "-fx-background-color: " + C_CARD_BG + ";" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 10;" +
-                        "-fx-background-radius: 10;");
-        card.setEffect(new DropShadow(8, 0, 2, Color.web("#00000018")));
 
-        HBox topRow = new HBox();
-        topRow.setAlignment(Pos.CENTER_LEFT);
-
-        VBox textBox = new VBox(4);
-        HBox.setHgrow(textBox, Priority.ALWAYS);
-
-        Label lblTitle = new Label(title);
-        lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
-        lblTitle.setTextFill(Color.web(C_TEXT_GRAY));
-
-        valueLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
-        valueLbl.setTextFill(Color.web(accentHex));
-
-        textBox.getChildren().addAll(lblTitle, valueLbl);
-
-        StackPane badge = new StackPane();
-        badge.setMinSize(46, 46);
-        badge.setPrefSize(46, 46);
-        Rectangle badgeBg = new Rectangle(46, 46);
-        badgeBg.setArcWidth(10);
-        badgeBg.setArcHeight(10);
-        Color accent = Color.web(accentHex);
-        badgeBg.setFill(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 0.12));
-        Label iconLbl = new Label(icon);
-        iconLbl.setFont(Font.font("Segoe UI Emoji", 22));
-        badge.getChildren().addAll(badgeBg, iconLbl);
-
-        topRow.getChildren().addAll(textBox, badge);
-        return card;
-    }
 
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {
         String base = "-fx-background-color: " + bg + ";" +

@@ -44,7 +44,11 @@ public class LoaiPhong {
 
     @Override
     public String toString() {
-        return maLoaiPhong;
+        try {
+            return model.enums.TenLoaiPhong.valueOf(maLoaiPhong).getDisplayName();
+        } catch (Exception e) {
+            return maLoaiPhong;
+        }
     }
 
     // --- Legacy compatibility ---

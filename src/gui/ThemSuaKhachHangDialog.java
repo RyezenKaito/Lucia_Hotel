@@ -5,93 +5,221 @@ import model.entities.KhachHang;
 import model.utils.ValidationUtils;
 
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.Window;
-import javafx.scene.input.KeyCode; // Thư viện để bắt phím Enter
 
 import java.time.LocalDate;
 
-/**
- * ThemSuaKhachHangDialog – JavaFX
- */
-public class ThemSuaKhachHangDialog {
+public class ThemSuaKhachHangDialog extends Stage {
 
-    /* ── Bảng màu ───────────────────────────────────────────────────── */
-    private static final String C_BG = "#f8f9fa";
     private static final String C_BORDER = "#e9ecef";
-    private static final String C_TEXT_DARK = "#111827";
     private static final String C_TEXT_GRAY = "#6b7280";
-    private static final String C_NAVY = "#1e3a8a";
-    private static final String C_BLUE = "#1d4ed8";
-    private static final String C_BLUE_HOVER = "#1e40af";
+    private static final String C_SIDEBAR = "#1e3a8a";
+    private static final String C_ACTIVE = "#1d4ed8";
     private static final String C_RED = "#dc2626";
 
-    /* ── State ──────────────────────────────────────────────────────── */
+    private double xOffset = 0;
+    private double yOffset = 0;
+
     private final Window owner;
     private final KhachHang khachHang;
     private final KhachHangDAO dao;
     private final Runnable onSuccess;
     private final boolean isEdit;
 
-    /* ── Form controls ──────────────────────────────────────────────── */
     private TextField txtMaKH, txtTen, txtCCCD, txtSDT;
     private DatePicker dpNgaySinh;
     private Label errTen, errNS, errCCCD, errSDT;
+    private Button btnSave;
 
-    /*
-     * ══════════════════════════════════════════════════════════════════
-     * CONSTRUCTOR
-     * ══════════════════════════════════════════════════════════════════
-     */
-    public ThemSuaKhachHangDialog(Window owner, KhachHang kh,
-            KhachHangDAO dao, Runnable onSuccess) {
+    private Region overlay;
+
+    public ThemSuaKhachHangDialog(Window owner, KhachHang kh, KhachHangDAO dao, Runnable onSuccess) {
         this.owner = owner;
         this.khachHang = kh;
         this.dao = dao;
         this.onSuccess = onSuccess;
         this.isEdit = (kh != null);
+
+        initOwner(owner);
+        initModality(Modality.APPLICATION_MODAL);
+        initStyle(StageStyle.TRANSPARENT);
+
+        Scene scene = new Scene(buildRoot(), 520, 620);
+        scene.setFill(Color.TRANSPARENT);
+        setScene(scene);
+        centerOnScreen();
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════════
-     * HIỂN THỊ DIALOG
-     * ══════════════════════════════════════════════════════════════════
-     */
-    public void show() {
-        Region overlay = DimOverlay.show(owner);
+    public void showDialog() {
+        this.overlay = DimOverlay.show(owner);
+        showAndWait();
+        DimOverlay.hide(owner, this.overlay);
+    }
 
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(isEdit ? "Cập nhật thông tin khách hàng" : "Thêm khách hàng mới");
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        if (owner != null)
-            dialog.initOwner(owner);
-        dialog.setResizable(false);
+    private VBox buildRoot() {
+        VBox root = new VBox();
+        root.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-background-radius: 16;" +
+                        "-fx-border-radius: 16;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0, 0, 6);");
+        root.getChildren().addAll(buildHeader(), buildBody(), buildFooter());
+        return root;
+    }
 
-        dialog.getDialogPane().setContent(buildContent());
-        dialog.getDialogPane().setStyle("-fx-padding: 0;");
+    private HBox buildHeader() {
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(18, 24, 18, 24));
+        header.setStyle("-fx-background-color: " + C_SIDEBAR + "; -fx-background-radius: 16 16 0 0;");
 
-        ButtonType btnSubmit = new ButtonType(
-                isEdit ? "💾 Cập nhật" : "Thêm khách hàng",
-                ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnCancel = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(btnSubmit, btnCancel);
+        VBox titleBox = new VBox(2);
+        Label lblTitle = new Label(isEdit ? "CẬP NHẬT KHÁCH HÀNG" : "THÊM KHÁCH HÀNG MỚI");
+        lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 17));
+        lblTitle.setTextFill(Color.WHITE);
 
-        styleDialogButtons(dialog, btnSubmit, btnCancel);
+        Label lblSub = new Label(isEdit ? "Mã KH: " + khachHang.getMaKH() : "Điền đầy đủ thông tin bên dưới");
+        lblSub.setFont(Font.font("Segoe UI", 12));
+        lblSub.setTextFill(Color.web("#93c5fd"));
+        titleBox.getChildren().addAll(lblTitle, lblSub);
 
-        Button okBtn = (Button) dialog.getDialogPane().lookupButton(btnSubmit);
-        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
-            if (!validateAndSubmit())
-                event.consume();
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button btnClose = new Button("✕");
+        btnClose.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 4 10 4 10;");
+        btnClose.setOnMouseEntered(e -> btnClose.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 4 10 4 10; -fx-background-radius: 6;"));
+        btnClose.setOnMouseExited(e -> btnClose.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18px; -fx-cursor: hand; -fx-padding: 4 10 4 10;"));
+        btnClose.setOnAction(e -> close());
+
+        header.setOnMousePressed(event -> {
+            xOffset = event.getSceneX();
+            yOffset = event.getSceneY();
+        });
+        header.setOnMouseDragged(event -> {
+            setX(event.getScreenX() - xOffset);
+            setY(event.getScreenY() - yOffset);
         });
 
-        // BẮT SỰ KIỆN THAY ĐỔI ĐỂ ENABLE NÚT CẬP NHẬT (CHỈ ÁP DỤNG KHI SỬA)
+        header.getChildren().addAll(titleBox, spacer, btnClose);
+        return header;
+    }
+
+    private ScrollPane buildBody() {
+        VBox formList = new VBox(16);
+        formList.setPadding(new Insets(22, 32, 10, 32));
+        formList.setStyle("-fx-background-color: white;");
+
+        txtMaKH = new TextField(isEdit ? khachHang.getMaKH() : dao.getNextMaKH());
+        txtMaKH.setEditable(false);
+        txtMaKH.setStyle(
+                fieldStyle() + "-fx-background-color: #e5e7eb; -fx-text-fill: #6b7280; -fx-font-weight: bold;");
+
+        txtTen = makeField(isEdit ? nvl(khachHang.getTenKH()) : "", "Nhập họ và tên");
+        errTen = errLabel();
+
+        dpNgaySinh = new DatePicker();
+        dpNgaySinh.setPromptText("Chọn ngày sinh");
+        dpNgaySinh.setPrefHeight(40);
+        dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
+        dpNgaySinh.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                + "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px;");
+        if (isEdit && khachHang.getNgaySinh() != null)
+            dpNgaySinh.setValue(khachHang.getNgaySinh());
+        errNS = errLabel();
+
+        txtCCCD = makeField(isEdit ? nvl(khachHang.getSoCCCD()) : "", "Nhập CCCD (12 số)");
+        ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
+        errCCCD = errLabel();
+
+        txtSDT = makeField(isEdit ? nvl(khachHang.getSoDT()) : "", "Nhập SDT (10 số)");
+        ValidationUtils.applyNumericOnlyFilter(txtSDT, 11);
+        errSDT = errLabel();
+
+        setupValidation();
+
+        formList.getChildren().addAll(
+                fieldBlock("Mã khách hàng", txtMaKH, null, "Mã sẽ được tự động tạo"),
+                fieldBlock("Họ và tên *", txtTen, errTen, "Vui lòng nhập họ và tên"),
+                fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh khách hàng (từ đủ 16 tuổi)"),
+                fieldBlock("Số CCCD *", txtCCCD, errCCCD, "Vui lòng nhập số CCCD (12 số)"),
+                fieldBlock("Số điện thoại *", txtSDT, errSDT, "Vui lòng nhập số điện thoại (10 số)"));
+
+        ScrollPane scroll = new ScrollPane(formList);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: white; -fx-background: white;");
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        return scroll;
+    }
+
+    private HBox buildFooter() {
+        HBox footer = new HBox(12);
+        footer.setAlignment(Pos.CENTER_RIGHT);
+        footer.setPadding(new Insets(14, 32, 20, 32));
+        footer.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                + " transparent transparent transparent; -fx-border-width: 1 0 0 0; -fx-background-radius: 0 0 16 16;");
+
+        Button btnCancel = makeFooterBtn("Hủy", "white", "#374151", C_BORDER, "#f3f4f6");
+        btnCancel.setOnAction(e -> close());
+
+        btnSave = makeFooterBtn(isEdit ? "💾 Cập nhật" : "💾 Thêm mới", C_SIDEBAR, "white", "transparent", C_ACTIVE);
+        btnSave.setOnAction(e -> handleSave());
+        if (isEdit)
+            btnSave.setDisable(true);
+
+        footer.getChildren().addAll(btnCancel, btnSave);
+        return footer;
+    }
+
+    private Button makeFooterBtn(String text, String bg, String textFill, String border, String hoverBg) {
+        Button b = new Button(text);
+        b.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        b.setPrefHeight(40);
+        b.setPrefWidth(text.contains("Thêm") || text.contains("Cập") ? 140 : 100);
+        b.setCursor(javafx.scene.Cursor.HAND);
+        String style = "-fx-background-color: " + bg + "; -fx-text-fill: " + textFill
+                + "; -fx-background-radius: 8; -fx-border-color: " + border + "; -fx-border-radius: 8;";
+        String hover = "-fx-background-color: " + hoverBg + "; -fx-text-fill: " + textFill
+                + "; -fx-background-radius: 8; -fx-border-color: " + border + "; -fx-border-radius: 8;";
+        b.setStyle(style);
+        b.setOnMouseEntered(e -> b.setStyle(hover));
+        b.setOnMouseExited(e -> b.setStyle(style));
+        return b;
+    }
+
+    private void setupValidation() {
+        txtTen.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateTen();
+        });
+        txtSDT.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateSDT();
+        });
+        txtCCCD.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateCCCD();
+        });
+        dpNgaySinh.focusedProperty().addListener((o, ov, nv) -> {
+            if (!nv)
+                validateNS();
+        });
+
         if (isEdit) {
-            okBtn.setDisable(true);
             javafx.beans.value.ChangeListener<Object> changeListener = (obs, oldVal, newVal) -> {
                 boolean changed = false;
                 if (!java.util.Objects.equals(txtTen.getText().trim(), nvl(khachHang.getTenKH()).trim()))
@@ -102,113 +230,20 @@ public class ThemSuaKhachHangDialog {
                     changed = true;
                 else if (!java.util.Objects.equals(dpNgaySinh.getValue(), khachHang.getNgaySinh()))
                     changed = true;
-
-                okBtn.setDisable(!changed);
+                if (btnSave != null)
+                    btnSave.setDisable(!changed);
             };
             txtTen.textProperty().addListener(changeListener);
             txtCCCD.textProperty().addListener(changeListener);
             txtSDT.textProperty().addListener(changeListener);
             dpNgaySinh.valueProperty().addListener(changeListener);
         }
-
-        // BẮT SỰ KIỆN PHÍM ENTER ĐỂ KÍCH HOẠT NÚT SUBMIT
-        dialog.getDialogPane().setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) {
-                okBtn.fire(); // Giả lập hành động click chuột vào nút
-                e.consume();
-            }
-        });
-
-        dialog.showAndWait();
-        DimOverlay.hide(owner, overlay);
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════════
-     * XÂY DỰNG NỘI DUNG FORM
-     * ══════════════════════════════════════════════════════════════════
-     */
-    private VBox buildContent() {
-        VBox content = new VBox(0);
-        content.setPrefWidth(540);
-
-        /* ── Header ───────────────────────────────────────────────── */
-        VBox headerBox = new VBox(6);
-        headerBox.setPadding(new Insets(24, 28, 18, 28));
-        headerBox.setStyle("-fx-background-color: " + C_NAVY + ";");
-
-        Label dlgTitle = new Label(isEdit
-                ? "Cập nhật thông tin khách hàng"
-                : "Thêm khách hàng mới");
-        dlgTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
-        dlgTitle.setTextFill(Color.WHITE);
-
-        Label dlgSub = new Label(isEdit
-                ? "Mã khách hàng: " + khachHang.getMaKH()
-                : "Vui lòng điền đầy đủ thông tin bên dưới");
-        dlgSub.setFont(Font.font("Segoe UI", 13));
-        dlgSub.setTextFill(Color.web("#93c5fd"));
-
-        Region sepLine = new Region();
-        sepLine.setPrefHeight(2);
-        sepLine.setStyle("-fx-background-color: #3b82f6;");
-
-        headerBox.getChildren().addAll(dlgTitle, dlgSub, sepLine);
-
-        /* ── Form fields ──────────────────────────────────────────── */
-        VBox formBox = new VBox(16);
-        formBox.setPadding(new Insets(22, 28, 10, 28));
-        formBox.setStyle("-fx-background-color: " + C_BG + ";");
-
-        txtMaKH = new TextField(isEdit ? khachHang.getMaKH() : dao.getNextMaKH());
-        txtMaKH.setEditable(false);
-        txtMaKH.setStyle(fieldStyle() + "-fx-background-color: #e5e7eb; -fx-text-fill: #6b7280;");
-
-        txtTen = makeField(isEdit ? nvl(khachHang.getTenKH()) : "", "Nhập họ và tên");
-        errTen = errLabel();
-
-        dpNgaySinh = new DatePicker();
-        dpNgaySinh.setPromptText("Chọn ngày sinh");
-        dpNgaySinh.setPrefHeight(42);
-        dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
-        dpNgaySinh.setStyle(
-                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px;" +
-                        "-fx-background-radius: 8; -fx-border-radius: 8;" +
-                        "-fx-border-color: " + C_BORDER + ";");
-        if (isEdit && khachHang.getNgaySinh() != null)
-            dpNgaySinh.setValue(khachHang.getNgaySinh());
-        errNS = errLabel();
-
-        txtCCCD = makeField(isEdit ? nvl(khachHang.getSoCCCD()) : "", "Nhập CCCD");
-        ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
-        errCCCD = errLabel();
-
-        txtSDT = makeField(isEdit ? nvl(khachHang.getSoDT()) : "", "Nhập số điện thoại");
-        ValidationUtils.applyNumericOnlyFilter(txtSDT, 11);
-        errSDT = errLabel();
-
-        formBox.getChildren().addAll(
-                fieldBlock("Mã khách hàng", txtMaKH, null,
-                        isEdit ? "Không thể chỉnh sửa" : "Tự động tạo mã"),
-                fieldBlockWithErr("Họ và tên *", txtTen, errTen, null),
-                fieldBlockWithErr("Ngày sinh *", dpNgaySinh, errNS, "Phải đủ 16 tuổi trở lên"),
-                fieldBlockWithErr("Số CCCD *", txtCCCD, errCCCD, "Mã số định danh 12 số"),
-                fieldBlockWithErr("Số điện thoại *", txtSDT, errSDT, "Gồm 10 số, theo chuẩn nhà mạng"));
-
-        content.getChildren().addAll(headerBox, formBox);
-        setupValidation();
-        return content;
-    }
-
-    /*
-     * ══════════════════════════════════════════════════════════════════
-     * VALIDATE & SUBMIT
-     * ══════════════════════════════════════════════════════════════════
-     */
     private boolean validateTen() {
         String ten = txtTen.getText().trim().replaceAll("\\s+", " ");
         if (ten.isEmpty()) {
-            showErrorField(txtTen, errTen, "⚠ Không được để trống.");
+            showErrorField(txtTen, errTen, "⚠ Vui lòng nhập họ và tên.");
             return false;
         }
         if (!ten.matches(ValidationUtils.REGEX_NAME)) {
@@ -220,7 +255,7 @@ public class ThemSuaKhachHangDialog {
             return false;
         }
         if (!ValidationUtils.isValidNameLength(ten)) {
-            showErrorField(txtTen, errTen, "⚠ Họ phải chứa ít 1 ký tự, Tên chứa ít nhất 2 ký tự.");
+            showErrorField(txtTen, errTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
             return false;
         }
         clearErrorField(txtTen, errTen);
@@ -244,7 +279,7 @@ public class ThemSuaKhachHangDialog {
     private boolean validateSDT() {
         String sdt = txtSDT.getText().trim();
         if (sdt.isEmpty()) {
-            showErrorField(txtSDT, errSDT, "⚠ Không được để trống.");
+            showErrorField(txtSDT, errSDT, "⚠ Vui lòng nhập số điện thoại (10 số).");
             return false;
         }
         if (!sdt.matches(ValidationUtils.REGEX_PHONE_VN)) {
@@ -259,7 +294,7 @@ public class ThemSuaKhachHangDialog {
         String cccd = txtCCCD.getText().trim();
         LocalDate ns = dpNgaySinh.getValue();
         if (cccd.isEmpty()) {
-            showErrorField(txtCCCD, errCCCD, "⚠ Không được để trống.");
+            showErrorField(txtCCCD, errCCCD, "⚠ Vui lòng nhập số CCCD.");
             return false;
         }
         if (!cccd.matches(ValidationUtils.REGEX_CCCD_FORMAT)) {
@@ -286,34 +321,7 @@ public class ThemSuaKhachHangDialog {
         return true;
     }
 
-    private void setupValidation() {
-        txtTen.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateTen();
-            else
-                clearErrorField(txtTen, errTen);
-        });
-        txtSDT.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateSDT();
-            else
-                clearErrorField(txtSDT, errSDT);
-        });
-        txtCCCD.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateCCCD();
-            else
-                clearErrorField(txtCCCD, errCCCD);
-        });
-        dpNgaySinh.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateNS();
-            else
-                clearErrorField(dpNgaySinh, errNS);
-        });
-    }
-
-    private boolean validateAndSubmit() {
+    private void handleSave() {
         boolean ok = true;
         if (!validateTen())
             ok = false;
@@ -324,97 +332,75 @@ public class ThemSuaKhachHangDialog {
         if (!validateCCCD())
             ok = false;
         if (!ok)
-            return false;
+            return;
 
-        String ten = txtTen.getText().trim().replaceAll("\\s+", " ");
+        String ten = ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " "));
         String cccd = txtCCCD.getText().trim();
         String sdt = txtSDT.getText().trim();
         LocalDate ns = dpNgaySinh.getValue();
-
-        // Nếu mọi thứ hợp lệ -> Chuẩn hóa tên viết hoa chữ cái đầu trước khi lưu vào DB
-        String tenChuanHoa = ValidationUtils.toTitleCase(ten);
         String maKH = txtMaKH.getText().trim();
 
         if (isEdit) {
-            khachHang.setTenKH(toTitleCase(ten));
+            khachHang.setTenKH(ten);
             khachHang.setSoCCCD(cccd);
             khachHang.setSoDT(sdt);
             khachHang.setNgaySinh(ns);
             if (dao.update(khachHang)) {
-                showInfo("Cập nhật thành công!", "Thông tin khách hàng " + maKH + " đã được cập nhật.");
+                showInfo("Cập nhật thành công!");
                 if (onSuccess != null)
                     onSuccess.run();
-                return true;
-            }
-            showError("Cập nhật thất bại", "Kiểm tra lại dữ liệu hoặc kết nối CSDL.");
-            return false;
+                close();
+            } else
+                showError("Cập nhật thất bại");
         } else {
-            KhachHang newKH = new KhachHang(maKH, toTitleCase(ten), cccd, sdt, ns);
+            KhachHang newKH = new KhachHang(maKH, ten, cccd, sdt, ns);
             if (dao.insert(newKH)) {
-                showInfo("Thêm thành công!", "Khách hàng " + maKH + " đã được thêm vào hệ thống.");
+                showInfo("Thêm thành công!");
                 if (onSuccess != null)
                     onSuccess.run();
-                return true;
-            }
-            showError("Thêm thất bại", "Kiểm tra lại dữ liệu hoặc kết nối CSDL.");
-            return false;
+                close();
+            } else
+                showError("Thêm thất bại");
         }
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════════
-     * FACTORY / UTILITY
-     * ══════════════════════════════════════════════════════════════════
-     */
     private VBox fieldBlock(String label, Control field, Label errLbl, String hint) {
         VBox b = new VBox(4);
+        b.setPadding(new Insets(0, 0, 2, 0));
         HBox lblBox = new HBox(4);
         if (label.endsWith("*")) {
             Label lblText = new Label(label.substring(0, label.length() - 1).trim());
-            lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-            lblText.setTextFill(Color.web(C_TEXT_DARK));
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
             Label lblStar = new Label("*");
             lblStar.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
             lblStar.setTextFill(Color.web(C_RED));
             lblBox.getChildren().addAll(lblText, lblStar);
         } else {
             Label lblText = new Label(label);
-            lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-            lblText.setTextFill(Color.web(C_TEXT_DARK));
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
             lblBox.getChildren().add(lblText);
         }
         b.getChildren().add(lblBox);
-        if (hint != null) {
-            Label h = new Label("   " + hint);
-            h.setFont(Font.font("Segoe UI", 11));
-            h.setTextFill(Color.web(C_TEXT_GRAY));
-            b.getChildren().add(h);
-        }
         field.setMaxWidth(Double.MAX_VALUE);
         b.getChildren().add(field);
         if (errLbl != null) {
             errLbl.setMaxWidth(Double.MAX_VALUE);
             b.getChildren().add(errLbl);
         }
+        if (hint != null) {
+            Label h = new Label(hint);
+            h.setFont(Font.font("Segoe UI", 11));
+            h.setTextFill(Color.web(C_TEXT_GRAY));
+            b.getChildren().add(h);
+        }
         return b;
     }
 
-    private VBox fieldBlockWithErr(String label, Control field, Label errLbl, String hint) {
-        return fieldBlock(label, field, errLbl, hint);
-    }
-
     private String fieldStyle() {
-        return "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 42;" +
-                "-fx-background-radius: 8; -fx-border-radius: 8;" +
-                "-fx-border-color: " + C_BORDER + "; -fx-padding: 0 14;";
-    }
-
-    private Label errLabel() {
-        Label l = new Label("");
-        l.setFont(Font.font("Segoe UI", 11));
-        l.setTextFill(Color.web(C_RED));
-        l.setWrapText(true);
-        return l;
+        return "-fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-pref-height: 40; -fx-background-color: white; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: "
+                + C_BORDER + "; -fx-padding: 8 12 8 12;";
     }
 
     private TextField makeField(String value, String prompt) {
@@ -422,6 +408,15 @@ public class ThemSuaKhachHangDialog {
         tf.setPromptText(prompt);
         tf.setStyle(fieldStyle());
         return tf;
+    }
+
+    private Label errLabel() {
+        Label l = new Label("");
+        l.setFont(Font.font("Segoe UI", 11));
+        l.setTextFill(Color.web(C_RED));
+        l.setWrapText(true);
+        l.setMinHeight(14);
+        return l;
     }
 
     private void showErrorField(Control tf, Label errLabel, String msg) {
@@ -436,60 +431,21 @@ public class ThemSuaKhachHangDialog {
         tf.setStyle(fieldStyle());
     }
 
-    private void styleDialogButtons(Dialog<?> dialog, ButtonType submit, ButtonType cancel) {
-        Button okBtn = (Button) dialog.getDialogPane().lookupButton(submit);
-        okBtn.setStyle(
-                "-fx-background-color: " + C_BLUE + "; -fx-text-fill: white;" +
-                        "-fx-font-weight: bold; -fx-font-size: 13px;" +
-                        "-fx-background-radius: 8; -fx-padding: 10 24; -fx-cursor: hand;");
-        okBtn.setOnMouseEntered(e -> okBtn.setStyle(okBtn.getStyle().replace(C_BLUE, C_BLUE_HOVER)));
-        okBtn.setOnMouseExited(e -> okBtn.setStyle(okBtn.getStyle().replace(C_BLUE_HOVER, C_BLUE)));
-
-        Button cancelBtn = (Button) dialog.getDialogPane().lookupButton(cancel);
-        cancelBtn.setStyle(
-                "-fx-background-color: #e5e7eb;" +
-                        "-fx-text-fill: " + C_TEXT_DARK + ";" +
-                        "-fx-font-size: 13px;" +
-                        "-fx-background-radius: 8;" +
-                        "-fx-padding: 10 24; -fx-cursor: hand;");
-    }
-
-    private void showInfo(String header, String msg) {
+    private void showInfo(String msg) {
         Alert a = new Alert(Alert.AlertType.INFORMATION);
-        a.setTitle("Thông báo");
-        a.setHeaderText(header);
+        a.setHeaderText(null);
         a.setContentText(msg);
         a.showAndWait();
     }
 
-    private void showError(String header, String msg) {
+    private void showError(String msg) {
         Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle("Lỗi");
-        a.setHeaderText(header);
+        a.setHeaderText(null);
         a.setContentText(msg);
         a.showAndWait();
     }
 
     private static String nvl(String s) {
         return s != null ? s : "";
-    }
-
-    private static String toTitleCase(String input) {
-        if (input == null || input.isEmpty())
-            return input;
-        StringBuilder sb = new StringBuilder();
-        boolean nextUpper = true;
-        for (char ch : input.toCharArray()) {
-            if (Character.isWhitespace(ch)) {
-                nextUpper = true;
-                sb.append(ch);
-            } else if (nextUpper) {
-                sb.append(Character.toUpperCase(ch));
-                nextUpper = false;
-            } else {
-                sb.append(Character.toLowerCase(ch));
-            }
-        }
-        return sb.toString();
     }
 }

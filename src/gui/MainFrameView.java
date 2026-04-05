@@ -110,7 +110,8 @@ public class MainFrameView {
         left.setPadding(new Insets(0, 0, 0, 28));
         HBox.setHgrow(left, Priority.ALWAYS);
 
-        Label title = new Label(staff != null && staff.getRole() == ChucVu.ADMIN ? "ADMIN" : isAdmin ? "QUẢN LÝ" : "NHÂN VIÊN");
+        Label title = new Label(
+                staff != null && staff.getRole() == ChucVu.ADMIN ? "ADMIN" : isAdmin ? "QUẢN LÝ" : "NHÂN VIÊN");
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
         title.setTextFill(Color.web(C_SIDEBAR));
 
@@ -173,8 +174,12 @@ public class MainFrameView {
                 navBtn("🧾", " Hóa đơn", "invoices"),
                 navBtn("🛏", "Phòng", "rooms"),
                 buildServiceSection(),
-                navBtn("👥", "Khách hàng", "customers"),
-                navBtn("👔", "Nhân viên", "staff"));
+                navBtn("👥", "Khách hàng", "customers"));
+
+        if (isAdmin) {
+            nav.getChildren().add(navBtn("👔", "Nhân viên", "staff"));
+        }
+
         sidebar.getChildren().add(nav);
 
         Region spacer = new Region();

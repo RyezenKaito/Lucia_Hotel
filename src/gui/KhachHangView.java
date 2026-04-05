@@ -319,7 +319,7 @@ public class KhachHangView extends BorderPane {
      */
     private void openDialog(KhachHang kh) {
         Window owner = getScene() != null ? getScene().getWindow() : null;
-        new ThemSuaKhachHangDialog(owner, kh, dao, this::loadData).show();
+        new ThemSuaKhachHangDialog(owner, kh, dao, this::loadData).showDialog();
     }
 
     /*

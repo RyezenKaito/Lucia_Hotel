@@ -42,6 +42,8 @@ public class ThemSuaNhanVienDialog extends Stage {
     private static final String C_ERROR = "#dc2626";
 
     /* ── State ────────────────────────────────────────────────────── */
+    private double xOffset = 0;
+    private double yOffset = 0;
     private final NhanVienDAO dao = new NhanVienDAO();
     private final NhanVien nvEdit; // null = thêm mới
     private final NhanVien currentUser; // người đang đăng nhập
@@ -149,6 +151,15 @@ public class ThemSuaNhanVienDialog extends Stage {
                         "-fx-padding: 4 10 4 10;"));
         btnClose.setOnAction(e -> close());
 
+        header.setOnMousePressed(event -> {
+            xOffset = event.getSceneX();
+            yOffset = event.getSceneY();
+        });
+        header.setOnMouseDragged(event -> {
+            setX(event.getScreenX() - xOffset);
+            setY(event.getScreenY() - yOffset);
+        });
+
         header.getChildren().addAll(titleBox, spacer, btnClose);
         return header;
     }
@@ -166,22 +177,22 @@ public class ThemSuaNhanVienDialog extends Stage {
         /* ── Họ và tên ─────────────────────────────────────────────── */
         txtTen = makeField("Nhập họ và tên");
         lblErrTen = makeErrLabel();
-        form.getChildren().add(fieldRow("Họ và tên *", txtTen, lblErrTen));
+        form.getChildren().add(fieldRow("Họ và tên *", txtTen, lblErrTen, "Vui lòng nhập họ và tên"));
 
         /* ── Địa chỉ ────────────────────────────────────────────── */
         txtDiaChi = makeField("Nhập địa chỉ");
         lblErrDiaChi = makeErrLabel();
-        form.getChildren().add(fieldRow("Địa chỉ", txtDiaChi, lblErrDiaChi));
+        form.getChildren().add(fieldRow("Địa chỉ", txtDiaChi, lblErrDiaChi, "Vui lòng nhập địa chỉ hiện tại (nếu có)"));
 
         /* ── SĐT ────────────────────────────────────────────────── */
         txtSDT = makeField("VD: 0901234567");
         lblErrSDT = makeErrLabel();
-        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT));
+        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT, "Vui lòng nhập số điện thoại (10 số"));
 
         txtCCCD = makeField("VD: 001234567890 (Mã định danh 12 số)");
         model.utils.ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
         lblErrCCCD = makeErrLabel();
-        form.getChildren().add(fieldRow("Số CCCD *", txtCCCD, lblErrCCCD));
+        form.getChildren().add(fieldRow("Số CCCD *", txtCCCD, lblErrCCCD, "Vui lòng nhập số CCCD (12 số)"));
 
         /* ── Ngày sinh ──────────────────────────────────────────── */
         dpNgaySinh = new DatePicker();
@@ -194,14 +205,15 @@ public class ThemSuaNhanVienDialog extends Stage {
                         "-fx-border-radius: 8; -fx-background-radius: 8;" +
                         "-fx-font-size: 13px;");
         lblErrNS = makeErrLabel();
-        form.getChildren().add(fieldRow("Ngày sinh *", dpNgaySinh, lblErrNS));
+        form.getChildren()
+                .add(fieldRow("Ngày sinh *", dpNgaySinh, lblErrNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
 
         /* ── Trình độ ───────────────────────────────────────────── */
         cbTrinhDo = new ComboBox<>();
         cbTrinhDo.getItems().addAll(trinhDo.values());
         cbTrinhDo.getSelectionModel().selectFirst();
         styleCombo(cbTrinhDo);
-        form.getChildren().add(comboRow("Trình độ *", cbTrinhDo));
+        form.getChildren().add(comboRow("Trình độ *", cbTrinhDo, "Vui lòng chọn trình độ học vấn"));
 
         /* ── Chức vụ ────────────────────────────────────────────── */
         cbChucVu = new ComboBox<>();
@@ -212,35 +224,36 @@ public class ThemSuaNhanVienDialog extends Stage {
             if (isAdmin) {
                 // ADMIN sửa: cho phép thay đổi chức vụ
                 cbChucVu.getSelectionModel().select(getRoleLabel(nvEdit.getRole()));
-                form.getChildren().add(comboRow("Chức vụ *", cbChucVu));
+                form.getChildren().add(comboRow("Chức vụ *", cbChucVu, null));
             } else {
                 // SỬA: QUẢN LÝ chỉ xem chức vụ hiện tại, readonly
                 String roleLabel = getRoleLabel(nvEdit.getRole());
                 TextField txtCV = makeReadonlyField(roleLabel);
-                form.getChildren().add(comboRow("Chức vụ", txtCV));
+                form.getChildren().add(comboRow("Chức vụ", txtCV, null));
             }
         } else if (isAdmin) {
             // THÊM + ADMIN: chọn tự do Quản lý / Nhân viên
             cbChucVu.getSelectionModel().select("Nhân viên");
-            form.getChildren().add(comboRow("Chức vụ *", cbChucVu));
+            form.getChildren().add(comboRow("Chức vụ *", cbChucVu, null));
         } else {
             // THÊM + QUAN_LY: gán cứng Nhân viên, không cho chọn
             TextField txtCV = makeReadonlyField("Nhân viên");
-            form.getChildren().add(comboRow("Chức vụ", txtCV));
+            form.getChildren().add(comboRow("Chức vụ", txtCV, null));
         }
-        
+
         /* ── Trạng thái (Chỉ hiện khi Sửa) ──────────────────────── */
         if (nvEdit != null) {
             cbTrangThai = new ComboBox<>();
             cbTrangThai.getItems().addAll(TrangThaiNV.values());
             styleCombo(cbTrangThai);
-            
+
             if (isAdmin) {
                 cbTrangThai.getSelectionModel().select(nvEdit.getTrangThai());
-                form.getChildren().add(comboRow("Trạng thái", cbTrangThai));
+                form.getChildren().add(comboRow("Trạng thái", cbTrangThai, "Vui lòng chọn trạng thái làm việc"));
             } else {
-                TextField txtTT = makeReadonlyField(nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
-                form.getChildren().add(comboRow("Trạng thái", txtTT));
+                TextField txtTT = makeReadonlyField(
+                        nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
+                form.getChildren().add(comboRow("Trạng thái", txtTT, "Hệ thống tự động cập nhật"));
             }
         }
 
@@ -346,7 +359,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         btnSave = makeFooterBtn(nvEdit == null ? "💾  Thêm mới" : "💾  Cập nhật",
                 C_SIDEBAR, "white", "transparent", C_ACTIVE);
         btnSave.setOnAction(e -> handleSave());
-        
+
         if (nvEdit != null) {
             btnSave.setDisable(true); // Mặc định khoá nút khi sửa
         }
@@ -382,7 +395,7 @@ public class ThemSuaNhanVienDialog extends Stage {
     private boolean validateTen() {
         String ten = txtTen.getText().trim().replaceAll("\\s+", " ");
         if (ten.isEmpty()) {
-            showFieldError(lblErrTen, txtTen, "⚠ Không được để trống.");
+            showFieldError(lblErrTen, txtTen, "⚠ Vui lòng nhập họ và tên.");
             return false;
         }
         if (!ten.matches(model.utils.ValidationUtils.REGEX_NAME)) {
@@ -418,7 +431,7 @@ public class ThemSuaNhanVienDialog extends Stage {
     private boolean validateSDT() {
         String sdt = txtSDT.getText().trim();
         if (sdt.isEmpty()) {
-            showFieldError(lblErrSDT, txtSDT, "⚠ Không được để trống.");
+            showFieldError(lblErrSDT, txtSDT, "⚠ Vui lòng nhập số điện thoại (10 số).");
             return false;
         }
         if (!sdt.matches(model.utils.ValidationUtils.REGEX_PHONE_VN)) {
@@ -433,7 +446,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         String cccd = txtCCCD.getText().trim();
         java.time.LocalDate ns = dpNgaySinh.getValue();
         if (cccd.isEmpty()) {
-            showFieldError(lblErrCCCD, txtCCCD, "⚠ Không được để trống.");
+            showFieldError(lblErrCCCD, txtCCCD, "⚠ Vui lòng nhập số CCCD (12 số).");
             return false;
         }
         if (!cccd.matches(model.utils.ValidationUtils.REGEX_CCCD_FORMAT)) {
@@ -481,34 +494,48 @@ public class ThemSuaNhanVienDialog extends Stage {
         txtDiaChi.textProperty().addListener(changeListener);
         dpNgaySinh.valueProperty().addListener(changeListener);
         cbTrinhDo.valueProperty().addListener(changeListener);
-        if (cbChucVu != null) cbChucVu.valueProperty().addListener(changeListener);
-        if (cbTrangThai != null) cbTrangThai.valueProperty().addListener(changeListener);
-        if (cbNguoiQuanLy != null) cbNguoiQuanLy.valueProperty().addListener(changeListener);
+        if (cbChucVu != null)
+            cbChucVu.valueProperty().addListener(changeListener);
+        if (cbTrangThai != null)
+            cbTrangThai.valueProperty().addListener(changeListener);
+        if (cbNguoiQuanLy != null)
+            cbNguoiQuanLy.valueProperty().addListener(changeListener);
     }
 
     private void checkChanges() {
-        if (nvEdit == null || btnSave == null) return;
-        
+        if (nvEdit == null || btnSave == null)
+            return;
+
         boolean changed = false;
-        if (!Objects.equals(txtTen.getText().trim(), nvEdit.getHoTen() == null ? "" : nvEdit.getHoTen().trim())) changed = true;
-        else if (!Objects.equals(txtSDT.getText().trim(), nvEdit.getSoDT() == null ? "" : nvEdit.getSoDT().trim())) changed = true;
-        else if (!Objects.equals(txtCCCD.getText().trim(), nvEdit.getCccd() == null ? "" : nvEdit.getCccd().trim())) changed = true;
-        else if (!Objects.equals(txtDiaChi.getText().trim(), nvEdit.getDiaChi() == null ? "" : nvEdit.getDiaChi().trim())) changed = true;
-        else if (!Objects.equals(dpNgaySinh.getValue(), nvEdit.getNgaySinh())) changed = true;
-        else if (!Objects.equals(cbTrinhDo.getValue(), nvEdit.getTrinhDo())) changed = true;
-        
+        if (!Objects.equals(txtTen.getText().trim(), nvEdit.getHoTen() == null ? "" : nvEdit.getHoTen().trim()))
+            changed = true;
+        else if (!Objects.equals(txtSDT.getText().trim(), nvEdit.getSoDT() == null ? "" : nvEdit.getSoDT().trim()))
+            changed = true;
+        else if (!Objects.equals(txtCCCD.getText().trim(), nvEdit.getCccd() == null ? "" : nvEdit.getCccd().trim()))
+            changed = true;
+        else if (!Objects.equals(txtDiaChi.getText().trim(),
+                nvEdit.getDiaChi() == null ? "" : nvEdit.getDiaChi().trim()))
+            changed = true;
+        else if (!Objects.equals(dpNgaySinh.getValue(), nvEdit.getNgaySinh()))
+            changed = true;
+        else if (!Objects.equals(cbTrinhDo.getValue(), nvEdit.getTrinhDo()))
+            changed = true;
+
         if (!changed && isAdmin) {
-             String oldRole = getRoleLabel(nvEdit.getRole());
-             if (!Objects.equals(cbChucVu.getValue(), oldRole)) changed = true;
+            String oldRole = getRoleLabel(nvEdit.getRole());
+            if (!Objects.equals(cbChucVu.getValue(), oldRole))
+                changed = true;
         }
         if (!changed && isAdmin && cbTrangThai != null) {
-             if (!Objects.equals(cbTrangThai.getValue(), nvEdit.getTrangThai())) changed = true;
+            if (!Objects.equals(cbTrangThai.getValue(), nvEdit.getTrangThai()))
+                changed = true;
         }
         if (!changed && nguoiQuanLyBox != null && nguoiQuanLyBox.isVisible()) {
-             String currentQL = cbNguoiQuanLy.getValue() != null ? cbNguoiQuanLy.getValue().getMaNV() : null;
-             if (!Objects.equals(currentQL, nvEdit.getMaQL())) changed = true;
+            String currentQL = cbNguoiQuanLy.getValue() != null ? cbNguoiQuanLy.getValue().getMaNV() : null;
+            if (!Objects.equals(currentQL, nvEdit.getMaQL()))
+                changed = true;
         }
-        
+
         btnSave.setDisable(!changed);
     }
 
@@ -578,7 +605,8 @@ public class ThemSuaNhanVienDialog extends Stage {
             n.setNgaySinh(dpNgaySinh.getValue());
             n.setRole(targetRole);
             n.setTrinhDo(selectedTrinhDo);
-            n.setTrangThai((nvEdit != null && isAdmin) ? cbTrangThai.getValue() : (nvEdit != null ? nvEdit.getTrangThai() : TrangThaiNV.CON_LAM));
+            n.setTrangThai((nvEdit != null && isAdmin) ? cbTrangThai.getValue()
+                    : (nvEdit != null ? nvEdit.getTrangThai() : TrangThaiNV.CON_LAM));
 
             if (nvEdit != null) {
                 n.setNgayVaoLamDate(nvEdit.getNgayVaoLamDate());
@@ -603,7 +631,7 @@ public class ThemSuaNhanVienDialog extends Stage {
                     parentView.loadData();
                 close();
             } else {
-                showError("Thao tác thất bại – kiểm tra lại dữ liệu hoặc cột cccd trong DB.");
+                showError("Thao tác thất bại.");
             }
 
         } catch (Exception ex) {
@@ -655,31 +683,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         };
     }
 
-    private VBox fieldRow(String labelText, Control field, Label errLabel) {
-        VBox box = new VBox(4);
-        box.setPadding(new Insets(0, 0, 2, 0));
-
-        HBox lblBox = new HBox(4);
-        if (labelText.endsWith("*")) {
-            Label lblText = new Label(labelText.substring(0, labelText.length() - 1).trim());
-            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-            lblText.setTextFill(Color.web("#374151"));
-            Label lblStar = new Label("*");
-            lblStar.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-            lblStar.setTextFill(Color.web(C_ERROR));
-            lblBox.getChildren().addAll(lblText, lblStar);
-        } else {
-            Label lblText = new Label(labelText);
-            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-            lblText.setTextFill(Color.web("#374151"));
-            lblBox.getChildren().add(lblText);
-        }
-
-        box.getChildren().addAll(lblBox, field, errLabel);
-        return box;
-    }
-
-    private VBox comboRow(String labelText, Control field) {
+    private VBox fieldRow(String labelText, Control field, Label errLabel, String hint) {
         VBox box = new VBox(4);
         box.setPadding(new Insets(0, 0, 2, 0));
 
@@ -700,6 +704,46 @@ public class ThemSuaNhanVienDialog extends Stage {
         }
 
         box.getChildren().addAll(lblBox, field);
+        if (errLabel != null) {
+            errLabel.setMaxWidth(Double.MAX_VALUE);
+            box.getChildren().add(errLabel);
+        }
+        if (hint != null && !hint.isEmpty()) {
+            Label lblHint = new Label(hint);
+            lblHint.setFont(Font.font("Segoe UI", 11));
+            lblHint.setTextFill(Color.web("#6b7280"));
+            box.getChildren().add(lblHint);
+        }
+        return box;
+    }
+
+    private VBox comboRow(String labelText, Control field, String hint) {
+        VBox box = new VBox(4);
+        box.setPadding(new Insets(0, 0, 2, 0));
+
+        HBox lblBox = new HBox(4);
+        if (labelText.endsWith("*")) {
+            Label lblText = new Label(labelText.substring(0, labelText.length() - 1).trim());
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
+            Label lblStar = new Label("*");
+            lblStar.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblStar.setTextFill(Color.web(C_ERROR));
+            lblBox.getChildren().addAll(lblText, lblStar);
+        } else {
+            Label lblText = new Label(labelText);
+            lblText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+            lblText.setTextFill(Color.web("#374151"));
+            lblBox.getChildren().add(lblText);
+        }
+
+        box.getChildren().addAll(lblBox, field);
+        if (hint != null && !hint.isEmpty()) {
+            Label lblHint = new Label(hint);
+            lblHint.setFont(Font.font("Segoe UI", 11));
+            lblHint.setTextFill(Color.web("#6b7280"));
+            box.getChildren().add(lblHint);
+        }
         return box;
     }
 
