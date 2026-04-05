@@ -186,8 +186,9 @@ public class ThemSuaNhanVienDialog extends Stage {
 
         /* ── SĐT ────────────────────────────────────────────────── */
         txtSDT = makeField("VD: 0901234567");
+        model.utils.ValidationUtils.applyNumericOnlyFilter(txtSDT, 10);
         lblErrSDT = makeErrLabel();
-        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT, "Vui lòng nhập số điện thoại (10 số"));
+        form.getChildren().add(fieldRow("Số điện thoại *", txtSDT, lblErrSDT, "Vui lòng nhập số điện thoại (10 số)"));
 
         txtCCCD = makeField("VD: 001234567890 (Mã định danh 12 số)");
         model.utils.ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
@@ -246,15 +247,23 @@ public class ThemSuaNhanVienDialog extends Stage {
             cbTrangThai = new ComboBox<>();
             cbTrangThai.getItems().addAll(TrangThaiNV.values());
             styleCombo(cbTrangThai);
-
-            if (isAdmin) {
-                cbTrangThai.getSelectionModel().select(nvEdit.getTrangThai());
-                form.getChildren().add(comboRow("Trạng thái", cbTrangThai, "Vui lòng chọn trạng thái làm việc"));
-            } else {
-                TextField txtTT = makeReadonlyField(
-                        nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
-                form.getChildren().add(comboRow("Trạng thái", txtTT, "Hệ thống tự động cập nhật"));
-            }
+            // Hiển thị tên tiếng Việt thay vì enum
+            cbTrangThai.setCellFactory(lv -> new javafx.scene.control.ListCell<>() {
+                @Override
+                protected void updateItem(TrangThaiNV item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : (item == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ"));
+                }
+            });
+            cbTrangThai.setButtonCell(new javafx.scene.control.ListCell<>() {
+                @Override
+                protected void updateItem(TrangThaiNV item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : (item == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ"));
+                }
+            });
+            cbTrangThai.getSelectionModel().select(nvEdit.getTrangThai());
+            form.getChildren().add(comboRow("Trạng thái", cbTrangThai, null));
         }
 
         /* ── Người quản lý ──────────────────────────────────────── */
@@ -407,7 +416,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             return false;
         }
         if (!model.utils.ValidationUtils.isValidNameLength(ten)) {
-            showFieldError(lblErrTen, txtTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
+            showFieldError(lblErrTen, txtTen, "⚠ Họ và tên phải chứa ít nhất 1 ký tự");
             return false;
         }
         clearFieldError(lblErrTen, txtTen);
@@ -605,7 +614,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             n.setNgaySinh(dpNgaySinh.getValue());
             n.setRole(targetRole);
             n.setTrinhDo(selectedTrinhDo);
-            n.setTrangThai((nvEdit != null && isAdmin) ? cbTrangThai.getValue()
+            n.setTrangThai((nvEdit != null && cbTrangThai != null) ? cbTrangThai.getValue()
                     : (nvEdit != null ? nvEdit.getTrangThai() : TrangThaiNV.CON_LAM));
 
             if (nvEdit != null) {

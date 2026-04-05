@@ -146,7 +146,7 @@ public class ThemSuaKhachHangDialog extends Stage {
         errCCCD = errLabel();
 
         txtSDT = makeField(isEdit ? nvl(khachHang.getSoDT()) : "", "Nhập SDT (10 số)");
-        ValidationUtils.applyNumericOnlyFilter(txtSDT, 11);
+        ValidationUtils.applyNumericOnlyFilter(txtSDT, 10);
         errSDT = errLabel();
 
         setupValidation();
@@ -255,7 +255,7 @@ public class ThemSuaKhachHangDialog extends Stage {
             return false;
         }
         if (!ValidationUtils.isValidNameLength(ten)) {
-            showErrorField(txtTen, errTen, "⚠ Họ phải chứa ít nhất 1 ký tự, Tên chứa ít nhất 2 ký tự.");
+            showErrorField(txtTen, errTen, "⚠ Họ và tên phải chứa ít nhất 1 ký tự");
             return false;
         }
         clearErrorField(txtTen, errTen);

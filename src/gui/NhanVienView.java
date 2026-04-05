@@ -324,10 +324,35 @@ public class NhanVienView extends BorderPane {
                 Label badge = new Label(item);
                 badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 if ("Còn làm".equals(item)) {
-                    badge.setStyle("-fx-background-color: #d1fae5; -fx-text-fill: #065f46; -fx-padding: 3 10 3 10; -fx-background-radius: 12;");
+                    badge.setStyle(
+                            "-fx-background-color: #d1fae5; -fx-text-fill: #065f46; -fx-padding: 3 10 3 10; -fx-background-radius: 12; -fx-cursor: hand;");
                 } else {
-                    badge.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-padding: 3 10 3 10; -fx-background-radius: 12;");
+                    badge.setStyle(
+                            "-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-padding: 3 10 3 10; -fx-background-radius: 12; -fx-cursor: hand;");
                 }
+
+                // Click để đổi trạng thái (cả QUAN_LY lẫn ADMIN)
+                ContextMenu statusMenu = new ContextMenu();
+                MenuItem mConLam = new MenuItem("✅  Còn làm");
+                mConLam.setOnAction(ev -> {
+                    NhanVien nv = getTableRow().getItem();
+                    if (nv != null)
+                        updateTrangThai(nv, model.enums.TrangThaiNV.CON_LAM);
+                });
+                MenuItem mDaNghi = new MenuItem("🚪  Đã nghỉ việc");
+                mDaNghi.setOnAction(ev -> {
+                    NhanVien nv = getTableRow().getItem();
+                    if (nv != null)
+                        updateTrangThai(nv, model.enums.TrangThaiNV.DA_NGHI);
+                });
+                statusMenu.getItems().addAll(mConLam, mDaNghi);
+
+                badge.setOnMouseClicked(e -> {
+                    if (e.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                        statusMenu.show(badge, e.getScreenX(), e.getScreenY());
+                    }
+                });
+
                 setGraphic(badge);
                 setText(null);
                 setAlignment(Pos.CENTER);
@@ -500,6 +525,18 @@ public class NhanVienView extends BorderPane {
         detailView.showAndWait();
 
         DimOverlay.hide(owner, overlay);
+    }
+
+    private void updateTrangThai(NhanVien nv, model.enums.TrangThaiNV status) {
+        if (nv.getTrangThai() == status)
+            return;
+
+        nv.setTrangThai(status);
+        if (dao.update(nv)) {
+            loadData(); // Refresh table và thống kê
+        } else {
+            showAlert("Lỗi", "Không thể cập nhật trạng thái nhân viên.");
+        }
     }
 
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {
