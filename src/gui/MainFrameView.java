@@ -1,7 +1,6 @@
 package gui;
 
 import javafx.application.Platform;
-import javafx.embed.swing.SwingNode; // FIX: nhúng Swing panel vào JavaFX
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,10 +12,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture; // FIX: import trực tiếp, bỏ inner class
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import java.util.function.Supplier;
 
 import model.entities.NhanVien;
 import model.enums.ChucVu;
@@ -409,13 +404,14 @@ public class MainFrameView {
                     showFX(new NhanVienView(staff));
                 }
             }
-            // Swing panels nhúng qua SwingNode
-            case "checkin" -> showSwing(() -> new CheckInPanel());
-            case "checkout" -> showSwing(() -> new CheckOutPanel());
-            case "invoices" -> showSwing(() -> new HoaDonPanel());
-            case "service" -> showSwing(() -> new ThemDichVuPanel());
-            case "servicePrice" -> showSwing(() -> new BangGiaDichVuPanel());
-            case "rooms" -> showSwing(() -> new QuanLyPhongPanel(isAdmin));
+            // Phase 3 - đã migrate sang JavaFX
+            case "checkin" -> showFX(new CheckInView());
+            case "checkout" -> showFX(new CheckOutView());
+            case "invoices" -> showFX(new HoaDonView());
+            // Phase 2 - đã migrate sang JavaFX
+            case "service" -> showFX(new DichVuView());
+            case "servicePrice" -> showFX(new BangGiaDichVuView());
+            case "rooms" -> showFX(new QuanLyPhongView(isAdmin));
             default -> showFX(buildPlaceholder(card));
         }
     }
@@ -446,18 +442,6 @@ public class MainFrameView {
     /** Hiển thị một JavaFX node trong content area */
     private void showFX(javafx.scene.Node node) {
         contentArea.getChildren().setAll(node);
-    }
-
-    /**
-     * Nhúng Swing JPanel vào JavaFX StackPane thông qua SwingNode.
-     * Factory được gọi trên Swing EDT, kết quả đặt vào SwingNode.
-     */
-    private void showSwing(Supplier<JPanel> factory) {
-        SwingNode node = new SwingNode();
-        SwingUtilities.invokeLater(() -> node.setContent(factory.get()));
-        StackPane wrapper = new StackPane(node);
-        wrapper.setStyle("-fx-background-color: " + C_CONTENT_BG + ";");
-        contentArea.getChildren().setAll(wrapper);
     }
 
     private StackPane buildPlaceholder(String name) {

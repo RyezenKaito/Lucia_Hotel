@@ -20,9 +20,9 @@ INSERT INTO LoaiPhong VALUES
 
 -- Phong
 INSERT INTO Phong VALUES
-('PH001', N'Phòng 101', 'SINGLE', N'CONTRONG', 101,1),
-('PH002', N'Phòng 102', 'DOUBLE', N'DANGSUDUNG', 102,1),
-('PH003', N'Phòng 201', 'FAMILY', N'CONTRONG', 201,2);
+('P101', N'Phòng 101', 'SINGLE', N'CONTRONG', 101,1),
+('P102', N'Phòng 102', 'DOUBLE', N'DANGSUDUNG', 102,1),
+('P201', N'Phòng 201', 'FAMILY', N'CONTRONG', 201,2);
 
 -- DatPhong
 INSERT INTO DatPhong VALUES
@@ -31,8 +31,8 @@ INSERT INTO DatPhong VALUES
 
 -- ChiTietDatPhong
 INSERT INTO ChiTietDatPhong VALUES
-('CTDP001', 'PH001', 'DP001', 100000, 1, N'Không hút thuốc'),
-('CTDP002', 'PH002', 'DP002', 150000, 2, N'Trẻ em đi kèm');
+('CTDP001', 'P101', 'DP001', 100000, 1, N'Không hút thuốc'),
+('CTDP002', 'P102', 'DP002', 150000, 2, N'Trẻ em đi kèm');
 
 -- DV
 INSERT INTO DV VALUES

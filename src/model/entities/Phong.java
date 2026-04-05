@@ -86,10 +86,10 @@ public class Phong {
     public String getVitri() { return String.valueOf(soTang); }
 
     /**
-     * Tự động phát sinh mã phòng theo tầng (Ví dụ: Tầng 2 -> P201, P202...)
+     * Tự động phát sinh mã phòng theo tầng (Ví dụ: Tầng 2 -> P201, P202..., P2100)
      */
     public static String phatSinhMaPhong(int floor, List<Phong> existingRooms) {
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 999; i++) {
             String candidate = String.format("P%d%02d", floor, i);
             boolean exists = false;
             for (Phong p : existingRooms) {
