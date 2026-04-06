@@ -1,0 +1,52 @@
+# Compiled class files
+*.class
+
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Configuration files that may contain local paths
+*.json
+*.properties
+.classpath
+.project
+.settings/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Build directories
+build/
+target/
+out/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Database files (if not wanted in repo)
+*.db
+*.sqlite
+*.sqlite3
+
+# JavaFX specific
+javafx.properties
