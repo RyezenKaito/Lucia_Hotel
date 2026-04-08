@@ -107,7 +107,13 @@ public class ChiTietDatPhongFrame extends JFrame {
         btnCheckIn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				new CheckInPanel().setVisible(true);	
+				JOptionPane.showMessageDialog(
+					ChiTietDatPhongFrame.this,
+					"Vui lòng chuyển sang mục \"Nhận phòng\" trên menu chính để thực hiện check-in.",
+					"Hướng dẫn nhận phòng",
+					JOptionPane.INFORMATION_MESSAGE
+				);
+				dispose();
 			}
 		});
         

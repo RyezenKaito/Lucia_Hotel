@@ -11,6 +11,8 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.stage.Popup;
 
 import java.time.DayOfWeek;
@@ -23,38 +25,38 @@ import java.time.format.DateTimeFormatter;
  *
  * Trông như một ô nhập ngày duy nhất (giống DatePicker gốc).
  * Khi click → mở popup:
- *   ┌─────────────────────────────────────┐
- *   │  [< ] [Tháng ▾]  [Năm ▾]  [ >]    │
- *   ├─────────────────────────────────────┤
- *   │  T2  T3  T4  T5  T6  T7  CN        │
- *   │   1   2   3   4   5   6   7         │
- *   │   8   9  10  ...                    │
- *   └─────────────────────────────────────┘
+ * ┌─────────────────────────────────────┐
+ * │ [< ] [Tháng ▾] [Năm ▾] [ >] │
+ * ├─────────────────────────────────────┤
+ * │ T2 T3 T4 T5 T6 T7 CN │
+ * │ 1 2 3 4 5 6 7 │
+ * │ 8 9 10 ... │
+ * └─────────────────────────────────────┘
  *
  * Sử dụng:
- *   SmartDatePicker dp = new SmartDatePicker();
- *   dp.setValue(LocalDate.of(2000, 5, 15));
- *   LocalDate date = dp.getValue();
+ * SmartDatePicker dp = new SmartDatePicker();
+ * dp.setValue(LocalDate.of(2000, 5, 15));
+ * LocalDate date = dp.getValue();
  */
 public class DatePicker extends HBox {
 
     /* ── Bảng màu ─────────────────────────────────────────────────── */
-    private static final String C_BORDER    = "#e9ecef";
-    private static final String C_BLUE      = "#1d4ed8";
-    private static final String C_NAVY      = "#1e3a8a";
-    private static final String C_TODAY_BG  = "#dbeafe";
+    private static final String C_BORDER = "#e9ecef";
+    private static final String C_BLUE = "#1d4ed8";
+    private static final String C_NAVY = "#1e3a8a";
+    private static final String C_TODAY_BG = "#dbeafe";
     private static final String C_SELECT_BG = "#1d4ed8";
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final String[] WEEK_DAYS = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
+    private static final String[] WEEK_DAYS = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
     private static final String[] MONTH_NAMES = {
-        "Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
-        "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"
+            "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+            "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
     };
 
     /* ── State ────────────────────────────────────────────────────── */
-    private LocalDate value;
-    private YearMonth viewMonth;           // tháng đang hiển thị trên popup
+    private final ObjectProperty<LocalDate> value = new SimpleObjectProperty<>(this, "value");
+    private YearMonth viewMonth; // tháng đang hiển thị trên popup
     private final TextField txtDisplay;
     private Popup popup;
     private GridPane calendarGrid;
@@ -63,10 +65,13 @@ public class DatePicker extends HBox {
 
     private final int minYear;
     private final int maxYear;
+    private LocalDate minDate;
 
-    /* ══════════════════════════════════════════════════════════════════
-       CONSTRUCTOR
-    ══════════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * CONSTRUCTOR
+     * ══════════════════════════════════════════════════════════════════
+     */
     public DatePicker() {
         this(LocalDate.now().getYear() - 100, LocalDate.now().getYear());
     }
@@ -80,6 +85,7 @@ public class DatePicker extends HBox {
         this.minYear = minYear;
         this.maxYear = maxYear;
         this.viewMonth = YearMonth.now();
+        this.minDate = null;
 
         setAlignment(Pos.CENTER_LEFT);
         setCursor(Cursor.HAND);
@@ -92,33 +98,30 @@ public class DatePicker extends HBox {
         txtDisplay.setPrefHeight(40);
         HBox.setHgrow(txtDisplay, Priority.ALWAYS);
         txtDisplay.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 8 0 0 8;" +
-            "-fx-background-radius: 8 0 0 8;" +
-            "-fx-font-size: 13px;" +
-            "-fx-padding: 8 12 8 12;"
-        );
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8 0 0 8;" +
+                        "-fx-background-radius: 8 0 0 8;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-padding: 8 12 8 12;");
         txtDisplay.focusedProperty().addListener((obs, o, focused) -> {
             if (focused) {
                 txtDisplay.setStyle(
-                    "-fx-background-color: white;" +
-                    "-fx-border-color: " + C_BLUE + ";" +
-                    "-fx-border-radius: 8 0 0 8;" +
-                    "-fx-background-radius: 8 0 0 8;" +
-                    "-fx-font-size: 13px;" +
-                    "-fx-padding: 8 12 8 12;" +
-                    "-fx-border-width: 2;"
-                );
+                        "-fx-background-color: white;" +
+                                "-fx-border-color: " + C_BLUE + ";" +
+                                "-fx-border-radius: 8 0 0 8;" +
+                                "-fx-background-radius: 8 0 0 8;" +
+                                "-fx-font-size: 13px;" +
+                                "-fx-padding: 8 12 8 12;" +
+                                "-fx-border-width: 2;");
             } else {
                 txtDisplay.setStyle(
-                    "-fx-background-color: white;" +
-                    "-fx-border-color: " + C_BORDER + ";" +
-                    "-fx-border-radius: 8 0 0 8;" +
-                    "-fx-background-radius: 8 0 0 8;" +
-                    "-fx-font-size: 13px;" +
-                    "-fx-padding: 8 12 8 12;"
-                );
+                        "-fx-background-color: white;" +
+                                "-fx-border-color: " + C_BORDER + ";" +
+                                "-fx-border-radius: 8 0 0 8;" +
+                                "-fx-background-radius: 8 0 0 8;" +
+                                "-fx-font-size: 13px;" +
+                                "-fx-padding: 8 12 8 12;");
             }
         });
 
@@ -128,29 +131,26 @@ public class DatePicker extends HBox {
         btnOpen.setMinWidth(42);
         btnOpen.setCursor(Cursor.HAND);
         btnOpen.setStyle(
-            "-fx-background-color: " + C_NAVY + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 14px;" +
-            "-fx-background-radius: 0 8 8 0;" +
-            "-fx-border-radius: 0 8 8 0;" +
-            "-fx-cursor: hand;"
-        );
+                "-fx-background-color: " + C_NAVY + ";" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-background-radius: 0 8 8 0;" +
+                        "-fx-border-radius: 0 8 8 0;" +
+                        "-fx-cursor: hand;");
         btnOpen.setOnMouseEntered(e -> btnOpen.setStyle(
-            "-fx-background-color: " + C_BLUE + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 14px;" +
-            "-fx-background-radius: 0 8 8 0;" +
-            "-fx-border-radius: 0 8 8 0;" +
-            "-fx-cursor: hand;"
-        ));
+                "-fx-background-color: " + C_BLUE + ";" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-background-radius: 0 8 8 0;" +
+                        "-fx-border-radius: 0 8 8 0;" +
+                        "-fx-cursor: hand;"));
         btnOpen.setOnMouseExited(e -> btnOpen.setStyle(
-            "-fx-background-color: " + C_NAVY + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-size: 14px;" +
-            "-fx-background-radius: 0 8 8 0;" +
-            "-fx-border-radius: 0 8 8 0;" +
-            "-fx-cursor: hand;"
-        ));
+                "-fx-background-color: " + C_NAVY + ";" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-background-radius: 0 8 8 0;" +
+                        "-fx-border-radius: 0 8 8 0;" +
+                        "-fx-cursor: hand;"));
 
         getChildren().addAll(txtDisplay, btnOpen);
 
@@ -159,15 +159,25 @@ public class DatePicker extends HBox {
         btnOpen.setOnAction(e -> togglePopup());
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       GET / SET VALUE
-    ══════════════════════════════════════════════════════════════════ */
+    /**
+     * Constructor mới nhận vào ngày mặc định ban đầu.
+     */
+    public DatePicker(LocalDate initialDate) {
+        this();
+        setValue(initialDate);
+    }
+
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * GET / SET VALUE
+     * ══════════════════════════════════════════════════════════════════
+     */
     public LocalDate getValue() {
-        return value;
+        return value.get();
     }
 
     public void setValue(LocalDate date) {
-        this.value = date;
+        this.value.set(date);
         if (date != null) {
             txtDisplay.setText(date.format(FMT));
             viewMonth = YearMonth.from(date);
@@ -176,9 +186,24 @@ public class DatePicker extends HBox {
         }
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       POPUP
-    ══════════════════════════════════════════════════════════════════ */
+    public ObjectProperty<LocalDate> valueProperty() {
+        return value;
+    }
+
+    public void setMinDate(LocalDate minDate) {
+        this.minDate = minDate;
+        refreshCalendar();
+    }
+
+    public void setPromptText(String prompt) {
+        txtDisplay.setPromptText(prompt);
+    }
+
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * POPUP
+     * ══════════════════════════════════════════════════════════════════
+     */
     private void togglePopup() {
         if (popup != null && popup.isShowing()) {
             popup.hide();
@@ -188,7 +213,8 @@ public class DatePicker extends HBox {
     }
 
     private void showPopup() {
-        if (popup == null) popup = new Popup();
+        if (popup == null)
+            popup = new Popup();
         popup.setAutoHide(true);
         popup.getContent().clear();
         popup.getContent().add(buildPopupContent());
@@ -197,7 +223,7 @@ public class DatePicker extends HBox {
         var bounds = localToScreen(getBoundsInLocal());
         if (bounds != null) {
             popup.show(getScene().getWindow(),
-                bounds.getMinX(), bounds.getMaxY() + 4);
+                    bounds.getMinX(), bounds.getMaxY() + 4);
         }
     }
 
@@ -205,12 +231,11 @@ public class DatePicker extends HBox {
         VBox box = new VBox(0);
         box.setPrefWidth(320);
         box.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 12;" +
-            "-fx-border-radius: 12;" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 0, 4);"
-        );
+                "-fx-background-color: white;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-border-radius: 12;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 0, 4);");
 
         box.getChildren().addAll(buildNavBar(), buildWeekHeader(), buildCalendarGrid());
         refreshCalendar();
@@ -223,7 +248,7 @@ public class DatePicker extends HBox {
         nav.setAlignment(Pos.CENTER);
         nav.setPadding(new Insets(14, 14, 10, 14));
         nav.setStyle("-fx-background-color: " + C_NAVY + ";" +
-                     "-fx-background-radius: 12 12 0 0;");
+                "-fx-background-radius: 12 12 0 0;");
 
         Button btnPrev = navArrow("◂");
         btnPrev.setOnAction(e -> {
@@ -239,31 +264,36 @@ public class DatePicker extends HBox {
         cbMonth.setPrefHeight(32);
         cbMonth.setPrefWidth(105);
         cbMonth.setStyle(
-            "-fx-font-size: 12px; -fx-font-family: 'Segoe UI';" +
-            "-fx-background-radius: 6; -fx-border-radius: 6;" +
-            "-fx-background-color: rgba(255,255,255,0.15);" +
-            "-fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3);"
-        );
+                "-fx-font-size: 12px; -fx-font-family: 'Segoe UI';" +
+                        "-fx-background-radius: 6; -fx-border-radius: 6;" +
+                        "-fx-background-color: rgba(255,255,255,0.15);" +
+                        "-fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3);");
         cbMonth.setOnAction(e -> {
             int m = cbMonth.getSelectionModel().getSelectedIndex() + 1;
-            if (m > 0) { viewMonth = viewMonth.withMonth(m); refreshCalendar(); }
+            if (m > 0) {
+                viewMonth = viewMonth.withMonth(m);
+                refreshCalendar();
+            }
         });
 
         // ── ComboBox Năm ────────────────────────────────────────
         cbYear = new ComboBox<>();
-        for (int y = maxYear; y >= minYear; y--) cbYear.getItems().add(y);
+        for (int y = maxYear; y >= minYear; y--)
+            cbYear.getItems().add(y);
         cbYear.setValue(viewMonth.getYear());
         cbYear.setPrefHeight(32);
         cbYear.setPrefWidth(85);
         cbYear.setStyle(
-            "-fx-font-size: 12px; -fx-font-family: 'Segoe UI';" +
-            "-fx-background-radius: 6; -fx-border-radius: 6;" +
-            "-fx-background-color: rgba(255,255,255,0.15);" +
-            "-fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3);"
-        );
+                "-fx-font-size: 12px; -fx-font-family: 'Segoe UI';" +
+                        "-fx-background-radius: 6; -fx-border-radius: 6;" +
+                        "-fx-background-color: rgba(255,255,255,0.15);" +
+                        "-fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3);");
         cbYear.setOnAction(e -> {
             Integer y = cbYear.getValue();
-            if (y != null) { viewMonth = viewMonth.withYear(y); refreshCalendar(); }
+            if (y != null) {
+                viewMonth = viewMonth.withYear(y);
+                refreshCalendar();
+            }
         });
 
         Button btnNext = navArrow("▸");
@@ -273,14 +303,16 @@ public class DatePicker extends HBox {
             refreshCalendar();
         });
 
-        Region sp1 = new Region(); HBox.setHgrow(sp1, Priority.ALWAYS);
-        Region sp2 = new Region(); HBox.setHgrow(sp2, Priority.ALWAYS);
+        Region sp1 = new Region();
+        HBox.setHgrow(sp1, Priority.ALWAYS);
+        Region sp2 = new Region();
+        HBox.setHgrow(sp2, Priority.ALWAYS);
 
         nav.getChildren().addAll(btnPrev, sp1, cbMonth, cbYear, sp2, btnNext);
         return nav;
     }
 
-    /* ── Header thứ: T2  T3  T4  T5  T6  T7  CN ─────────────────── */
+    /* ── Header thứ: T2 T3 T4 T5 T6 T7 CN ─────────────────── */
     private GridPane buildWeekHeader() {
         GridPane g = new GridPane();
         g.setPadding(new Insets(8, 14, 4, 14));
@@ -307,18 +339,21 @@ public class DatePicker extends HBox {
         return calendarGrid;
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       REFRESH CALENDAR GRID
-    ══════════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * REFRESH CALENDAR GRID
+     * ══════════════════════════════════════════════════════════════════
+     */
     private void refreshCalendar() {
         calendarGrid.getChildren().clear();
 
         LocalDate first = viewMonth.atDay(1);
         int dow = first.getDayOfWeek().getValue(); // 1=Mon ... 7=Sun
-        int offset = dow - 1;                       // số ô trống đầu
+        int offset = dow - 1; // số ô trống đầu
         int daysInMonth = viewMonth.lengthOfMonth();
 
         LocalDate today = LocalDate.now();
+        LocalDate val = getValue();
 
         int row = 0;
         for (int i = 0; i < offset; i++) {
@@ -328,11 +363,14 @@ public class DatePicker extends HBox {
         int col = offset;
         for (int day = 1; day <= daysInMonth; day++) {
             LocalDate date = viewMonth.atDay(day);
-            Button btn = dayButton(day, date, today);
+            Button btn = dayButton(day, date, today, val);
             calendarGrid.add(btn, col, row);
             GridPane.setHgrow(btn, Priority.ALWAYS);
             col++;
-            if (col == 7) { col = 0; row++; }
+            if (col == 7) {
+                col = 0;
+                row++;
+            }
         }
         // Ô trống cuối
         while (col > 0 && col < 7) {
@@ -341,25 +379,28 @@ public class DatePicker extends HBox {
         }
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       HELPERS
-    ══════════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * HELPERS
+     * ══════════════════════════════════════════════════════════════════
+     */
     private void syncCombosFromView() {
         cbMonth.getSelectionModel().select(viewMonth.getMonthValue() - 1);
         cbYear.setValue(viewMonth.getYear());
     }
 
-    private Button dayButton(int day, LocalDate date, LocalDate today) {
+    private Button dayButton(int day, LocalDate date, LocalDate today, LocalDate val) {
         Button btn = new Button(String.valueOf(day));
         btn.setFont(Font.font("Segoe UI", 12));
         btn.setPrefSize(320.0 / 7 - 4, 34);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setCursor(Cursor.HAND);
 
-        boolean isToday    = date.equals(today);
-        boolean isSelected = date.equals(value);
-        boolean isWeekend  = date.getDayOfWeek() == DayOfWeek.SATURDAY
-                          || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+        boolean isToday = date.equals(today);
+        boolean isSelected = date.equals(val);
+        boolean isWeekend = date.getDayOfWeek() == DayOfWeek.SATURDAY
+                || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+        boolean isDisabled = minDate != null && date.isBefore(minDate);
 
         String bg = "transparent";
         String fg = isWeekend ? "#dc2626" : "#1f2937";
@@ -373,26 +414,33 @@ public class DatePicker extends HBox {
             fg = C_BLUE;
         }
 
-        String style =
-            "-fx-background-color: " + bg + ";" +
-            "-fx-text-fill: " + fg + ";" +
-            "-fx-background-radius: " + radius + ";" +
-            "-fx-border-radius: " + radius + ";" +
-            "-fx-font-size: 12px;" +
-            "-fx-cursor: hand;";
+        if (isDisabled) {
+            fg = "#d1d5db"; // màu xám nhạt
+            btn.setDisable(true);
+        }
+
+        String style = "-fx-background-color: " + bg + ";" +
+                "-fx-text-fill: " + fg + ";" +
+                "-fx-background-radius: " + radius + ";" +
+                "-fx-border-radius: " + radius + ";" +
+                "-fx-font-size: 12px;" +
+                "-fx-cursor: " + (isDisabled ? "default" : "hand") + ";";
         btn.setStyle(style);
 
-        String hoverStyle = style.replace(
-            "-fx-background-color: " + bg,
-            "-fx-background-color: " + (isSelected ? C_SELECT_BG : "#e0e7ff"));
+        if (!isDisabled) {
+            String hoverStyle = style.replace(
+                    "-fx-background-color: " + bg,
+                    "-fx-background-color: " + (isSelected ? C_SELECT_BG : "#e0e7ff"));
 
-        btn.setOnMouseEntered(e -> btn.setStyle(hoverStyle));
-        btn.setOnMouseExited(e -> btn.setStyle(style));
+            btn.setOnMouseEntered(e -> btn.setStyle(hoverStyle));
+            btn.setOnMouseExited(e -> btn.setStyle(style));
 
-        btn.setOnAction(e -> {
-            setValue(date);
-            if (popup != null) popup.hide();
-        });
+            btn.setOnAction(e -> {
+                setValue(date);
+                if (popup != null)
+                    popup.hide();
+            });
+        }
 
         return btn;
     }
@@ -408,16 +456,14 @@ public class DatePicker extends HBox {
         btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         btn.setPrefSize(32, 32);
         btn.setCursor(Cursor.HAND);
-        String normal =
-            "-fx-background-color: rgba(255,255,255,0.1);" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-cursor: hand;";
-        String hover =
-            "-fx-background-color: rgba(255,255,255,0.25);" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-cursor: hand;";
+        String normal = "-fx-background-color: rgba(255,255,255,0.1);" +
+                "-fx-text-fill: white;" +
+                "-fx-background-radius: 50;" +
+                "-fx-cursor: hand;";
+        String hover = "-fx-background-color: rgba(255,255,255,0.25);" +
+                "-fx-text-fill: white;" +
+                "-fx-background-radius: 50;" +
+                "-fx-cursor: hand;";
         btn.setStyle(normal);
         btn.setOnMouseEntered(e -> btn.setStyle(hover));
         btn.setOnMouseExited(e -> btn.setStyle(normal));

@@ -85,6 +85,7 @@ public class MainFrameView {
                     default -> "NHÂN VIÊN";
                 } : "HỆ THỐNG"));
         primaryStage.setScene(scene);
+        primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> {
             e.consume();
             confirmExit();
@@ -262,6 +263,7 @@ public class MainFrameView {
 
         serviceSubMenu.getChildren().addAll(
                 subNavBtn("  ├  Sử dụng dịch vụ", "service"),
+                subNavBtn("  ├  Danh mục dịch vụ", "serviceManager"),
                 subNavBtn("  └  Bảng giá dịch vụ", "servicePrice"));
 
         header.setOnAction(e -> {
@@ -430,6 +432,7 @@ public class MainFrameView {
             case "invoices" -> showFX(new HoaDonView());
             // Phase 2 - đã migrate sang JavaFX
             case "service" -> showFX(new DichVuView());
+            case "serviceManager" -> showFX(new QuanLyDichVuView(isAdmin));
             case "servicePrice" -> showFX(new BangGiaDichVuView());
             case "rooms" -> showFX(new QuanLyPhongView(isAdmin));
             default -> showFX(buildPlaceholder(card));

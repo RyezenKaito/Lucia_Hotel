@@ -14,7 +14,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getAll() {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT * FROM DV";
+        String sql = "SELECT * FROM DV WHERE trangThai = 0";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              Statement stmt = con.createStatement();
@@ -34,7 +34,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT * FROM DV WHERE loaiDV = ?";
+        String sql = "SELECT * FROM DV WHERE loaiDV = ? AND trangThai = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, loaiDV);
@@ -53,7 +53,7 @@ public class DichVuDAO {
      * Cập nhật thông tin dịch vụ
      */
     public boolean update(DichVu dv) {
-        String sql = "UPDATE DV SET tenDV = ?, gia = ?, loaiDV = ?, mieuTa = ?, donVi = ? WHERE maDV = ?";
+        String sql = "UPDATE DV SET tenDV = ?, gia = ?, loaiDV = ?, mieuTa = ?, donVi = ?, trangThai = ? WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
             
@@ -62,7 +62,8 @@ public class DichVuDAO {
             pstmt.setString(3, dv.getLoaiDV());
             pstmt.setString(4, dv.getMieuTa());
             pstmt.setString(5, dv.getDonVi());
-            pstmt.setString(6, dv.getMaDV());
+            pstmt.setInt(6, dv.getTrangThai());
+            pstmt.setString(7, dv.getMaDV());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -75,7 +76,7 @@ public class DichVuDAO {
      * Thêm mới dịch vụ
      */
     public boolean insert(DichVu dv) {
-        String sql = "INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement pstmt = con.prepareStatement(sql)) {
             
@@ -85,6 +86,7 @@ public class DichVuDAO {
             pstmt.setString(4, dv.getLoaiDV());
             pstmt.setString(5, dv.getMieuTa());
             pstmt.setString(6, dv.getDonVi());
+            pstmt.setInt(7, 0); // Active by default
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -121,6 +123,43 @@ public class DichVuDAO {
         dv.setLoaiDV(rs.getString("loaiDV"));
         dv.setMieuTa(rs.getString("mieuTa"));
         dv.setDonVi(rs.getString("donVi"));
+        try {
+            dv.setTrangThai(rs.getInt("trangThai"));
+        } catch (SQLException e) {
+            dv.setTrangThai(0); // Graceful fallback
+        }
         return dv;
+    }
+
+    /**
+     * Kiểm tra mã dịch vụ đã tồn tại trong CSDL chưa
+     */
+    public boolean exists(String maDV) {
+        String sql = "SELECT COUNT(*) FROM DV WHERE maDV = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDV);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Xóa dịch vụ theo mã (Ẩn đi, không xóa vĩnh viễn)
+     */
+    public boolean delete(String maDV) {
+        String sql = "UPDATE DV SET trangThai = 1 WHERE maDV = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDV);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

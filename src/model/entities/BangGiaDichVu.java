@@ -52,8 +52,12 @@ public class BangGiaDichVu {
     
 	public BangGiaDichVu() {
 		super();
-		this.maBangGia = maBangGia;
 	}
-	
-	
+
+	/**
+	 * Sinh mã bảng giá tự động dựa trên timestamp
+	 */
+	public static String createMaBangGia() {
+		return "BG" + System.currentTimeMillis();
+	}
 }	

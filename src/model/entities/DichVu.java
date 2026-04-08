@@ -12,6 +12,7 @@ public class DichVu {
     private String loaiDV;
     private String mieuTa;
     private String donVi;
+    private int trangThai; // 0: active, 1: hidden
 
     public DichVu() {
     }
@@ -20,13 +21,14 @@ public class DichVu {
         this.maDV = maDV;
     }
 
-    public DichVu(String maDV, String tenDV, double gia, String loaiDV, String mieuTa, String donVi) {
+    public DichVu(String maDV, String tenDV, double gia, String loaiDV, String mieuTa, String donVi, int trangThai) {
         this.maDV = maDV;
         this.tenDV = tenDV;
         this.gia = gia;
         this.loaiDV = loaiDV;
         this.mieuTa = mieuTa;
         this.donVi = donVi;
+        this.trangThai = trangThai;
     }
 
     public String getMaDV() {
@@ -77,6 +79,14 @@ public class DichVu {
         this.donVi = donVi;
     }
 
+    public int getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(int trangThai) {
+        this.trangThai = trangThai;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -99,5 +109,7 @@ public class DichVu {
     public String getMaDichVu() { return maDV; }
     public String getTenDichVu() { return tenDV; }
     public double getDonGia() { return gia; }
+    public double getGiaDichVu() { return gia; }
+    public String getLoaiDichVu() { return loaiDV; }
     public String getDonViTinh() { return donVi; }
 }

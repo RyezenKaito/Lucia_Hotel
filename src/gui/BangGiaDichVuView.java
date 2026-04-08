@@ -22,16 +22,18 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Window;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * BangGiaDichVuView – JavaFX
- * Thay thế BangGiaDichVuPanel (Swing).
+ * Thay thế BangGiaDichVuView (Swing JPanel) cũ.
+ * Giữ nguyên toàn bộ logic nghiệp vụ, chỉ đổi giao diện sang JavaFX
+ * đồng nhất với KhachHangView, DichVuView, NhanVienView...
  */
 public class BangGiaDichVuView extends BorderPane {
 
-    /* ── Bảng màu ───────────────────────────────────────────────────── */
+    /* ── Bảng màu (đồng bộ KhachHangView & MainFrameView) ────────── */
     private static final String C_BG = "#f8f9fa";
     private static final String C_CARD_BG = "white";
     private static final String C_BORDER = "#e9ecef";
@@ -40,20 +42,23 @@ public class BangGiaDichVuView extends BorderPane {
     private static final String C_NAVY = "#1e3a8a";
     private static final String C_BLUE = "#1d4ed8";
     private static final String C_BLUE_HOVER = "#1e40af";
+    private static final String C_RED = "#dc2626";
     private static final String C_GREEN = "#16a34a";
-
-    /* ── DAO & dữ liệu ─────────────────────────────────────────────── */
-    private final BangGiaDichVuDAO dao = new BangGiaDichVuDAO();
-    private ObservableList<BangGiaDichVu> masterData = FXCollections.observableArrayList();
-    private FilteredList<BangGiaDichVu> filteredData;
-
-    /* ── Controls ───────────────────────────────────────────────────── */
-    private TableView<BangGiaDichVu> table;
-    private TextField txtSearch;
-    private Label lblTong, lblDangAp, lblHetHan;
+    private static final String C_GOLD = "#d97706";
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy");
 
+    /* ── DAO & dữ liệu ────────────────────────────────────────────── */
+    private final BangGiaDichVuDAO dao = new BangGiaDichVuDAO();
+    private ObservableList<Object[]> masterData = FXCollections.observableArrayList();
+    private FilteredList<Object[]> filteredData;
+
+    /* ── Controls ──────────────────────────────────────────────────── */
+    private TableView<Object[]> table;
+    private TextField txtSearch;
+    private Label lblTong, lblDangAD, lblNgungAD;
+
+    /* ── Constructor ───────────────────────────────────────────────── */
     public BangGiaDichVuView() {
         setStyle("-fx-background-color: " + C_BG + ";");
         setPadding(new Insets(32));
@@ -61,176 +66,252 @@ public class BangGiaDichVuView extends BorderPane {
         setTop(buildHeader());
         setCenter(buildTableCard());
 
-        loadData();
+        loadDataFromDatabase();
     }
 
-    /* ── HEADER ─────────────────────────────────────────────────────── */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * HEADER: Tiêu đề + Nút thêm + Thẻ thống kê + Thanh tìm kiếm
+     * ══════════════════════════════════════════════════════════════════
+     */
     private VBox buildHeader() {
         VBox header = new VBox(20);
         header.setPadding(new Insets(0, 0, 12, 0));
 
-        // Dòng 1: Tiêu đề + nút thêm
+        /* ── Dòng 1: Tiêu đề + Nút thêm ───────────────────────── */
         HBox titleRow = new HBox();
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox titleBox = new VBox(4);
         HBox.setHgrow(titleBox, Priority.ALWAYS);
-        Label lblTitle = new Label("Bảng giá dịch vụ");
+        Label lblTitle = new Label("Quản lý bảng giá dịch vụ");
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
         lblTitle.setTextFill(Color.web(C_TEXT_DARK));
-        Label lblSub = new Label("Quản lý bảng giá và chi tiết giá dịch vụ của khách sạn");
-        lblSub.setFont(Font.font("Segoe UI", 14));
-        lblSub.setTextFill(Color.web(C_TEXT_GRAY));
-        titleBox.getChildren().addAll(lblTitle, lblSub);
+        Label lblSubtitle = new Label("Thiết lập và quản lý các đợt giá dịch vụ khách sạn");
+        lblSubtitle.setFont(Font.font("Segoe UI", 14));
+        lblSubtitle.setTextFill(Color.web(C_TEXT_GRAY));
+        titleBox.getChildren().addAll(lblTitle, lblSubtitle);
 
-        HBox btnBox = new HBox(10);
-        btnBox.setAlignment(Pos.CENTER_RIGHT);
+        Button btnAdd = new Button("＋  Thêm bảng giá");
+        btnAdd.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        btnAdd.setPrefHeight(40);
+        btnAdd.setCursor(Cursor.HAND);
+        styleButton(btnAdd, C_BLUE, "white", C_BLUE_HOVER);
+        btnAdd.setOnAction(e -> {
+            Window owner = getScene() != null ? getScene().getWindow() : null;
+            new ThemSuaBangGiaDialog(owner, null, null, this::loadDataFromDatabase).show();
+        });
 
-        Button btnAddDV = new Button("＋  Thêm dịch vụ");
-        btnAddDV.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        btnAddDV.setPrefHeight(40);
-        btnAddDV.setCursor(Cursor.HAND);
-        styleButton(btnAddDV, "#374151", "white", "#1f2937");
-        btnAddDV.setOnAction(e -> openThemDichVuDialog());
+        titleRow.getChildren().addAll(titleBox, btnAdd);
 
-        Button btnAddBG = new Button("＋  Thêm bảng giá");
-        btnAddBG.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        btnAddBG.setPrefHeight(40);
-        btnAddBG.setCursor(Cursor.HAND);
-        styleButton(btnAddBG, C_BLUE, "white", C_BLUE_HOVER);
-        btnAddBG.setOnAction(e -> openThemBangGiaDialog());
-
-        btnBox.getChildren().addAll(btnAddDV, btnAddBG);
-        titleRow.getChildren().addAll(titleBox, btnBox);
-
-        // Dòng 2: Thẻ thống kê
+        /* ── Dòng 2: Thẻ thống kê ────────────────────────────── */
         HBox statsRow = new HBox(20);
         statsRow.setAlignment(Pos.CENTER_LEFT);
 
         lblTong = new Label("0");
-        lblDangAp = new Label("0");
-        lblHetHan = new Label("0");
+        lblDangAD = new Label("0");
+        lblNgungAD = new Label("0");
 
         VBox c1 = createStatCard("📋", "TỔNG BẢNG GIÁ", lblTong, C_NAVY);
-        VBox c2 = createStatCard("✅", "ĐANG ÁP DỤNG", lblDangAp, C_GREEN);
-        VBox c3 = createStatCard("⏸", "NGƯNG ÁP DỤNG", lblHetHan, C_TEXT_GRAY);
+        VBox c2 = createStatCard("✅", "ĐANG ÁP DỤNG", lblDangAD, C_GREEN);
+        VBox c3 = createStatCard("⏸", "NGƯNG ÁP DỤNG", lblNgungAD, C_RED);
 
         HBox.setHgrow(c1, Priority.ALWAYS);
         HBox.setHgrow(c2, Priority.ALWAYS);
         HBox.setHgrow(c3, Priority.ALWAYS);
         statsRow.getChildren().addAll(c1, c2, c3);
 
-        // Dòng 3: Tìm kiếm
+        /* ── Dòng 3: Thanh tìm kiếm ─────────────────────────── */
         txtSearch = new TextField();
-        txtSearch.setPromptText("🔍  Tìm kiếm theo mã hoặc tên bảng giá...");
+        txtSearch.setPromptText("🔍  Tìm kiếm theo mã, tên bảng giá...");
         txtSearch.setFont(Font.font("Segoe UI", 14));
         txtSearch.setPrefHeight(42);
         txtSearch.setStyle(
-                "-fx-background-color: white; -fx-border-color: " + C_BORDER + ";" +
-                "-fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 0 16;");
+                "-fx-background-color: white;" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 8;" +
+                        "-fx-background-radius: 8;" +
+                        "-fx-padding: 0 16 0 16;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter(n));
 
         header.getChildren().addAll(titleRow, statsRow, txtSearch);
         return header;
     }
 
-    /* ── TABLE CARD ─────────────────────────────────────────────────── */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * BẢNG DỮ LIỆU
+     * ══════════════════════════════════════════════════════════════════
+     */
     @SuppressWarnings("unchecked")
     private VBox buildTableCard() {
         VBox card = new VBox(0);
         card.setStyle(
                 "-fx-background-color: " + C_CARD_BG + ";" +
-                "-fx-border-color: " + C_BORDER + ";" +
-                "-fx-border-radius: 10; -fx-background-radius: 10;");
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;");
         card.setEffect(new DropShadow(8, 0, 2, Color.web("#00000010")));
 
         table = new TableView<>();
-        table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;" +
-                "-fx-table-cell-border-color: " + C_BORDER + ";");
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-border-color: transparent;" +
+                        "-fx-table-cell-border-color: " + C_BORDER + ";");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Không có dữ liệu bảng giá"));
 
-        // STT
-        TableColumn<BangGiaDichVu, String> colSTT = new TableColumn<>("STT");
-        colSTT.setMinWidth(50); colSTT.setMaxWidth(60);
+        // ── Cột STT ──
+        TableColumn<Object[], String> colSTT = new TableColumn<>("STT");
+        colSTT.setMinWidth(50);
+        colSTT.setMaxWidth(60);
         colSTT.setStyle("-fx-alignment: CENTER;");
-        colSTT.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(table.getItems().indexOf(p.getValue()) + 1)));
+        colSTT.setCellValueFactory(p -> {
+            int idx = table.getItems().indexOf(p.getValue()) + 1;
+            return new SimpleStringProperty(String.valueOf(idx));
+        });
 
-        // Mã BG
-        TableColumn<BangGiaDichVu, String> colMa = new TableColumn<>("Mã bảng giá");
+        // ── Cột Mã BG ──
+        TableColumn<Object[], String> colMa = new TableColumn<>("Mã bảng giá");
         colMa.setMinWidth(120);
+        colMa.setPrefWidth(120);
         colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
-        colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaBangGia())));
+        colMa.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[0])));
 
-        // Tên BG
-        TableColumn<BangGiaDichVu, String> colTen = new TableColumn<>("Tên bảng giá");
+        // ── Cột Tên BG ──
+        TableColumn<Object[], String> colTen = new TableColumn<>("Tên bảng giá");
         colTen.setMinWidth(200);
-        colTen.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getTenBangGia())));
+        colTen.setPrefWidth(400);
+        colTen.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[1])));
 
-        // Ngày áp dụng
-        TableColumn<BangGiaDichVu, String> colNgayAD = new TableColumn<>("Ngày áp dụng");
-        colNgayAD.setMinWidth(130);
+        // ── Cột Ngày áp dụng ──
+        TableColumn<Object[], String> colNgayAD = new TableColumn<>("Ngày áp dụng");
+        colNgayAD.setMinWidth(120);
+        colNgayAD.setPrefWidth(150);
         colNgayAD.setStyle("-fx-alignment: CENTER;");
-        colNgayAD.setCellValueFactory(p -> {
-            java.sql.Date d = p.getValue().getNgayApDung();
-            return new SimpleStringProperty(d != null ? SDF.format(d) : "");
-        });
+        colNgayAD.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[2])));
 
-        // Ngày hết hạn
-        TableColumn<BangGiaDichVu, String> colNgayHH = new TableColumn<>("Ngày hết hạn");
-        colNgayHH.setMinWidth(130);
+        // ── Cột Ngày hết hạn ──
+        TableColumn<Object[], String> colNgayHH = new TableColumn<>("Ngày hết hạn");
+        colNgayHH.setMinWidth(120);
+        colNgayHH.setPrefWidth(150);
         colNgayHH.setStyle("-fx-alignment: CENTER;");
-        colNgayHH.setCellValueFactory(p -> {
-            java.sql.Date d = p.getValue().getNgayHetHieuLuc();
-            return new SimpleStringProperty(d != null ? SDF.format(d) : "");
-        });
+        colNgayHH.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[3])));
 
-        // Trạng thái
-        TableColumn<BangGiaDichVu, String> colTT = new TableColumn<>("Trạng thái");
-        colTT.setMinWidth(140);
-        colTT.setStyle("-fx-alignment: CENTER;");
-        colTT.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTrangThai() == 1 ? "Đang áp dụng" : "Ngưng áp dụng"));
-        colTT.setCellFactory(col -> new TableCell<>() {
+        // ── Cột Trạng thái (tô màu) ──
+        // ── Cột Trạng thái (Sử dụng ComboBox) ──
+        TableColumn<Object[], String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai.setMinWidth(160);
+        colTrangThai.setPrefWidth(180);
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[4])));
+
+        colTrangThai.setCellFactory(col -> new TableCell<>() {
+            private final ComboBox<String> comboBox = new ComboBox<>(
+                    FXCollections.observableArrayList("Đang áp dụng", "Chờ áp dụng", "Ngưng áp dụng"));
+
+            {
+                comboBox.setMaxWidth(Double.MAX_VALUE);
+
+                // Sự kiện đổi trạng thái
+                comboBox.setOnAction(e -> {
+                    String newValue = comboBox.getSelectionModel().getSelectedItem();
+                    if (newValue != null && getTableRow() != null && getTableRow().getItem() != null) {
+                        Object[] rowData = getTableRow().getItem();
+                        if (!newValue.equals(str(rowData[4]))) {
+                            handleQuickStatusUpdate(str(rowData[0]), newValue);
+                        }
+                    }
+                });
+            }
+
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) { setText(null); setStyle(""); }
-                else if (item.equals("Đang áp dụng")) {
-                    setText(item);
-                    setStyle("-fx-text-fill: " + C_GREEN + "; -fx-alignment: CENTER; -fx-font-weight: bold;");
+                if (empty || item == null) {
+                    setGraphic(null);
                 } else {
-                    setText(item);
-                    setStyle("-fx-text-fill: " + C_TEXT_GRAY + "; -fx-alignment: CENTER;");
+                    comboBox.getSelectionModel().select(item);
+
+                    // ── THIẾT LẬP MÀU CHỮ ──
+                    String colorHex;
+                    if (item.equals("Đang áp dụng")) {
+                        colorHex = C_GREEN;
+                    } else if (item.equals("Chờ áp dụng")) {
+                        colorHex = C_BLUE;
+                    } else {
+                        colorHex = C_RED;
+                    }
+
+                    // Gán trực tiếp màu chữ vào style của ComboBox
+                    // Sử dụng -fx-content-display: TEXT_ONLY để đảm bảo text được ưu tiên
+                    comboBox.setStyle(
+                            "-fx-text-fill: " + colorHex + ";" +
+                                    "-fx-font-weight: bold;" +
+                                    "-fx-background-color: transparent;" + // Giữ nền trong suốt để nổi bật chữ
+                                    "-fx-border-color: " + C_BORDER + ";" +
+                                    "-fx-border-radius: 4;");
+
+                    // Quan trọng: Đổi màu chữ cho cả phần hiển thị nội dung (Prompt/Selection)
+                    comboBox.setButtonCell(new ListCell<String>() {
+                        @Override
+                        protected void updateItem(String item, boolean empty) {
+                            super.updateItem(item, empty);
+                            if (item != null) {
+                                setText(item);
+                                setTextFill(Color.web(colorHex));
+                                setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+                            }
+                        }
+                    });
+
+                    setGraphic(comboBox);
                 }
             }
         });
 
-        for (TableColumn<BangGiaDichVu, ?> c : List.of(colSTT, colMa, colTen, colNgayAD, colNgayHH, colTT)) {
+        // Khóa tất cả cột
+        for (TableColumn<Object[], ?> c : List.of(colSTT, colMa, colTen, colNgayAD, colNgayHH, colTrangThai)) {
             c.setReorderable(false);
             c.setSortable(false);
         }
-        table.getColumns().addAll(colSTT, colMa, colTen, colNgayAD, colNgayHH, colTT);
 
-        // Context menu
+        table.getColumns().addAll(colSTT, colMa, colTen, colNgayAD, colNgayHH, colTrangThai);
+
+        // ── Context Menu (chuột phải) ──
         ContextMenu ctxMenu = new ContextMenu();
-        MenuItem miEdit = new MenuItem("✏  Chỉnh sửa bảng giá");
+
+        MenuItem miEdit = new MenuItem("✏  Chỉnh sửa chi tiết");
         miEdit.setStyle("-fx-font-size: 13px;");
         miEdit.setOnAction(e -> {
-            BangGiaDichVu bg = table.getSelectionModel().getSelectedItem();
-            if (bg != null) openSuaBangGiaDialog(bg);
+            Object[] row = table.getSelectionModel().getSelectedItem();
+            if (row != null)
+                handleEdit(row);
         });
+
         MenuItem miDelete = new MenuItem("🗑  Xóa bảng giá");
         miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
         miDelete.setOnAction(e -> {
-            BangGiaDichVu bg = table.getSelectionModel().getSelectedItem();
-            if (bg != null) handleDelete(bg);
+            Object[] row = table.getSelectionModel().getSelectedItem();
+            if (row != null)
+                handleDelete(row);
         });
+
         ctxMenu.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
 
         table.setOnMouseClicked(e -> {
-            if (e.getButton() == MouseButton.SECONDARY && table.getSelectionModel().getSelectedItem() != null)
+            if (e.getButton() == MouseButton.SECONDARY
+                    && table.getSelectionModel().getSelectedItem() != null) {
                 ctxMenu.show(table, e.getScreenX(), e.getScreenY());
-            else ctxMenu.hide();
+            } else {
+                ctxMenu.hide();
+                // Double-click để sửa (giữ nguyên logic cũ)
+                if (e.getClickCount() == 2 && e.getButton() == MouseButton.PRIMARY) {
+                    Object[] row = table.getSelectionModel().getSelectedItem();
+                    if (row != null)
+                        handleEdit(row);
+                }
+            }
         });
 
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -238,96 +319,207 @@ public class BangGiaDichVuView extends BorderPane {
         return card;
     }
 
-    /* ── DATA ───────────────────────────────────────────────────────── */
-    public void loadData() {
-        try {
-            List<BangGiaDichVu> list = dao.getAllBangGia();
-            masterData.setAll(list);
-            filteredData = new FilteredList<>(masterData, p -> true);
-            table.setItems(filteredData);
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * LOAD DATA (giữ nguyên logic tính trạng thái từ Swing cũ)
+     * ══════════════════════════════════════════════════════════════════
+     */
+    public void loadDataFromDatabase() {
+        masterData.clear();
+        List<BangGiaDichVu> list = dao.getAllBangGia();
+        if (list == null)
+            return;
 
-            long dangAp = list.stream().filter(b -> b.getTrangThai() == 1).count();
-            lblTong.setText(String.valueOf(list.size()));
-            lblDangAp.setText(String.valueOf(dangAp));
-            lblHetHan.setText(String.valueOf(list.size() - dangAp));
-        } catch (Exception ex) {
-            lblTong.setText("—");
-            lblDangAp.setText("—");
-            lblHetHan.setText("—");
+        Date now = new Date();
+        int countDangAD = 0, countNgung = 0;
+
+        for (BangGiaDichVu bg : list) {
+            String trangThaiText;
+
+            // Giữ nguyên logic trạng thái từ Swing cũ
+            if (now.after(bg.getNgayHetHieuLuc())) {
+                trangThaiText = "Ngưng áp dụng";
+            } else if (now.before(bg.getNgayApDung())) {
+                trangThaiText = "Chờ áp dụng";
+            } else {
+                if (bg.getTrangThai() == 1) {
+                    trangThaiText = "Ngưng áp dụng";
+                } else {
+                    trangThaiText = "Đang áp dụng";
+                }
+            }
+
+            if (trangThaiText.equals("Đang áp dụng"))
+                countDangAD++;
+            if (trangThaiText.equals("Ngưng áp dụng"))
+                countNgung++;
+
+            masterData.add(new Object[] {
+                    bg.getMaBangGia(),
+                    bg.getTenBangGia(),
+                    SDF.format(bg.getNgayApDung()),
+                    SDF.format(bg.getNgayHetHieuLuc()),
+                    trangThaiText
+            });
+        }
+
+        filteredData = new FilteredList<>(masterData, p -> true);
+        table.setItems(filteredData);
+
+        // Cập nhật thẻ thống kê
+        lblTong.setText(String.valueOf(list.size()));
+        lblDangAD.setText(String.valueOf(countDangAD));
+        lblNgungAD.setText(String.valueOf(countNgung));
+
+        // Re-apply filter nếu có
+        if (txtSearch != null && !txtSearch.getText().isEmpty()) {
+            applyFilter(txtSearch.getText());
         }
     }
 
     private void applyFilter(String keyword) {
-        if (filteredData == null) return;
+        if (filteredData == null)
+            return;
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
-        filteredData.setPredicate(bg -> {
-            if (kw.isEmpty()) return true;
-            return nvl(bg.getMaBangGia()).toLowerCase().contains(kw)
-                    || nvl(bg.getTenBangGia()).toLowerCase().contains(kw);
+        filteredData.setPredicate(row -> {
+            if (kw.isEmpty())
+                return true;
+            return str(row[0]).toLowerCase().contains(kw)
+                    || str(row[1]).toLowerCase().contains(kw);
         });
     }
 
-    /* ── ACTIONS ─────────────────────────────────────────────────────── */
-    private void openThemDichVuDialog() {
-        Window owner = getScene() != null ? getScene().getWindow() : null;
-        new ThemSuaDichVuDialog(owner, null, this::loadData).show();
-    }
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * HANDLE EDIT – giữ nguyên logic Swing cũ
+     * ══════════════════════════════════════════════════════════════════
+     */
+    private void handleEdit(Object[] row) {
+        String maBG = str(row[0]);
+        String trangThai = str(row[4]);
 
-    private void openThemBangGiaDialog() {
-        Window owner = getScene() != null ? getScene().getWindow() : null;
-        new ThemSuaBangGiaDialog(owner, null, null, this::loadData).show();
-    }
+        BangGiaDichVu bg = dao.getBangGiaByMa(maBG);
+        List<BangGiaDichVu_ChiTiet> dsChiTiet = dao.getChiTietByMa(maBG);
 
-    private void openSuaBangGiaDialog(BangGiaDichVu bg) {
-        Window owner = getScene() != null ? getScene().getWindow() : null;
-        List<BangGiaDichVu_ChiTiet> dsChiTiet = dao.getChiTietByMa(bg.getMaBangGia());
-        new ThemSuaBangGiaDialog(owner, bg, dsChiTiet, this::loadData).show();
-    }
+        if (bg != null) {
+            // Giữ nguyên logic: Bảng giá đã ngưng → hỏi trước khi sửa
+            if (trangThai.equals("Ngưng áp dụng")) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Bảng giá này đã hết hạn. Bạn có muốn điều chỉnh lại ngày để tái sử dụng không?",
+                        ButtonType.YES, ButtonType.NO);
+                confirm.setTitle("Thông báo");
+                confirm.setHeaderText(null);
+                var result = confirm.showAndWait();
+                if (result.isEmpty() || result.get() != ButtonType.YES)
+                    return;
+            }
 
-    private void handleDelete(BangGiaDichVu bg) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận xóa");
-        confirm.setHeaderText("Xóa bảng giá [" + bg.getMaBangGia() + "]?");
-        confirm.setContentText("Hành động này sẽ xóa toàn bộ chi tiết giá trong bảng.\nKhông thể hoàn tác!");
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            showAlert(Alert.AlertType.INFORMATION, "Chú ý", "Chức năng xóa bảng giá đang được bảo trì để tránh ảnh hưởng dữ liệu lịch sử.");
+            Window owner = getScene() != null ? getScene().getWindow() : null;
+            new ThemSuaBangGiaDialog(owner, bg, dsChiTiet, this::loadDataFromDatabase).show();
         }
     }
 
-    /* ── UTIL ───────────────────────────────────────────────────────── */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * HANDLE DELETE – giữ nguyên logic Swing cũ
+     * ══════════════════════════════════════════════════════════════════
+     */
+    private void handleDelete(Object[] row) {
+        String maBG = str(row[0]);
+        String trangThai = str(row[4]);
+
+        // Giữ nguyên logic: CHẶN XÓA bảng giá đang áp dụng
+        if (trangThai.equals("Đang áp dụng")) {
+            Alert warn = new Alert(Alert.AlertType.WARNING);
+            warn.setTitle("Cảnh báo");
+            warn.setHeaderText("Không thể xóa bảng giá đang áp dụng!");
+            warn.setContentText("Bạn chỉ có thể xóa bảng giá đã hết hạn hoặc đang chờ.");
+            warn.showAndWait();
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Bạn có chắc muốn xóa vĩnh viễn bảng giá: " + maBG + "?",
+                ButtonType.YES, ButtonType.NO);
+        confirm.setTitle("Xác nhận xóa");
+        confirm.setHeaderText(null);
+        confirm.showAndWait().ifPresent(btn -> {
+            if (btn == ButtonType.YES) {
+                if (dao.deleteBangGia(maBG)) {
+                    showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã xóa bảng giá " + maBG);
+                    loadDataFromDatabase();
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Lỗi", "Lỗi hệ thống: Không thể xóa dữ liệu!");
+                }
+            }
+        });
+    }
+
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * THẺ THỐNG KÊ (giống KhachHangView)
+     * ══════════════════════════════════════════════════════════════════
+     */
     private VBox createStatCard(String icon, String title, Label valueLbl, String accentHex) {
         VBox card = new VBox(8);
         card.setPadding(new Insets(20));
-        card.setStyle("-fx-background-color: " + C_CARD_BG + "; -fx-border-color: " + C_BORDER + ";" +
-                "-fx-border-radius: 10; -fx-background-radius: 10;");
+        card.setStyle(
+                "-fx-background-color: " + C_CARD_BG + ";" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;");
         card.setEffect(new DropShadow(8, 0, 2, Color.web("#00000018")));
 
-        HBox topRow = new HBox(); topRow.setAlignment(Pos.CENTER_LEFT);
-        VBox textBox = new VBox(4); HBox.setHgrow(textBox, Priority.ALWAYS);
+        HBox topRow = new HBox();
+        topRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox textBox = new VBox(4);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
+
         Label lblTitle = new Label(title);
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
         lblTitle.setTextFill(Color.web(C_TEXT_GRAY));
+
         valueLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
-        valueLbl.setTextFill(Color.web(accentHex));
+        valueLbl.setTextFill(Color.web(C_TEXT_DARK));
+
         textBox.getChildren().addAll(lblTitle, valueLbl);
 
-        StackPane badge = new StackPane(); badge.setMinSize(46, 46); badge.setPrefSize(46, 46);
-        Rectangle bg = new Rectangle(46, 46); bg.setArcWidth(10); bg.setArcHeight(10);
-        Color ac = Color.web(accentHex);
-        bg.setFill(new Color(ac.getRed(), ac.getGreen(), ac.getBlue(), 0.12));
-        Label iconLbl = new Label(icon); iconLbl.setFont(Font.font("Segoe UI Emoji", 22));
-        badge.getChildren().addAll(bg, iconLbl);
+        StackPane badge = new StackPane();
+        badge.setMinSize(46, 46);
+        badge.setPrefSize(46, 46);
+        Rectangle badgeBg = new Rectangle(46, 46);
+        badgeBg.setArcWidth(10);
+        badgeBg.setArcHeight(10);
+        Color accent = Color.web(accentHex);
+        badgeBg.setFill(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 0.12));
+        Label iconLbl = new Label(icon);
+        iconLbl.setFont(Font.font("Segoe UI Emoji", 22));
+        badge.getChildren().addAll(badgeBg, iconLbl);
+
         topRow.getChildren().addAll(textBox, badge);
 
-        card.getChildren().add(topRow);
+        Region bar = new Region();
+        bar.setPrefHeight(3);
+        bar.setStyle("-fx-background-color: " + accentHex + "; -fx-background-radius: 2;");
+
+        card.getChildren().addAll(topRow, bar);
         return card;
     }
 
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * UTILITY
+     * ══════════════════════════════════════════════════════════════════
+     */
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {
-        String base = "-fx-background-color: " + bg + "; -fx-text-fill: " + fg + ";" +
-                "-fx-background-radius: 8; -fx-padding: 10 20; -fx-cursor: hand;";
-        String hover = base.replace("-fx-background-color: " + bg, "-fx-background-color: " + hoverBg);
+        String base = "-fx-background-color: " + bg + ";" +
+                "-fx-text-fill: " + fg + ";" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20; -fx-cursor: hand;";
+        String hover = base.replace(
+                "-fx-background-color: " + bg,
+                "-fx-background-color: " + hoverBg);
         btn.setStyle(base);
         btn.setOnMouseEntered(e -> btn.setStyle(hover));
         btn.setOnMouseExited(e -> btn.setStyle(base));
@@ -341,5 +533,31 @@ public class BangGiaDichVuView extends BorderPane {
         a.showAndWait();
     }
 
-    private static String nvl(String s) { return s != null ? s : ""; }
+    private static String str(Object o) {
+        return o != null ? o.toString() : "";
+    }
+
+    /**
+     * Cập nhật trạng thái nhanh từ ComboBox trên bảng
+     */
+    private void handleQuickStatusUpdate(String maBG, String tenTrangThaiMoi) {
+        // Chuyển đổi tên hiển thị sang mã số (Trạng thái trong DB của bạn là int)
+        // Giả sử: 0 = Đang áp dụng/Chờ, 1 = Ngưng áp dụng (Dựa theo logic code cũ của
+        // bạn)
+        int trangThaiInt = tenTrangThaiMoi.equals("Ngưng áp dụng") ? 1 : 0;
+
+        // Lấy đối tượng từ DB để cập nhật
+        BangGiaDichVu bg = dao.getBangGiaByMa(maBG);
+        if (bg != null) {
+            bg.setTrangThai(trangThaiInt);
+
+            // Lưu vào DB
+            if (dao.updateTrangThaiTheoTen(maBG, tenTrangThaiMoi)) {
+                // Load lại để cập nhật Thẻ thống kê và màu sắc đồng bộ
+                loadDataFromDatabase();
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật trạng thái cho " + maBG);
+            }
+        }
+    }
 }

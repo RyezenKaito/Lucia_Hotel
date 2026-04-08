@@ -12,7 +12,6 @@ public class BangGiaDichVu_ChiTiet {
     private DichVu maDichVu;         // maDichVu (Foreign Key)
     private double giaDichVu;        // giaDichVu
     private String donViTinh;        // donViTinh
-    private int soLuong;             // soLuong
 
     // Constructor không tham số
     public BangGiaDichVu_ChiTiet() {
@@ -20,13 +19,12 @@ public class BangGiaDichVu_ChiTiet {
 
     // Constructor đầy đủ tham số
     public BangGiaDichVu_ChiTiet(String maChiTietBangGia, BangGiaDichVu maBangGia, DichVu maDichVu, 
-                                double giaDichVu, String donViTinh, int soLuong) {
+                                double giaDichVu, String donViTinh) {
         this.maChiTietBangGia = maChiTietBangGia;
         this.maBangGia = maBangGia;
         this.maDichVu = maDichVu;
         this.giaDichVu = giaDichVu;
         this.donViTinh = donViTinh;
-        this.soLuong = soLuong;
     }
 
     // Getter và Setter
@@ -70,13 +68,7 @@ public class BangGiaDichVu_ChiTiet {
         this.donViTinh = donViTinh;
     }
 
-    public int getSoLuong() {
-        return soLuong;
-    }
 
-    public void setSoLuong(int soLuong) {
-        this.soLuong = soLuong;
-    }
 
     // Phương thức hashCode và equals dựa trên maChiTietBangGia
     @Override
