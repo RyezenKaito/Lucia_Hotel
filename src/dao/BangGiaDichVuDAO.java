@@ -278,27 +278,29 @@ public class BangGiaDichVuDAO {
     }
 
     /**
-     * Sinh mã bảng giá tiếp theo (BG0001, BG0002, ...)
+     * Sinh mã bảng giá tiếp theo (BG001, BG002, ...)
      */
     public String generateNextMaBangGia() {
-        String sql = "SELECT TOP 1 maBangGia FROM BangGiaDV_Header WHERE maBangGia LIKE 'BG%' ORDER BY maBangGia DESC";
-        try (Connection conn = ConnectDatabase.getInstance().getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                String last = rs.getString("maBangGia");
-                String numPart = last.replace("BG", "");
-                try {
-                    int num = Integer.parseInt(numPart) + 1;
-                    return String.format("BG%04d", num);
-                } catch (NumberFormatException e) {
-                    // fallback
+        String sql = "SELECT maBangGia FROM BangGiaDV_Header WHERE maBangGia LIKE 'BG%'";
+        int max = 0;
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String last = rs.getString(1);
+                if (last != null && last.length() > 2) {
+                    try {
+                        int num = Integer.parseInt(last.substring(2));
+                        if (num > max)
+                            max = num;
+                    } catch (Exception ignored) {
+                    }
                 }
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return "BG0001";
+        return String.format("BG%03d", max + 1);
     }
 
     /**
@@ -385,7 +387,8 @@ public class BangGiaDichVuDAO {
      */
     public java.util.Map<String, Double> getActivePriceMap() {
         java.util.Map<String, Double> map = new java.util.LinkedHashMap<>();
-        // Tìm bảng giá có trangThai = 0 (Đang áp dụng) và hôm nay nằm trong [ngayApDung, ngayHetHieuLuc]
+        // Tìm bảng giá có trangThai = 0 (Đang áp dụng) và hôm nay nằm trong
+        // [ngayApDung, ngayHetHieuLuc]
         String sql = "SELECT d.maDV, d.giaDV FROM BangGiaDV_Detail d " +
                 "INNER JOIN BangGiaDV_Header h ON d.maBangGia = h.maBangGia " +
                 "WHERE h.trangThai = 0 AND CAST(GETDATE() AS DATE) BETWEEN h.ngayApDung AND h.ngayHetHieuLuc";
@@ -409,52 +412,69 @@ public class BangGiaDichVuDAO {
      * @return true nếu cập nhật thành công
      */
     public boolean updateTrangThaiTheoTen(String maBG, String tenTrangThai) {
-        // Ánh xạ tên trạng thái sang giá trị số trong Database
-        // Dựa trên logic của bạn: trangThai = 1 là Ngưng áp dụng (hoặc hết hạn), 0 là
-        // Hoạt động
         int trangThaiInt = 0;
+        boolean isActivating = false;
 
         if (tenTrangThai.equals("Ngưng áp dụng")) {
             trangThaiInt = 1;
         } else if (tenTrangThai.equals("Đang áp dụng") || tenTrangThai.equals("Chờ áp dụng")) {
             trangThaiInt = 0;
+            isActivating = true;
         }
 
-        String sql = "UPDATE BangGiaDV_Header SET trangThai = ? WHERE maBangGia = ?";
+        try (Connection conn = ConnectDatabase.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
 
-        try (Connection conn = ConnectDatabase.getInstance().getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, trangThaiInt);
-            ps.setString(2, maBG);
-
-            int rowAffected = ps.executeUpdate();
-
-            // Nếu chuyển sang "Ngưng áp dụng", có thể bạn muốn cập nhật luôn ngày hết hạn
-            // là hôm nay
-            if (rowAffected > 0 && tenTrangThai.equals("Ngưng áp dụng")) {
-                updateNgayHetHanKhiDung(maBG);
+            // 1. Cập nhật trạng thái bit
+            String sqlStatus = "UPDATE BangGiaDV_Header SET trangThai = ? WHERE maBangGia = ?";
+            try (PreparedStatement ps1 = conn.prepareStatement(sqlStatus)) {
+                ps1.setInt(1, trangThaiInt);
+                ps1.setString(2, maBG);
+                ps1.executeUpdate();
             }
 
-            return rowAffected > 0;
+            // 2. Nếu "Ngưng áp dụng" -> Chốt ngày kết thúc là hôm nay
+            if (tenTrangThai.equals("Ngưng áp dụng")) {
+                String sqlStop = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = GETDATE() WHERE maBangGia = ? AND ngayHetHieuLuc > GETDATE()";
+                try (PreparedStatement ps2 = conn.prepareStatement(sqlStop)) {
+                    ps2.setString(1, maBG);
+                    ps2.executeUpdate();
+                }
+            }
+
+            // 3. Nếu "Đang áp dụng" mà ngày đã hết hạn -> Tự động gia hạn thêm 30 ngày để
+            // logic hiển thị không bị bóp nghẹt
+            if (isActivating) {
+                String sqlExtend = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = DATEADD(day, 30, GETDATE()) " +
+                        "WHERE maBangGia = ? AND ngayHetHieuLuc < GETDATE()";
+                try (PreparedStatement ps3 = conn.prepareStatement(sqlExtend)) {
+                    ps3.setString(1, maBG);
+                    ps3.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    /**
-     * Hỗ trợ cập nhật ngày hết hạn về thời điểm hiện tại khi người dùng chọn "Ngưng
-     * áp dụng" thủ công
-     */
-    private void updateNgayHetHanKhiDung(String maBG) {
-        String sql = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = GETDATE() WHERE maBangGia = ? AND ngayHetHieuLuc > GETDATE()";
-        try (Connection conn = ConnectDatabase.getInstance().getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maBG);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+    // /**
+    // * Hỗ trợ cập nhật ngày hết hạn về thời điểm hiện tại khi người dùng chọn
+    // "Ngưng
+    // * áp dụng" thủ công
+    // */
+    // private void updateNgayHetHanKhiDung(String maBG) {
+    // String sql = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = GETDATE() WHERE
+    // maBangGia = ? AND ngayHetHieuLuc > GETDATE()";
+    // try (Connection conn = ConnectDatabase.getInstance().getConnection();
+    // PreparedStatement ps = conn.prepareStatement(sql)) {
+    // ps.setString(1, maBG);
+    // ps.executeUpdate();
+    // } catch (SQLException e) {
+    // e.printStackTrace();
+    // }
+    // }
 }

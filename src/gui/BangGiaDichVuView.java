@@ -207,65 +207,64 @@ public class BangGiaDichVuView extends BorderPane {
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[4])));
 
         colTrangThai.setCellFactory(col -> new TableCell<>() {
-            private final ComboBox<String> comboBox = new ComboBox<>(
-                    FXCollections.observableArrayList("Đang áp dụng", "Chờ áp dụng", "Ngưng áp dụng"));
-
-            {
-                comboBox.setMaxWidth(Double.MAX_VALUE);
-
-                // Sự kiện đổi trạng thái
-                comboBox.setOnAction(e -> {
-                    String newValue = comboBox.getSelectionModel().getSelectedItem();
-                    if (newValue != null && getTableRow() != null && getTableRow().getItem() != null) {
-                        Object[] rowData = getTableRow().getItem();
-                        if (!newValue.equals(str(rowData[4]))) {
-                            handleQuickStatusUpdate(str(rowData[0]), newValue);
-                        }
-                    }
-                });
-            }
-
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
+                    setText(null);
                     setGraphic(null);
                 } else {
-                    comboBox.getSelectionModel().select(item);
+                    // HBox Badge chứa Text + Arrow - Thu nhỏ khung cực bộ
+                    HBox badge = new HBox(4);
+                    badge.setAlignment(Pos.CENTER);
+                    badge.setPadding(new Insets(2, 8, 2, 8));
+                    badge.setMaxWidth(Region.USE_PREF_SIZE);
+                    badge.setMaxHeight(Region.USE_PREF_SIZE);
+                    badge.setCursor(Cursor.HAND);
 
-                    // ── THIẾT LẬP MÀU CHỮ ──
-                    String colorHex;
+                    Label lblText = new Label(item);
+                    lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+
+                    Label lblArrow = new Label("▾");
+                    lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+
+                    badge.getChildren().addAll(lblText, lblArrow);
+
+                    // Style dựa trên trạng thái
+                    String bgColor, textColor;
                     if (item.equals("Đang áp dụng")) {
-                        colorHex = C_GREEN;
+                        bgColor = "#d1fae5";
+                        textColor = "#065f46"; // Emerald
                     } else if (item.equals("Chờ áp dụng")) {
-                        colorHex = C_BLUE;
+                        bgColor = "#dbeafe";
+                        textColor = "#1e40af"; // Blue
                     } else {
-                        colorHex = C_RED;
+                        bgColor = "#fee2e2";
+                        textColor = "#b91c1c"; // Rose
                     }
 
-                    // Gán trực tiếp màu chữ vào style của ComboBox
-                    // Sử dụng -fx-content-display: TEXT_ONLY để đảm bảo text được ưu tiên
-                    comboBox.setStyle(
-                            "-fx-text-fill: " + colorHex + ";" +
-                                    "-fx-font-weight: bold;" +
-                                    "-fx-background-color: transparent;" + // Giữ nền trong suốt để nổi bật chữ
-                                    "-fx-border-color: " + C_BORDER + ";" +
-                                    "-fx-border-radius: 4;");
+                    badge.setStyle("-fx-background-color: " + bgColor + "; " +
+                            "-fx-background-radius: 12;");
+                    lblText.setStyle("-fx-text-fill: " + textColor + ";");
+                    lblArrow.setStyle("-fx-text-fill: " + textColor + ";");
 
-                    // Quan trọng: Đổi màu chữ cho cả phần hiển thị nội dung (Prompt/Selection)
-                    comboBox.setButtonCell(new ListCell<String>() {
-                        @Override
-                        protected void updateItem(String item, boolean empty) {
-                            super.updateItem(item, empty);
-                            if (item != null) {
-                                setText(item);
-                                setTextFill(Color.web(colorHex));
-                                setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-                            }
+                    // Menu chọn trạng thái nhanh
+                    ContextMenu statusMenu = new ContextMenu();
+                    MenuItem m1 = new MenuItem("✅  Đang áp dụng");
+                    m1.setOnAction(ev -> handleQuickStatusUpdate(str(getTableRow().getItem()[0]), "Đang áp dụng"));
+                    MenuItem m2 = new MenuItem("⏸  Ngưng áp dụng");
+                    m2.setOnAction(ev -> handleQuickStatusUpdate(str(getTableRow().getItem()[0]), "Ngưng áp dụng"));
+                    statusMenu.getItems().addAll(m1, m2);
+
+                    badge.setOnMouseClicked(e -> {
+                        if (e.getButton() == MouseButton.PRIMARY) {
+                            statusMenu.show(badge, e.getScreenX(), e.getScreenY());
                         }
                     });
 
-                    setGraphic(comboBox);
+                    setGraphic(badge);
+                    setText(null);
+                    setAlignment(Pos.CENTER);
                 }
             }
         });
@@ -336,15 +335,21 @@ public class BangGiaDichVuView extends BorderPane {
         for (BangGiaDichVu bg : list) {
             String trangThaiText;
 
-            // Giữ nguyên logic trạng thái từ Swing cũ
-            if (now.after(bg.getNgayHetHieuLuc())) {
+            // Logic hiển thị trạng thái:
+            // 1. Ưu tiên kiểm tra xem người dùng có nốt "Ngưng áp dụng" thủ công không
+            // (trangThai = 1)
+            if (bg.getTrangThai() == 1) {
                 trangThaiText = "Ngưng áp dụng";
-            } else if (now.before(bg.getNgayApDung())) {
-                trangThaiText = "Chờ áp dụng";
             } else {
-                if (bg.getTrangThai() == 1) {
-                    trangThaiText = "Ngưng áp dụng";
-                } else {
+                // 2. Nếu trangThai = 0 (Hoạt động), thì mới xét đến yếu tố thời gian
+                if (now.after(bg.getNgayHetHieuLuc())) {
+                    trangThaiText = "Ngưng áp dụng"; // Đã hết hạn
+                }
+                // Note: Bỏ trạng thái "Chờ áp dụng"
+                // else if (now.before(bg.getNgayApDung())) {
+                // trangThaiText = "Chờ áp dụng"; // Chưa đến ngày
+                // }
+                else {
                     trangThaiText = "Đang áp dụng";
                 }
             }
