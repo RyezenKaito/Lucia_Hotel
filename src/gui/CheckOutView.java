@@ -2,8 +2,12 @@ package gui;
 
 import dao.DatPhongDAO;
 import dao.DichVuSuDungDAO;
+import dao.HoaDonDAO;
+import dao.PhongDAO;
 import model.entities.DatPhong;
 import model.entities.DichVuSuDung;
+import model.entities.HoaDon;
+import model.entities.NhanVien;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -43,6 +47,8 @@ public class CheckOutView extends BorderPane {
     /* ── DAO ────────────────────────────────────────────────────────── */
     private final DatPhongDAO datPhongDAO = new DatPhongDAO();
     private final DichVuSuDungDAO dvsdDAO = new DichVuSuDungDAO();
+    private final HoaDonDAO hoaDonDAO = new HoaDonDAO();
+    private final PhongDAO phongDAO = new PhongDAO();
 
     /* ── Controls ───────────────────────────────────────────────────── */
     private TextField txtSearch;
@@ -54,11 +60,24 @@ public class CheckOutView extends BorderPane {
     // Data hiện tại
     private DatPhong currentDatPhong;
     private String currentMaHD;
+    private String currentMaPhong;
+    private double currentGiaPhong = 0;
     private double currentTienPhong = 0;
     private double currentTienDV = 0;
+    private double currentTienCoc = 0;
     private double currentLateFee = 0;
+    private double currentTongTien = 0;
+    private long currentSoDem = 0;
+
+    /* ── Nhân viên đang đăng nhập ──────────────────────────────────── */
+    private NhanVien staff;
 
     public CheckOutView() {
+        this(null);
+    }
+
+    public CheckOutView(NhanVien staff) {
+        this.staff = staff;
         setStyle("-fx-background-color: " + C_BG + ";");
         setPadding(new Insets(32));
 
@@ -101,7 +120,7 @@ public class CheckOutView extends BorderPane {
         searchRow.getChildren().addAll(txtSearch, btnSearch);
 
         VBox quickBox = new VBox(8);
-        Label lblQuick = new Label("Phòng đang trả hôm nay:");
+        Label lblQuick = new Label("Phòng đang có khách:");
         lblQuick.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
         lblQuick.setTextFill(Color.web(C_TEXT_GRAY));
 
@@ -142,10 +161,12 @@ public class CheckOutView extends BorderPane {
         serviceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         TableColumn<DichVuSuDung, String> colNgay = new TableColumn<>("Ngày");
-        colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgaySuDung().toString()));
+        colNgay.setCellValueFactory(p -> new SimpleStringProperty(
+                p.getValue().getNgaySuDung() != null ? p.getValue().getNgaySuDung().toString() : ""));
 
         TableColumn<DichVuSuDung, String> colTen = new TableColumn<>("Dịch vụ");
-        colTen.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getDichVu().getTenDV()));
+        colTen.setCellValueFactory(p -> new SimpleStringProperty(
+                p.getValue().getDichVu() != null ? p.getValue().getDichVu().getTenDV() : ""));
 
         TableColumn<DichVuSuDung, String> colSl = new TableColumn<>("SL");
         colSl.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getSoLuong())));
@@ -183,15 +204,22 @@ public class CheckOutView extends BorderPane {
         return main;
     }
 
+    // ── Quick Suggestions: Load phòng đang sử dụng từ DB ──
     private void loadQuickSuggestions() {
         quickCheckOutFlow.getChildren().clear();
-        // Giả lập danh sách phòng cần trả hôm nay (Trong thực tế query từ DB)
-        String[] suggestions = { "P101", "P205", "P302" };
-        for (String s : suggestions) {
+        List<String> dsPhong = datPhongDAO.getPhongDangSuDung();
+        if (dsPhong.isEmpty()) {
+            Label lblEmpty = new Label("Không có phòng nào đang sử dụng");
+            lblEmpty.setFont(Font.font("Segoe UI", 12));
+            lblEmpty.setTextFill(Color.web(C_TEXT_GRAY));
+            quickCheckOutFlow.getChildren().add(lblEmpty);
+            return;
+        }
+        for (String s : dsPhong) {
             Button b = new Button(s);
             b.setCursor(Cursor.HAND);
             b.setStyle("-fx-background-color: white; -fx-border-color: " + C_GOLD + "; -fx-text-fill: " + C_GOLD
-                    + "; -fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 4 12;");
+                    + "; -fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 4 12; -fx-font-weight: bold;");
             b.setOnAction(e -> {
                 txtSearch.setText(s);
                 handleSearch();
@@ -200,83 +228,123 @@ public class CheckOutView extends BorderPane {
         }
     }
 
+    // ── Tìm phòng: lấy thông tin checkout từ DB ──
     private void handleSearch() {
-        String maPhong = txtSearch.getText().trim();
+        String maPhong = txtSearch.getText().trim().toUpperCase();
         if (maPhong.isEmpty())
             return;
 
-        currentMaHD = datPhongDAO.getMaHDByMaPhong(maPhong);
-        if (currentMaHD != null) {
-            // Lấy thông tin đợt đặt
-            currentDatPhong = datPhongDAO.findDatPhongDetail(maPhong); // Logic query theo mã phòng
-            if (currentDatPhong != null) {
-                updateDetailUI();
-                loadServices();
-                calculateBilling();
-                updateBillingUI();
-            }
+        // Query tổng hợp từ DB (DatPhong + KH + ChiTietDatPhong + LoaiPhong)
+        Object[] info = datPhongDAO.findCheckOutInfoByMaPhong(maPhong);
+        if (info != null) {
+            currentDatPhong = (DatPhong) info[0];
+            currentTienCoc = (double) info[1];
+            currentGiaPhong = (double) info[2];
+            currentMaPhong = (String) info[3];
+
+            // Lấy mã hóa đơn (nếu đã tạo từ trước)
+            currentMaHD = datPhongDAO.getMaHDByMaPhong(maPhong);
+
+            updateDetailUI();
+            loadServices();
+            calculateBilling();
+            updateBillingUI();
         } else {
-            // Thông thường là do phòng mang trạng thái Trống hoặc Bảo trì
             resetView();
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Thông báo");
             alert.setHeaderText("Không tìm thấy khách đang ở tại phòng này");
+            alert.setContentText("Phòng \"" + maPhong + "\" không đang được sử dụng hoặc không tồn tại.");
             alert.showAndWait();
         }
     }
 
+    // ── Hiển thị thông tin khách + đặt phòng ──
     private void updateDetailUI() {
         guestInfoSection.getChildren().clear();
         Label lblT = new Label("Thông tin đặt phòng");
         lblT.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         lblT.setTextFill(Color.web(C_NAVY));
 
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
         GridPane grid = new GridPane();
         grid.setHgap(30);
         grid.setVgap(12);
-        grid.add(createLabel("Khách hàng:"), 0, 0);
-        grid.add(createValue(currentDatPhong.getKhachHang().getTenKH()), 1, 0);
-        grid.add(createLabel("Số điện thoại:"), 0, 1);
-        grid.add(createValue(currentDatPhong.getKhachHang().getSoDT()), 1, 1);
-        grid.add(createLabel("Ngày nhận:"), 2, 0);
-        grid.add(createValue(currentDatPhong.getNgayCheckIn().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))),
-                3, 0);
-        grid.add(createLabel("Ngày trả dự kiến:"), 2, 1);
-        grid.add(createValue(currentDatPhong.getNgayCheckOut().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))),
-                3, 1);
+
+        grid.add(createLabel("Mã đặt phòng:"), 0, 0);
+        grid.add(createValue(currentDatPhong.getMaDat()), 1, 0);
+        grid.add(createLabel("Phòng:"), 2, 0);
+        grid.add(createValue(currentMaPhong + " — " + String.format("%,.0f đ/đêm", currentGiaPhong)), 3, 0);
+
+        grid.add(createLabel("Khách hàng:"), 0, 1);
+        grid.add(createValue(currentDatPhong.getKhachHang().getTenKH()), 1, 1);
+        grid.add(createLabel("Số điện thoại:"), 2, 1);
+        grid.add(createValue(currentDatPhong.getKhachHang().getSoDT() != null
+                ? currentDatPhong.getKhachHang().getSoDT() : "—"), 3, 1);
+
+        grid.add(createLabel("Ngày nhận phòng:"), 0, 2);
+        grid.add(createValue(currentDatPhong.getNgayCheckIn() != null
+                ? currentDatPhong.getNgayCheckIn().format(fmt) : "—"), 1, 2);
+        grid.add(createLabel("Ngày trả dự kiến:"), 2, 2);
+        grid.add(createValue(currentDatPhong.getNgayCheckOut() != null
+                ? currentDatPhong.getNgayCheckOut().format(fmt) : "—"), 3, 2);
+
+        grid.add(createLabel("Tiền cọc:"), 0, 3);
+        Label lblCoc = createValue(String.format("%,.0f đ", currentTienCoc));
+        lblCoc.setTextFill(Color.web(C_GREEN));
+        grid.add(lblCoc, 1, 3);
 
         guestInfoSection.getChildren().addAll(lblT, grid);
     }
 
+    // ── Load dịch vụ đã sử dụng ──
     private void loadServices() {
-        List<DichVuSuDung> list = dvsdDAO.findByMaHD(currentMaHD);
-        serviceTable.setItems(FXCollections.observableArrayList(list));
-        currentTienDV = list.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
+        if (currentMaHD != null) {
+            List<DichVuSuDung> list = dvsdDAO.findByMaHD(currentMaHD);
+            serviceTable.setItems(FXCollections.observableArrayList(list));
+            currentTienDV = list.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
+        } else {
+            serviceTable.setItems(FXCollections.observableArrayList());
+            currentTienDV = 0;
+        }
     }
 
+    // ── Tính toán hóa đơn thực tế ──
     private void calculateBilling() {
-        // Giả sử lấy giá phòng từ booking hoặc query từ database.
-        // Ở đây giả định một giá trị để demo.
-        double donGiaP = 1200000;
-
         LocalDateTime now = LocalDateTime.now();
-        Duration duration = Duration.between(currentDatPhong.getNgayCheckIn(), now);
-        long nights = Math.max(1, duration.toDays());
+        LocalDateTime checkIn = currentDatPhong.getNgayCheckIn();
 
-        currentTienPhong = nights * donGiaP;
+        // Tính số đêm (ít nhất 1 đêm)
+        if (checkIn != null) {
+            Duration duration = Duration.between(checkIn, now);
+            currentSoDem = Math.max(1, duration.toDays());
+        } else {
+            currentSoDem = 1;
+        }
 
-        // Phụ phí trả muộn (Logic demo)
-        int hour = now.getHour();
-        if (hour >= 18)
-            currentLateFee = donGiaP; // 100%
-        else if (hour >= 15)
-            currentLateFee = donGiaP * 0.5; // 50%
-        else if (hour >= 12)
-            currentLateFee = donGiaP * 0.3; // 30%
-        else
-            currentLateFee = 0;
+        // Tiền phòng = số đêm × giá phòng/đêm (từ LoaiPhong)
+        currentTienPhong = currentSoDem * currentGiaPhong;
+
+        // Phụ phí trả muộn (so với ngày checkout dự kiến)
+        currentLateFee = 0;
+        if (currentDatPhong.getNgayCheckOut() != null && now.isAfter(currentDatPhong.getNgayCheckOut())) {
+            int hour = now.getHour();
+            if (hour >= 18)
+                currentLateFee = currentGiaPhong;       // 100% giá 1 đêm
+            else if (hour >= 15)
+                currentLateFee = currentGiaPhong * 0.5;  // 50%
+            else if (hour >= 12)
+                currentLateFee = currentGiaPhong * 0.3;  // 30%
+        }
+
+        // Tổng = tiền phòng + dịch vụ + phụ phí - cọc
+        currentTongTien = currentTienPhong + currentTienDV + currentLateFee - currentTienCoc;
+        if (currentTongTien < 0)
+            currentTongTien = 0;
     }
 
+    // ── Hiển thị hóa đơn thanh toán ──
     private void updateBillingUI() {
         billingSection.getChildren().clear();
         Label lblT = new Label("Chi tiết hóa đơn");
@@ -285,68 +353,170 @@ public class CheckOutView extends BorderPane {
 
         VBox rows = new VBox(12);
         rows.getChildren().addAll(
-                createBillRow("Tiền phòng (" + (long) (currentTienPhong / 1200000) + " đêm)", currentTienPhong,
-                        Color.web(C_TEXT_DARK)),
+                createBillRow("Tiền phòng (" + currentSoDem + " đêm × " + String.format("%,.0f", currentGiaPhong)
+                        + " đ)", currentTienPhong, Color.web(C_TEXT_DARK)),
                 createBillRow("Tiền dịch vụ", currentTienDV, Color.web(C_TEXT_DARK)),
-                createBillRow("Phụ phí trả muộn", currentLateFee, Color.web(C_RED)),
-                createBillRow("Tiền đã cọc", -0.0, Color.web(C_GREEN)) // Giả định cọc
-        );
+                createBillRow("Phụ phí trả muộn", currentLateFee,
+                        currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
+                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)));
 
         Separator sep = new Separator();
-        double tong = currentTienPhong + currentTienDV + currentLateFee;
 
         HBox totalRow = new HBox();
         totalRow.setAlignment(Pos.CENTER_LEFT);
         Label lblTotal = new Label("TỔNG THANH TOÁN");
         lblTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
         HBox.setHgrow(lblTotal, Priority.ALWAYS);
-        Label valTotal = new Label(String.format("%,.0f đ", tong));
+        Label valTotal = new Label(String.format("%,.0f đ", currentTongTien));
         valTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         valTotal.setTextFill(Color.web(C_BLUE));
         totalRow.getChildren().addAll(lblTotal, valTotal);
 
-        Button btnPay = new Button("💳  XÁC NHẬN THANH TOÁN");
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        Button btnPay = new Button("💳  XÁC NHẬN THANH TOÁN VÀ TRẢ PHÒNG");
         btnPay.setMaxWidth(Double.MAX_VALUE);
         btnPay.setPrefHeight(50);
+        btnPay.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         styleButton(btnPay, C_NAVY, "white", "#1e3a8aEE");
         btnPay.setOnAction(e -> handleCheckOut());
 
-        billingSection.getChildren().addAll(lblT, new Separator(), rows, sep, totalRow, new Region(), btnPay);
+        billingSection.getChildren().addAll(lblT, new Separator(), rows, sep, totalRow, spacer, btnPay);
     }
 
+    // ── Thanh toán + Trả phòng (Business Logic) ──
     private void handleCheckOut() {
+        if (currentDatPhong == null || currentMaPhong == null)
+            return;
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận thanh toán");
-        confirm.setHeaderText("Hoàn tất trả phòng cho khách " + currentDatPhong.getKhachHang().getTenKH() + "?");
-        confirm.setContentText("Hóa đơn sẽ được lưu và trạng thái phòng sẽ chuyển sang 'Trống'.");
+        confirm.setHeaderText("Hoàn tất trả phòng " + currentMaPhong + " cho khách "
+                + currentDatPhong.getKhachHang().getTenKH() + "?");
+        confirm.setContentText("Tổng thanh toán: " + String.format("%,.0f đ", currentTongTien)
+                + "\nHóa đơn sẽ được lưu và trạng thái phòng sẽ chuyển sang 'Còn trống'.");
 
         confirm.showAndWait().ifPresent(type -> {
             if (type == ButtonType.OK) {
-                // Trong thực tế sẽ gọi HoaDonDAO.insert(...) và PhongDAO.update(...)
-                Alert success = new Alert(Alert.AlertType.INFORMATION);
-                success.setTitle("Thành công");
-                success.setHeaderText("Đã thanh toán và trả phòng!");
-                success.showAndWait();
-                resetView();
+                boolean success = performCheckOut();
+                if (success) {
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Thành công");
+                    successAlert.setHeaderText("✅ Đã thanh toán và trả phòng thành công!");
+                    successAlert.setContentText(
+                            "Phòng: " + currentMaPhong + "\n" +
+                                    "Khách: " + currentDatPhong.getKhachHang().getTenKH() + "\n" +
+                                    "Tổng tiền: " + String.format("%,.0f đ", currentTongTien) + "\n\n" +
+                                    "Trạng thái phòng đã được cập nhật thành 'Còn trống'.");
+                    successAlert.showAndWait();
+                    resetView();
+                    loadQuickSuggestions();
+                } else {
+                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                    errorAlert.setTitle("Lỗi");
+                    errorAlert.setHeaderText("Thanh toán thất bại");
+                    errorAlert.setContentText("Đã xảy ra lỗi khi lưu dữ liệu. Vui lòng thử lại.");
+                    errorAlert.showAndWait();
+                }
             }
         });
+    }
+
+    /**
+     * Thực hiện nghiệp vụ checkout thực tế:
+     * 1. Nếu HoaDon đã tồn tại → cập nhật tổng tiền
+     * 2. Nếu chưa có HoaDon → tạo mới
+     * 3. Cập nhật trạng thái phòng → CONTRONG
+     */
+    private boolean performCheckOut() {
+        try {
+            // ── Bước 1: Xử lý HoaDon ──
+            if (currentMaHD != null) {
+                HoaDon hd = hoaDonDAO.getById(currentMaHD);
+                if (hd != null) {
+                    hd.setTienPhong(currentTienPhong);
+                    hd.setTienDV(currentTienDV);
+                    hd.setTienCoc(currentTienCoc);
+                    hd.setThueVAT(0); // Không tính VAT theo yêu cầu
+                    hd.setTongTien(currentTongTien);
+                    hd.setNgayTaoHD(LocalDateTime.now());
+                    if (!hoaDonDAO.updateTongTien(hd)) {
+                        System.err.println("Lỗi cập nhật hóa đơn: " + currentMaHD);
+                        return false;
+                    }
+                }
+            } else {
+                HoaDon hd = new HoaDon();
+                hd.setMaHD(hoaDonDAO.generateMaHD());
+                hd.setDatPhong(currentDatPhong);
+                hd.setNhanVien(staff != null ? staff : new NhanVien("ADMIN"));
+                hd.setNgayTaoHD(LocalDateTime.now());
+                hd.setTienPhong(currentTienPhong);
+                hd.setTienDV(currentTienDV);
+                hd.setTienCoc(currentTienCoc);
+                hd.setThueVAT(0);
+                hd.setTongTien(currentTongTien);
+                if (!hoaDonDAO.insert(hd)) {
+                    System.err.println("Lỗi tạo hóa đơn mới");
+                    return false;
+                }
+            }
+
+            // ── Bước 2: Cập nhật trạng thái phòng → CONTRONG ──
+            if (!phongDAO.updateTrangThai(currentMaPhong, "CONTRONG")) {
+                System.err.println("Lỗi cập nhật trạng thái phòng: " + currentMaPhong);
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     private void resetView() {
         txtSearch.clear();
         currentDatPhong = null;
         currentMaHD = null;
+        currentMaPhong = null;
+        currentGiaPhong = 0;
+        currentTienPhong = 0;
+        currentTienDV = 0;
+        currentTienCoc = 0;
+        currentLateFee = 0;
+        currentTongTien = 0;
+        currentSoDem = 0;
+
         guestInfoSection.getChildren().clear();
-        guestInfoSection.getChildren().add(new Label("Chưa có thông tin phòng"));
+        Label lblEmpty = new Label("🛏  Vui lòng chọn phòng để bắt đầu thủ tục trả phòng");
+        lblEmpty.setFont(Font.font("Segoe UI", 14));
+        lblEmpty.setTextFill(Color.web(C_TEXT_GRAY));
+        guestInfoSection.getChildren().add(lblEmpty);
+
         serviceTable.setItems(FXCollections.observableArrayList());
+
         billingSection.getChildren().clear();
-        billingSection.getChildren().add(new Label("Vùi lòng chọn phòng để tính tiền"));
+        VBox emptyBilling = new VBox(12);
+        emptyBilling.setAlignment(Pos.CENTER);
+        Label lblIcon = new Label("💰");
+        lblIcon.setFont(Font.font(36));
+        Label lblMsg = new Label("Chọn phòng để xem hóa đơn");
+        lblMsg.setFont(Font.font("Segoe UI", 14));
+        lblMsg.setTextFill(Color.web(C_TEXT_GRAY));
+        emptyBilling.getChildren().addAll(lblIcon, lblMsg);
+        billingSection.getChildren().add(emptyBilling);
     }
+
+    /* ── UI Helpers ──────────────────────────────────────────────────── */
 
     private HBox createBillRow(String label, double value, Color valColor) {
         HBox hb = new HBox();
+        hb.setAlignment(Pos.CENTER_LEFT);
         Label lbl = new Label(label);
         lbl.setTextFill(Color.web(C_TEXT_GRAY));
+        lbl.setFont(Font.font("Segoe UI", 13));
         HBox.setHgrow(lbl, Priority.ALWAYS);
         Label val = new Label(String.format("%,.0f đ", value));
         val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));

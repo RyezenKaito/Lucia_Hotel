@@ -192,28 +192,34 @@ public class QuanLyPhongView extends BorderPane {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    // HBox Badge chứa Text + Arrow - Thu nhỏ khung lại
+                    boolean isOccupied = item.equals("Đã có khách");
+
+                    // HBox Badge chứa Text + Arrow (nếu không phải Đã có khách)
                     HBox badge = new HBox(4);
                     badge.setAlignment(Pos.CENTER);
-                    badge.setPadding(new Insets(2, 8, 2, 8)); // Padding cực nhỏ
+                    badge.setPadding(new Insets(2, 8, 2, 8));
                     badge.setMaxWidth(Region.USE_PREF_SIZE);
-                    badge.setMaxHeight(Region.USE_PREF_SIZE); // Khống chế chiều cao không cho full dòng
-                    badge.setCursor(Cursor.HAND);
+                    badge.setMaxHeight(Region.USE_PREF_SIZE);
 
                     Label lblText = new Label(item);
                     lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
 
-                    Label lblArrow = new Label("▾");
-                    lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                    badge.getChildren().add(lblText);
 
-                    badge.getChildren().addAll(lblText, lblArrow);
+                    // Chỉ hiện mũi tên dropdown khi KHÔNG phải "Đã có khách"
+                    if (!isOccupied) {
+                        badge.setCursor(Cursor.HAND);
+                        Label lblArrow = new Label("▾");
+                        lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                        badge.getChildren().add(lblArrow);
+                    }
 
                     // Style dựa trên trạng thái
                     String bg, text;
                     if (item.equals("Còn trống")) {
                         bg = "#d1fae5";
                         text = "#065f46"; // Emerald
-                    } else if (item.equals("Đã có khách")) {
+                    } else if (isOccupied) {
                         bg = "#fef3c7";
                         text = "#92400e"; // Amber
                     } else {
@@ -221,26 +227,25 @@ public class QuanLyPhongView extends BorderPane {
                         text = "#991b1b"; // Rose
                     }
 
-                    badge.setStyle("-fx-background-color: " + bg + "; " +
-                            "-fx-background-radius: 12;");
+                    badge.setStyle("-fx-background-color: " + bg + "; -fx-background-radius: 12;");
                     lblText.setStyle("-fx-text-fill: " + text + ";");
-                    lblArrow.setStyle("-fx-text-fill: " + text + ";");
 
-                    // Menu chọn trạng thái
-                    ContextMenu statusMenu = new ContextMenu();
-                    MenuItem m1 = new MenuItem("✅  Còn trống");
-                    m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
-                    MenuItem m2 = new MenuItem("🛏  Đã có khách");
-                    m2.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.DACOKHACH));
-                    MenuItem m3 = new MenuItem("🔧  Đang bảo trì");
-                    m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
-                    statusMenu.getItems().addAll(m1, m2, m3);
+                    // Menu chọn trạng thái: CHỈ cho phép Còn trống / Đang bảo trì
+                    // Phòng "Đã có khách" do nghiệp vụ Đặt phòng/Nhận phòng/Trả phòng tự quản lý
+                    if (!isOccupied) {
+                        ContextMenu statusMenu = new ContextMenu();
+                        MenuItem m1 = new MenuItem("✅  Còn trống");
+                        m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
+                        MenuItem m3 = new MenuItem("🔧  Đang bảo trì");
+                        m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
+                        statusMenu.getItems().addAll(m1, m3);
 
-                    badge.setOnMouseClicked(e -> {
-                        if (e.getButton() == MouseButton.PRIMARY) {
-                            statusMenu.show(badge, e.getScreenX(), e.getScreenY());
-                        }
-                    });
+                        badge.setOnMouseClicked(e -> {
+                            if (e.getButton() == MouseButton.PRIMARY) {
+                                statusMenu.show(badge, e.getScreenX(), e.getScreenY());
+                            }
+                        });
+                    }
 
                     setGraphic(badge);
                     setText(null);
@@ -275,16 +280,28 @@ public class QuanLyPhongView extends BorderPane {
             miEdit.setStyle("-fx-font-size: 13px;");
             miEdit.setOnAction(e -> {
                 Phong p = table.getSelectionModel().getSelectedItem();
-                if (p != null)
-                    openDialog(p);
+                if (p != null) {
+                    if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) {
+                        showAlert(Alert.AlertType.WARNING, "Không thể chỉnh sửa",
+                                "Phòng đang có khách. Vui lòng thực hiện trả phòng trước.");
+                    } else {
+                        openDialog(p);
+                    }
+                }
             });
 
             MenuItem miDelete = new MenuItem("🗑  Xóa phòng");
             miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miDelete.setOnAction(e -> {
                 Phong p = table.getSelectionModel().getSelectedItem();
-                if (p != null)
-                    handleDelete(p);
+                if (p != null) {
+                    if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) {
+                        showAlert(Alert.AlertType.WARNING, "Không thể xóa",
+                                "Phòng đang có khách. Vui lòng thực hiện trả phòng trước.");
+                    } else {
+                        handleDelete(p);
+                    }
+                }
             });
 
             ctxMenu.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
