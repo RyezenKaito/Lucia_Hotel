@@ -164,7 +164,6 @@ public class PhongDAO {
 
     /**
      * Cập nhật trạng thái phòng (dùng cho nghiệp vụ Check-in / Check-out)
-     * Trạng thái tự động: CONTRONG, DANGSUDUNG, BAN
      */
     public boolean updateTrangThai(String maPhong, String trangThai) {
         String sql = "UPDATE Phong SET tinhTrang = ? WHERE maPhong = ?";
@@ -177,5 +176,21 @@ public class PhongDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * Lấy danh sách phòng trống theo mã loại phòng
+     * Trả về List chuỗi "maPhong - tenPhong" dùng cho ComboBox
+     */
+    public List<String> getPhongTrongByLoai(String maLoaiPhong) {
+        List<String> ds = new ArrayList<>();
+        String sql = "SELECT maPhong, tenPhong FROM Phong WHERE loaiPhong = ? AND tinhTrang = N'CONTRONG'";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maLoaiPhong);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) ds.add(rs.getString("maPhong") + " - " + rs.getString("tenPhong"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return ds;
     }
 }
