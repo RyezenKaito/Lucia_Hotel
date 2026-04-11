@@ -1,6 +1,7 @@
 package dao;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +37,7 @@ public class DatPhongDAO {
         List<String> dsMa = new ArrayList<>();
         String sql = "SELECT maDat FROM DatPhong " +
                 "WHERE CAST(ngayCheckIn AS DATE) = CAST(GETDATE() AS DATE) " +
-                "AND ngayCheckIn IS NOT NULL"; // logic có thể cần điều chỉnh tùy nghiệp vụ
+                "AND ngayCheckIn IS NOT NULL"; 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -75,12 +76,12 @@ public class DatPhongDAO {
                 dp.setMaDat(rs.getString("maDat"));
                 dp.setNgayDat(rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null);
                 dp.setKhachHang(kh);
+                
+                // SỬA Ở ĐÂY: Lấy Date -> LocalDate -> gán thêm 00:00 để thành LocalDateTime
                 dp.setNgayCheckIn(
-                        rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime()
-                                : null);
+                        rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay() : null);
                 dp.setNgayCheckOut(
-                        rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime()
-                                : null);
+                        rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay() : null);
 
                 return dp;
             }
@@ -102,8 +103,10 @@ public class DatPhongDAO {
             pstmt.setTimestamp(2, dp.getNgayDat() != null ? Timestamp.valueOf(dp.getNgayDat())
                     : Timestamp.valueOf(LocalDateTime.now()));
             pstmt.setString(3, dp.getKhachHang().getMaKH());
-            pstmt.setTimestamp(4, dp.getNgayCheckIn() != null ? Timestamp.valueOf(dp.getNgayCheckIn()) : null);
-            pstmt.setTimestamp(5, dp.getNgayCheckOut() != null ? Timestamp.valueOf(dp.getNgayCheckOut()) : null);
+            
+            // SỬA Ở ĐÂY: Lấy LocalDateTime -> LocalDate -> java.sql.Date
+            pstmt.setDate(4, dp.getNgayCheckIn() != null ? java.sql.Date.valueOf(dp.getNgayCheckIn().toLocalDate()) : null);
+            pstmt.setDate(5, dp.getNgayCheckOut() != null ? java.sql.Date.valueOf(dp.getNgayCheckOut().toLocalDate()) : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
@@ -113,8 +116,7 @@ public class DatPhongDAO {
     }
 
     /**
-     * Lấy tên khách hàng đang ở trong phòng (Dựa trên ChiTietDatPhong join DatPhong
-     * join KH)
+     * Lấy tên khách hàng đang ở trong phòng
      */
     public String getTenKhachHienTai(String maPhong) {
         String sql = "SELECT kh.tenKH FROM KH kh " +
@@ -158,11 +160,7 @@ public class DatPhongDAO {
     }
 
     /**
-     * Query tổng hợp checkout: DatPhong + KH + ChiTietDatPhong (giaCoc) + LoaiPhong (giaPhong)
-     * Chỉ tìm phòng đang có trạng thái DANGSUDUNG
-     * 
-     * @return Object[] { DatPhong dp, double giaCoc, double giaPhong, String maPhong }
-     *         hoặc null nếu không tìm thấy
+     * Query tổng hợp checkout
      */
     public Object[] findCheckOutInfoByMaPhong(String maPhong) {
         String sql = "SELECT dp.maDat, dp.ngayDat, dp.ngayCheckIn, dp.ngayCheckOut, " +
@@ -193,10 +191,12 @@ public class DatPhongDAO {
                 dp.setNgayDat(rs.getTimestamp("ngayDat") != null
                         ? rs.getTimestamp("ngayDat").toLocalDateTime() : null);
                 dp.setKhachHang(kh);
-                dp.setNgayCheckIn(rs.getTimestamp("ngayCheckIn") != null
-                        ? rs.getTimestamp("ngayCheckIn").toLocalDateTime() : null);
-                dp.setNgayCheckOut(rs.getTimestamp("ngayCheckOut") != null
-                        ? rs.getTimestamp("ngayCheckOut").toLocalDateTime() : null);
+                
+                // SỬA Ở ĐÂY: Date -> LocalDate -> LocalDateTime
+                dp.setNgayCheckIn(rs.getDate("ngayCheckIn") != null
+                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay() : null);
+                dp.setNgayCheckOut(rs.getDate("ngayCheckOut") != null
+                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay() : null);
 
                 double giaCoc = rs.getDouble("giaCoc");
                 double giaPhong = rs.getDouble("giaPhong");
@@ -210,10 +210,6 @@ public class DatPhongDAO {
         return null;
     }
 
-    /**
-     * Lấy danh sách mã phòng đang sử dụng (DANGSUDUNG)
-     * Dùng cho Quick Suggestions trên giao diện Trả phòng
-     */
     public List<String> getPhongDangSuDung() {
         List<String> ds = new ArrayList<>();
         String sql = "SELECT maPhong FROM Phong WHERE tinhTrang = N'DANGSUDUNG'";
@@ -229,23 +225,15 @@ public class DatPhongDAO {
         return ds;
     }
 
-    /**
-     * Lưu giỏ hàng dịch vụ vào database
-     * Luồng: maPhong → getMaHDByMaPhong → tìm maCTHD từ ChiTietHoaDon → MERGE
-     * DichVuSuDung
-     * Sử dụng MERGE để nếu dịch vụ đã tồn tại thì cộng dồn số lượng
-     */
     public boolean saveServiceOrder(String maPhong, java.util.Map<model.entities.DichVu, Integer> cart) {
         String maHD = getMaHDByMaPhong(maPhong);
         if (maHD == null)
             return false;
 
-        // Tìm mã chi tiết hóa đơn (maCTHD) từ ChiTietHoaDon liên kết với HoaDon này
         String maCTHD = findMaCTHDByMaHD(maHD);
         if (maCTHD == null)
             return false;
 
-        // MERGE: nếu dịch vụ đã tồn tại → cộng dồn soLuong, nếu chưa → INSERT mới
         String sql = "MERGE INTO DichVuSuDung AS target " +
                 "USING (VALUES (?, ?, ?, ?)) AS source (maDV, maCTHD, soLuong, giaDV) " +
                 "ON target.maDV = source.maDV AND target.maCTHD = source.maCTHD " +
@@ -291,9 +279,6 @@ public class DatPhongDAO {
         }
     }
 
-    /**
-     * Tìm mã chi tiết hóa đơn (maCTHD) từ bảng ChiTietHoaDon dựa trên mã hóa đơn
-     */
     private String findMaCTHDByMaHD(String maHD) {
         String sql = "SELECT TOP 1 maCTHD FROM ChiTietHoaDon WHERE maHD = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -305,6 +290,90 @@ public class DatPhongDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    public String generateMaDat() {
+        String sql = "SELECT maDat FROM DatPhong WHERE maDat LIKE 'DP%'";
+        int max = 0;
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String val = rs.getString(1);
+                if (val != null && val.length() > 2) {
+                    try {
+                        int num = Integer.parseInt(val.substring(2).trim());
+                        if (num > max) max = num;
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return String.format("DP%03d", max + 1);
+    }
+
+    // Các hàm dưới đây nhận trực tiếp LocalDate từ UI Dialog truyền xuống nên không cần sửa
+    public boolean insertWithConnection(Connection con, String maDat, String maKH,
+                                        LocalDate checkIn, LocalDate checkOut) throws SQLException {
+        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut) VALUES(?,?,?,?,?)";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDat);
+            ps.setDate(2, java.sql.Date.valueOf(java.time.LocalDate.now()));
+            ps.setString(3, maKH);
+            ps.setDate(4, java.sql.Date.valueOf(checkIn));
+            ps.setDate(5, java.sql.Date.valueOf(checkOut));
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateNgayCheckInOut(Connection con, String maDat,
+                                        LocalDate checkIn, LocalDate checkOut) throws SQLException {
+        String sql = "UPDATE DatPhong SET ngayCheckIn=?, ngayCheckOut=? WHERE maDat=?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setDate(1, java.sql.Date.valueOf(checkIn));
+            ps.setDate(2, java.sql.Date.valueOf(checkOut));
+            ps.setString(3, maDat);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * LẤY CHI TIẾT ĐƠN ĐẶT PHÒNG ĐỂ POPULATE FORM SỬA
+     */
+    public Object[] findEditDetail(String maDat) {
+        String sql = """
+            SELECT kh.tenKH, kh.soDT, kh.soCCCD, kh.ngaySinh,
+                   dp.ngayCheckIn, dp.ngayCheckOut,
+                   ctdp.maPhong, ctdp.soNguoi, ctdp.giaCoc, ctdp.ghiChu,
+                   p.loaiPhong
+            FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH
+            LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
+            LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
+            WHERE dp.maDat = ?
+            """;
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDat);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Object[] {
+                    rs.getString("tenKH"),
+                    rs.getString("soDT"),
+                    rs.getString("soCCCD"),
+                    rs.getDate("ngaySinh") != null ? rs.getDate("ngaySinh").toLocalDate() : null,
+                    
+                    // Hàm này trả về thẳng LocalDate để UI Dialog nhận được và đưa lên form dễ dàng
+                    rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate() : null,
+                    rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate() : null,
+                    
+                    rs.getString("maPhong"),
+                    rs.getObject("soNguoi") != null ? rs.getInt("soNguoi") : 1,
+                    rs.getObject("giaCoc") != null ? rs.getDouble("giaCoc") : 0.0,
+                    rs.getString("ghiChu"),
+                    rs.getString("loaiPhong")
+                };
+            }
+        } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
 }
