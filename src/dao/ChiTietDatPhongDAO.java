@@ -88,4 +88,70 @@ public class ChiTietDatPhongDAO {
         }
         return String.format("CTDP%03d", max + 1);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INSERT (dùng chung Connection cho transaction)
+    // ─────────────────────────────────────────────────────────────────────────
+    public boolean insertWithConnection(Connection con, String maCTDP, String maPhong,
+                                        String maDat, double giaCoc, int soNguoi, String ghiChu) throws SQLException {
+        String sql = "INSERT INTO ChiTietDatPhong(maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES(?,?,?,?,?,?)";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maCTDP);
+            ps.setString(2, maPhong);
+            ps.setString(3, maDat);
+            ps.setDouble(4, giaCoc);
+            ps.setInt(5, soNguoi);
+            ps.setString(6, ghiChu);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CẬP NHẬT CHI TIẾT ĐẶT PHÒNG THEO MÃ ĐẶT (dùng chung Connection)
+    // ─────────────────────────────────────────────────────────────────────────
+    public boolean updateByMaDat(Connection con, String maDat, String maPhong,
+                                  double giaCoc, int soNguoi, String ghiChu) throws SQLException {
+        String sql = "UPDATE ChiTietDatPhong SET maPhong=?, giaCoc=?, soNguoi=?, ghiChu=? WHERE maDat=?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maPhong);
+            ps.setDouble(2, giaCoc);
+            ps.setInt(3, soNguoi);
+            ps.setString(4, ghiChu);
+            ps.setString(5, maDat);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // [THÊM MỚI] LẤY TỔNG TIỀN CỌC CỦA MỘT ĐƠN ĐẶT PHÒNG
+    // ─────────────────────────────────────────────────────────────────────────
+    public double getTongCocByMaDat(String maDat) {
+        String sql = "SELECT SUM(giaCoc) FROM ChiTietDatPhong WHERE maDat = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, maDat);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0.0;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // [THÊM MỚI] XÓA TOÀN BỘ CHI TIẾT ĐẶT PHÒNG DỰA TRÊN MÃ ĐẶT
+    // ─────────────────────────────────────────────────────────────────────────
+    public boolean deleteByMaDat(String maDat) {
+        String sql = "DELETE FROM ChiTietDatPhong WHERE maDat = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, maDat);
+            return pstmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
