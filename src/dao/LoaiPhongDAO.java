@@ -85,4 +85,25 @@ public class LoaiPhongDAO {
         lp.setSucChua(rs.getInt("sucChua"));
         return lp;
     }
+
+    /**
+     * Lấy danh sách mã loại phòng (dùng cho ComboBox đặt phòng)
+     */
+    public List<String> getAllMaLoaiPhong() {
+        List<String> list = new ArrayList<>();
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT maLoaiPhong FROM LoaiPhong")) {
+            while (rs.next()) list.add(rs.getString("maLoaiPhong"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /**
+     * Lấy giá phòng theo mã loại
+     */
+    public double getGiaByMaLoai(String maLoaiPhong) {
+        LoaiPhong lp = findByID(maLoaiPhong);
+        return lp != null ? lp.getGia() : 0;
+    }
 }
