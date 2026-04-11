@@ -161,4 +161,21 @@ public class PhongDAO {
         }
         return ds;
     }
+
+    /**
+     * Cập nhật trạng thái phòng (dùng cho nghiệp vụ Check-in / Check-out)
+     * Trạng thái tự động: CONTRONG, DANGSUDUNG, BAN
+     */
+    public boolean updateTrangThai(String maPhong, String trangThai) {
+        String sql = "UPDATE Phong SET tinhTrang = ? WHERE maPhong = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, trangThai);
+            pstmt.setString(2, maPhong);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

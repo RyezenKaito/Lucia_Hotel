@@ -140,7 +140,8 @@ public class ThemSuaDichVuDialog extends Stage {
         form.setStyle("-fx-background-color: white;");
 
         // 1. Mã dịch vụ (Auto-generate if new)
-        txtMaDV = makeField(isEdit ? dichVu.getMaDV() : generateCode(), "");
+        DichVuDAO dvDAO = new DichVuDAO();
+        txtMaDV = makeField(isEdit ? dichVu.getMaDV() : dvDAO.generateNextMaDV(), "");
         txtMaDV.setEditable(false);
         txtMaDV.setStyle(fieldStyle() + "-fx-background-color: #f3f4f6; -fx-text-fill: " + C_TEXT_GRAY + ";");
 

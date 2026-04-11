@@ -16,7 +16,6 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Window;
@@ -39,9 +38,6 @@ public class QuanLyPhongView extends BorderPane {
     private static final String C_NAVY = "#1e3a8a";
     private static final String C_BLUE = "#1d4ed8";
     private static final String C_BLUE_HOVER = "#1e40af";
-    private static final String C_RED = "#dc2626";
-    private static final String C_GREEN = "#16a34a";
-    private static final String C_GOLD = "#d97706";
 
     /* ── DAO & dữ liệu ─────────────────────────────────────────────── */
     private final PhongDAO dao = new PhongDAO();
@@ -96,7 +92,6 @@ public class QuanLyPhongView extends BorderPane {
             titleRow.getChildren().add(btnAdd);
         }
 
-
         /* ── Dòng 3: Thanh tìm kiếm ──────────────────────────────── */
         txtSearch = new TextField();
         txtSearch.setPromptText("🔍  Tìm kiếm theo mã phòng hoặc loại phòng...");
@@ -136,19 +131,21 @@ public class QuanLyPhongView extends BorderPane {
         colSTT.setMinWidth(50);
         colSTT.setMaxWidth(60);
         colSTT.setStyle("-fx-alignment: CENTER;");
-        colSTT.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(table.getItems().indexOf(p.getValue()) + 1)));
+        colSTT.setCellValueFactory(
+                p -> new SimpleStringProperty(String.valueOf(table.getItems().indexOf(p.getValue()) + 1)));
 
         // Cột Mã phòng
         TableColumn<Phong, String> colMa = new TableColumn<>("Mã phòng");
         colMa.setMinWidth(100);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaPhong())));
 
         // Cột Loại phòng
         TableColumn<Phong, String> colLoai = new TableColumn<>("Loại phòng");
         colLoai.setMinWidth(150);
         colLoai.setStyle("-fx-alignment: CENTER;");
-        colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getLoaiPhong() != null ? p.getValue().getLoaiPhong().toString() : ""));
+        colLoai.setCellValueFactory(p -> new SimpleStringProperty(
+                p.getValue().getLoaiPhong() != null ? p.getValue().getLoaiPhong().toString() : ""));
 
         // Cột Đơn giá
         TableColumn<Phong, String> colGia = new TableColumn<>("Đơn giá");
@@ -175,13 +172,16 @@ public class QuanLyPhongView extends BorderPane {
         // Cột Trạng thái
         TableColumn<Phong, String> colTrangThai = new TableColumn<>("Trạng thái");
         colTrangThai.setMinWidth(150);
-        colTrangThai.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(p -> {
             TrangThaiPhong tt = p.getValue().getTrangThai();
             String val = "Không xác định";
-            if (tt == TrangThaiPhong.CONTRONG) val = "Còn trống";
-            else if (tt == TrangThaiPhong.DACOKHACH) val = "Đã có khách";
-            else if (tt == TrangThaiPhong.BAN) val = "Đang bảo trì";
+            if (tt == TrangThaiPhong.CONTRONG)
+                val = "Còn trống";
+            else if (tt == TrangThaiPhong.DACOKHACH)
+                val = "Đã có khách";
+            else if (tt == TrangThaiPhong.BAN)
+                val = "Đang bảo trì";
             return new SimpleStringProperty(val);
         });
         colTrangThai.setCellFactory(column -> new TableCell<>() {
@@ -190,30 +190,66 @@ public class QuanLyPhongView extends BorderPane {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
-                    setOnMouseClicked(null);
+                    setGraphic(null);
                 } else {
-                    setText(item);
-                    String baseStyle = "-fx-alignment: CENTER; -fx-font-weight: bold; -fx-cursor: hand; ";
-                    if (item.equals("Còn trống")) setStyle(baseStyle + "-fx-text-fill: " + C_GREEN + ";");
-                    else if (item.equals("Đã có khách")) setStyle(baseStyle + "-fx-text-fill: " + C_GOLD + ";");
-                    else setStyle(baseStyle + "-fx-text-fill: " + C_RED + ";");
+                    boolean isOccupied = item.equals("Đã có khách");
 
-                    ContextMenu statusMenu = new ContextMenu();
-                    MenuItem m1 = new MenuItem("✅  Còn trống");
-                    m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
-                    MenuItem m2 = new MenuItem("🛏  Đã có khách");
-                    m2.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.DACOKHACH));
-                    MenuItem m3 = new MenuItem("🔧  Đang bảo trì");
-                    m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
-                    
-                    statusMenu.getItems().addAll(m1, m2, m3);
+                    // HBox Badge chứa Text + Arrow (nếu không phải Đã có khách)
+                    HBox badge = new HBox(4);
+                    badge.setAlignment(Pos.CENTER);
+                    badge.setPadding(new Insets(2, 8, 2, 8));
+                    badge.setMaxWidth(Region.USE_PREF_SIZE);
+                    badge.setMaxHeight(Region.USE_PREF_SIZE);
 
-                    setOnMouseClicked(e -> {
-                        if (e.getButton() == MouseButton.PRIMARY) {
-                            statusMenu.show(this, e.getScreenX(), e.getScreenY());
-                        }
-                    });
+                    Label lblText = new Label(item);
+                    lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+
+                    badge.getChildren().add(lblText);
+
+                    // Chỉ hiện mũi tên dropdown khi KHÔNG phải "Đã có khách"
+                    if (!isOccupied) {
+                        badge.setCursor(Cursor.HAND);
+                        Label lblArrow = new Label("▾");
+                        lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                        badge.getChildren().add(lblArrow);
+                    }
+
+                    // Style dựa trên trạng thái
+                    String bg, text;
+                    if (item.equals("Còn trống")) {
+                        bg = "#d1fae5";
+                        text = "#065f46"; // Emerald
+                    } else if (isOccupied) {
+                        bg = "#fef3c7";
+                        text = "#92400e"; // Amber
+                    } else {
+                        bg = "#fee2e2";
+                        text = "#991b1b"; // Rose
+                    }
+
+                    badge.setStyle("-fx-background-color: " + bg + "; -fx-background-radius: 12;");
+                    lblText.setStyle("-fx-text-fill: " + text + ";");
+
+                    // Menu chọn trạng thái: CHỈ cho phép Còn trống / Đang bảo trì
+                    // Phòng "Đã có khách" do nghiệp vụ Đặt phòng/Nhận phòng/Trả phòng tự quản lý
+                    if (!isOccupied) {
+                        ContextMenu statusMenu = new ContextMenu();
+                        MenuItem m1 = new MenuItem("✅  Còn trống");
+                        m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
+                        MenuItem m3 = new MenuItem("🔧  Đang bảo trì");
+                        m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
+                        statusMenu.getItems().addAll(m1, m3);
+
+                        badge.setOnMouseClicked(e -> {
+                            if (e.getButton() == MouseButton.PRIMARY) {
+                                statusMenu.show(badge, e.getScreenX(), e.getScreenY());
+                            }
+                        });
+                    }
+
+                    setGraphic(badge);
+                    setText(null);
+                    setAlignment(Pos.CENTER);
                 }
             }
         });
@@ -244,14 +280,28 @@ public class QuanLyPhongView extends BorderPane {
             miEdit.setStyle("-fx-font-size: 13px;");
             miEdit.setOnAction(e -> {
                 Phong p = table.getSelectionModel().getSelectedItem();
-                if (p != null) openDialog(p);
+                if (p != null) {
+                    if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) {
+                        showAlert(Alert.AlertType.WARNING, "Không thể chỉnh sửa",
+                                "Phòng đang có khách. Vui lòng thực hiện trả phòng trước.");
+                    } else {
+                        openDialog(p);
+                    }
+                }
             });
 
             MenuItem miDelete = new MenuItem("🗑  Xóa phòng");
             miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miDelete.setOnAction(e -> {
                 Phong p = table.getSelectionModel().getSelectedItem();
-                if (p != null) handleDelete(p);
+                if (p != null) {
+                    if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) {
+                        showAlert(Alert.AlertType.WARNING, "Không thể xóa",
+                                "Phòng đang có khách. Vui lòng thực hiện trả phòng trước.");
+                    } else {
+                        handleDelete(p);
+                    }
+                }
             });
 
             ctxMenu.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
@@ -284,10 +334,12 @@ public class QuanLyPhongView extends BorderPane {
     }
 
     private void applyFilter(String keyword) {
-        if (filteredData == null) return;
+        if (filteredData == null)
+            return;
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         filteredData.setPredicate(p -> {
-            if (kw.isEmpty()) return true;
+            if (kw.isEmpty())
+                return true;
             String lp = p.getLoaiPhong() != null ? p.getLoaiPhong().toString().toLowerCase() : "";
             return nvl(p.getMaPhong()).toLowerCase().contains(kw) || lp.contains(kw);
         });
@@ -299,7 +351,8 @@ public class QuanLyPhongView extends BorderPane {
     }
 
     private void updateStatus(Phong p, TrangThaiPhong newStatus) {
-        if (p == null || p.getTrangThai() == newStatus) return;
+        if (p == null || p.getTrangThai() == newStatus)
+            return;
         p.setTrangThai(newStatus);
         if (dao.update(p)) {
             loadData();
@@ -321,14 +374,13 @@ public class QuanLyPhongView extends BorderPane {
                 showAlert(Alert.AlertType.INFORMATION, "Đã xóa", "Phòng " + p.getMaPhong() + " đã được xóa.");
                 loadData();
             } else {
-                showAlert(Alert.AlertType.ERROR, "Xóa thất bại", "Kiểm tra lại xem phòng có đang dính dữ liệu hóa đơn không.");
+                showAlert(Alert.AlertType.ERROR, "Xóa thất bại",
+                        "Kiểm tra lại xem phòng có đang dính dữ liệu hóa đơn không.");
             }
         }
     }
 
     /* ── Utilities ──────────────────────────────────────────────────── */
-
-
 
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {
         String base = "-fx-background-color: " + bg + ";" +

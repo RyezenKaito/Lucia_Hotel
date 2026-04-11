@@ -184,17 +184,27 @@ public class ThemSuaPhongDialog extends Stage {
 
         Control trangThaiControl;
         if (isEdit) {
-            cbTrangThai = new ComboBox<>(FXCollections.observableArrayList("Còn trống", "Đã có khách", "Đang bảo trì"));
-            cbTrangThai.setMaxWidth(Double.MAX_VALUE);
-            cbTrangThai.setStyle(fieldStyle());
-            if (phong.getTrangThai() == TrangThaiPhong.CONTRONG)
-                cbTrangThai.setValue("Còn trống");
-            else if (phong.getTrangThai() == TrangThaiPhong.DACOKHACH)
+            // Phòng "Đã có khách" → trạng thái chỉ đọc (do nghiệp vụ đặt/nhận/trả phòng tự quản lý)
+            boolean isOccupied = phong.getTrangThai() == TrangThaiPhong.DACOKHACH;
+            if (isOccupied) {
+                cbTrangThai = new ComboBox<>();
                 cbTrangThai.setValue("Đã có khách");
-            else
-                cbTrangThai.setValue("Đang bảo trì");
-            cbTrangThai.setOnAction(e -> checkChanges());
-            trangThaiControl = cbTrangThai;
+                TextField txtTTOccupied = new TextField("Đã có khách (tự động)");
+                txtTTOccupied.setEditable(false);
+                txtTTOccupied.setStyle(fieldStyle() + "-fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-font-weight: bold;");
+                trangThaiControl = txtTTOccupied;
+            } else {
+                // Chỉ cho phép chọn Còn trống / Đang bảo trì
+                cbTrangThai = new ComboBox<>(FXCollections.observableArrayList("Còn trống", "Đang bảo trì"));
+                cbTrangThai.setMaxWidth(Double.MAX_VALUE);
+                cbTrangThai.setStyle(fieldStyle());
+                if (phong.getTrangThai() == TrangThaiPhong.CONTRONG)
+                    cbTrangThai.setValue("Còn trống");
+                else
+                    cbTrangThai.setValue("Đang bảo trì");
+                cbTrangThai.setOnAction(e -> checkChanges());
+                trangThaiControl = cbTrangThai;
+            }
         } else {
             cbTrangThai = new ComboBox<>();
             cbTrangThai.setValue("Còn trống"); // Lưu logic cho handleSave()
@@ -328,8 +338,13 @@ public class ThemSuaPhongDialog extends Stage {
         int tang = isEdit ? phong.getSoTang() : cbSoTang.getValue();
         LoaiPhong lp = cbLoaiPhong.getValue();
         String ttStr = cbTrangThai.getValue();
-        TrangThaiPhong tt = ttStr.equals("Còn trống") ? TrangThaiPhong.CONTRONG
-                : (ttStr.equals("Đã có khách") ? TrangThaiPhong.DACOKHACH : TrangThaiPhong.BAN);
+        TrangThaiPhong tt;
+        if ("Đã có khách".equals(ttStr))
+            tt = TrangThaiPhong.DACOKHACH; // Giữ nguyên trạng thái gốc (phòng đang có khách)
+        else if ("Còn trống".equals(ttStr))
+            tt = TrangThaiPhong.CONTRONG;
+        else
+            tt = TrangThaiPhong.BAN;
 
         Phong p;
         if (isEdit) {

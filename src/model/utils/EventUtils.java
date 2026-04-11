@@ -13,11 +13,14 @@ import java.util.function.Supplier;
  */
 public final class EventUtils {
 
-    private EventUtils() {} // không tạo instance
+    private EventUtils() {
+    } // không tạo instance
 
-    /* ══════════════════════════════════════════════════════════════════
-       1. ENTER → NEXT FIELD (field cuối cùng → gọi onSubmit)
-    ══════════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * 1. ENTER → NEXT FIELD (field cuối cùng → gọi onSubmit)
+     * ══════════════════════════════════════════════════════════════════
+     */
 
     /**
      * Gắn sự kiện Enter cho danh sách control theo thứ tự tab.
@@ -38,19 +41,23 @@ public final class EventUtils {
                         Platform.runLater(nextField::requestFocus);
                     } else {
                         // Field cuối → submit
-                        if (onSubmit != null) onSubmit.run();
+                        if (onSubmit != null)
+                            onSubmit.run();
                     }
                 }
             });
         }
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       2. FOCUS VÀO Ô LỖI ĐẦU TIÊN (CAO NHẤT)
-    ══════════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * 2. FOCUS VÀO Ô LỖI ĐẦU TIÊN (CAO NHẤT)
+     * ══════════════════════════════════════════════════════════════════
+     */
 
     public static boolean focusFirstError(Control[] fields, Label[] errorLabels) {
-        if (fields == null || errorLabels == null) return false;
+        if (fields == null || errorLabels == null)
+            return false;
 
         int len = Math.min(fields.length, errorLabels.length);
         for (int i = 0; i < len; i++) {
@@ -65,7 +72,8 @@ public final class EventUtils {
     }
 
     public static boolean focusFirstError(Node[] fields, Label[] errorLabels) {
-        if (fields == null || errorLabels == null) return false;
+        if (fields == null || errorLabels == null)
+            return false;
 
         int len = Math.min(fields.length, errorLabels.length);
         for (int i = 0; i < len; i++) {
@@ -79,15 +87,19 @@ public final class EventUtils {
         return false;
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-    3. DIRTY TRACKING THÔNG MINH (Tự động Disable nút nếu chưa đổi)
- ══════════════════════════════════════════════════════════════════ */
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * 3. DIRTY TRACKING THÔNG MINH (Tự động Disable nút nếu chưa đổi)
+     * ══════════════════════════════════════════════════════════════════
+     */
 
     /**
-     * Tự động theo dõi thay đổi và Disable nút nếu dữ liệu giống hệt lúc mới mở form.
+     * Tự động theo dõi thay đổi và Disable nút nếu dữ liệu giống hệt lúc mới mở
+     * form.
      */
     public static void setupDirtyTracking(Button btn, Node... nodes) {
-        if (btn == null || nodes == null) return;
+        if (btn == null || nodes == null)
+            return;
 
         // 1. Chụp snapshot giá trị ngay khi mở form
         Object[] initialValues = new Object[nodes.length];
@@ -122,32 +134,42 @@ public final class EventUtils {
                 ((CheckBox) n).selectedProperty().addListener((o, oldV, newV) -> check.run());
             } else {
                 // Hỗ trợ DatePicker custom của bạn thông qua Focus và Click
-                n.focusedProperty().addListener((o, oldV, focused) -> { if (!focused) check.run(); });
+                n.focusedProperty().addListener((o, oldV, focused) -> {
+                    if (!focused)
+                        check.run();
+                });
                 n.setOnMouseClicked(e -> Platform.runLater(check));
             }
         }
     }
 
- /**
-  * Helper: Trích xuất giá trị an toàn từ mọi loại giao diện.
-  */
- private static Object getValue(Node n) {
-     if (n instanceof TextField) return ((TextField) n).getText() != null ? ((TextField) n).getText().trim() : "";
-     if (n instanceof ComboBox) return ((ComboBox<?>) n).getValue();
-     if (n instanceof javafx.scene.control.DatePicker) return ((javafx.scene.control.DatePicker) n).getValue();
-     if (n instanceof CheckBox) return ((CheckBox) n).isSelected();
-     
-     // Dùng Reflection: Nếu component tự chế có viết sẵn hàm getValue(), tự động gọi nó ra!
-     try {
-         return n.getClass().getMethod("getValue").invoke(n);
-     } catch (Exception e) {
-         return null; // Bỏ qua nếu không lấy được giá trị
-     }
- }
+    /**
+     * Helper: Trích xuất giá trị an toàn từ mọi loại giao diện.
+     */
+    private static Object getValue(Node n) {
+        if (n instanceof TextField)
+            return ((TextField) n).getText() != null ? ((TextField) n).getText().trim() : "";
+        if (n instanceof ComboBox)
+            return ((ComboBox<?>) n).getValue();
+        if (n instanceof javafx.scene.control.DatePicker)
+            return ((javafx.scene.control.DatePicker) n).getValue();
+        if (n instanceof CheckBox)
+            return ((CheckBox) n).isSelected();
 
-    /* ══════════════════════════════════════════════════════════════════
-       4. TIỆN ÍCH TẠO SNAPSHOT GIÁ TRỊ BAN ĐẦU
-    ══════════════════════════════════════════════════════════════════ */
+        // Dùng Reflection: Nếu component tự chế có viết sẵn hàm getValue(), tự động gọi
+        // nó ra!
+        try {
+            return n.getClass().getMethod("getValue").invoke(n);
+        } catch (Exception e) {
+            return null; // Bỏ qua nếu không lấy được giá trị
+        }
+    }
+
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * 4. TIỆN ÍCH TẠO SNAPSHOT GIÁ TRỊ BAN ĐẦU
+     * ══════════════════════════════════════════════════════════════════
+     */
 
     public static String[] snapshot(TextField... fields) {
         String[] snap = new String[fields.length];
@@ -158,10 +180,12 @@ public final class EventUtils {
     }
 
     public static boolean hasTextChanged(TextField[] fields, String[] originals) {
-        if (fields.length != originals.length) return true;
+        if (fields.length != originals.length)
+            return true;
         for (int i = 0; i < fields.length; i++) {
             String current = fields[i].getText() != null ? fields[i].getText() : "";
-            if (!current.equals(originals[i])) return true;
+            if (!current.equals(originals[i]))
+                return true;
         }
         return false;
     }

@@ -17,8 +17,8 @@ public class DichVuDAO {
         String sql = "SELECT * FROM DV WHERE trangThai = 0";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 ds.add(mapRow(rs));
@@ -36,7 +36,7 @@ public class DichVuDAO {
         List<DichVu> ds = new ArrayList<>();
         String sql = "SELECT * FROM DV WHERE loaiDV = ? AND trangThai = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, loaiDV);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -55,8 +55,8 @@ public class DichVuDAO {
     public boolean update(DichVu dv) {
         String sql = "UPDATE DV SET tenDV = ?, gia = ?, loaiDV = ?, mieuTa = ?, donVi = ?, trangThai = ? WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement pstmt = con.prepareStatement(sql)) {
-            
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+
             pstmt.setString(1, dv.getTenDV());
             pstmt.setDouble(2, dv.getGia());
             pstmt.setString(3, dv.getLoaiDV());
@@ -78,8 +78,8 @@ public class DichVuDAO {
     public boolean insert(DichVu dv) {
         String sql = "INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement pstmt = con.prepareStatement(sql)) {
-            
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+
             pstmt.setString(1, dv.getMaDV());
             pstmt.setString(2, dv.getTenDV());
             pstmt.setDouble(3, dv.getGia());
@@ -94,15 +94,15 @@ public class DichVuDAO {
             return false;
         }
     }
-    
+
     /**
      * Lấy thông tin dịch vụ theo mã dịch vụ (ID)
      */
     public DichVu getServiceByID(String ma) {
         String sql = "SELECT * FROM DV WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            
+                PreparedStatement ps = con.prepareStatement(sql)) {
+
             ps.setString(1, ma);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -137,10 +137,11 @@ public class DichVuDAO {
     public boolean exists(String maDV) {
         String sql = "SELECT COUNT(*) FROM DV WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDV);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1) > 0;
+                if (rs.next())
+                    return rs.getInt(1) > 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -154,12 +155,38 @@ public class DichVuDAO {
     public boolean delete(String maDV) {
         String sql = "UPDATE DV SET trangThai = 1 WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDV);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * Sinh mã dịch vụ tiếp theo (DV001, DV002, ...)
+     */
+    public String generateNextMaDV() {
+        String sql = "SELECT maDV FROM DV WHERE maDV LIKE 'DV%'";
+        int max = 0;
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String last = rs.getString(1);
+                if (last != null && last.length() > 2) {
+                    try {
+                        int num = Integer.parseInt(last.substring(2));
+                        if (num > max)
+                            max = num;
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return String.format("DV%03d", max + 1);
     }
 }

@@ -10,17 +10,17 @@ import model.entities.DatPhong;
 import model.entities.KhachHang;
 
 public class DatPhongDAO {
-    
+
     /**
      * Tìm khách hàng dựa trên mã đặt phòng
      */
     public KhachHang findKhachHangByIdDatPhong(String maDat) {
         String sql = "SELECT maKH FROM DatPhong WHERE maDat = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement pstmt = con.prepareStatement(sql)) {
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
             pstmt.setString(1, maDat);
             ResultSet rs = pstmt.executeQuery();
-            if(rs.next()) {
+            if (rs.next()) {
                 return new KhachHangDAO().findKhachHangByID(rs.getString("maKH"));
             }
         } catch (Exception e) {
@@ -35,11 +35,11 @@ public class DatPhongDAO {
     public List<String> getMaDatPhongCheckInHomNay() {
         List<String> dsMa = new ArrayList<>();
         String sql = "SELECT maDat FROM DatPhong " +
-                     "WHERE CAST(ngayCheckIn AS DATE) = CAST(GETDATE() AS DATE) " +
-                     "AND ngayCheckIn IS NOT NULL"; // logic có thể cần điều chỉnh tùy nghiệp vụ
+                "WHERE CAST(ngayCheckIn AS DATE) = CAST(GETDATE() AS DATE) " +
+                "AND ngayCheckIn IS NOT NULL"; // logic có thể cần điều chỉnh tùy nghiệp vụ
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 dsMa.add(rs.getString("maDat"));
             }
@@ -54,31 +54,34 @@ public class DatPhongDAO {
      */
     public DatPhong findDatPhongDetail(String keyword) {
         String sql = "SELECT dp.*, kh.tenKH, kh.soDT, kh.soCCCD " +
-                     "FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH " +
-                     "WHERE dp.maDat = ? OR kh.soDT = ?";
-        
+                "FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH " +
+                "WHERE dp.maDat = ? OR kh.soDT = ?";
+
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement pstmt = con.prepareStatement(sql)) {
-            
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+
             pstmt.setString(1, keyword);
             pstmt.setString(2, keyword);
             ResultSet rs = pstmt.executeQuery();
-            
+
             if (rs.next()) {
                 KhachHang kh = new KhachHang(
-                    rs.getString("maKH"),
-                    rs.getString("tenKH"),
-                    rs.getString("soCCCD"),
-                    rs.getString("soDT")
-                );
+                        rs.getString("maKH"),
+                        rs.getString("tenKH"),
+                        rs.getString("soCCCD"),
+                        rs.getString("soDT"));
 
                 DatPhong dp = new DatPhong();
                 dp.setMaDat(rs.getString("maDat"));
                 dp.setNgayDat(rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null);
                 dp.setKhachHang(kh);
-                dp.setNgayCheckIn(rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime() : null);
-                dp.setNgayCheckOut(rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime() : null);
-                
+                dp.setNgayCheckIn(
+                        rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime()
+                                : null);
+                dp.setNgayCheckOut(
+                        rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime()
+                                : null);
+
                 return dp;
             }
         } catch (Exception e) {
@@ -93,10 +96,11 @@ public class DatPhongDAO {
     public boolean insert(DatPhong dp) {
         String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut) VALUES (?,?,?,?,?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement pstmt = con.prepareStatement(sql)) {
-            
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+
             pstmt.setString(1, dp.getMaDat());
-            pstmt.setTimestamp(2, dp.getNgayDat() != null ? Timestamp.valueOf(dp.getNgayDat()) : Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setTimestamp(2, dp.getNgayDat() != null ? Timestamp.valueOf(dp.getNgayDat())
+                    : Timestamp.valueOf(LocalDateTime.now()));
             pstmt.setString(3, dp.getKhachHang().getMaKH());
             pstmt.setTimestamp(4, dp.getNgayCheckIn() != null ? Timestamp.valueOf(dp.getNgayCheckIn()) : null);
             pstmt.setTimestamp(5, dp.getNgayCheckOut() != null ? Timestamp.valueOf(dp.getNgayCheckOut()) : null);
@@ -109,16 +113,18 @@ public class DatPhongDAO {
     }
 
     /**
-     * Lấy tên khách hàng đang ở trong phòng (Dựa trên ChiTietDatPhong join DatPhong join KH)
+     * Lấy tên khách hàng đang ở trong phòng (Dựa trên ChiTietDatPhong join DatPhong
+     * join KH)
      */
     public String getTenKhachHienTai(String maPhong) {
         String sql = "SELECT kh.tenKH FROM KH kh " +
-                     "JOIN DatPhong dp ON kh.maKH = dp.maKH " +
-                     "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
-                     "WHERE ctdp.maPhong = ? AND dp.ngayCheckOut IS NULL"; // Giả định đơn chưa checkout là đang ở
-        
+                "JOIN DatPhong dp ON kh.maKH = dp.maKH " +
+                "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
+
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -135,14 +141,16 @@ public class DatPhongDAO {
      */
     public String getMaHDByMaPhong(String maPhong) {
         String sql = "SELECT h.maHD FROM HoaDon h " +
-                     "JOIN DatPhong dp ON h.maDat = dp.maDat " +
-                     "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
-                     "WHERE ctdp.maPhong = ? AND dp.ngayCheckOut IS NULL";
+                "JOIN DatPhong dp ON h.maDat = dp.maDat " +
+                "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getString("maHD");
+            if (rs.next())
+                return rs.getString("maHD");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -150,38 +158,153 @@ public class DatPhongDAO {
     }
 
     /**
+     * Query tổng hợp checkout: DatPhong + KH + ChiTietDatPhong (giaCoc) + LoaiPhong (giaPhong)
+     * Chỉ tìm phòng đang có trạng thái DANGSUDUNG
+     * 
+     * @return Object[] { DatPhong dp, double giaCoc, double giaPhong, String maPhong }
+     *         hoặc null nếu không tìm thấy
+     */
+    public Object[] findCheckOutInfoByMaPhong(String maPhong) {
+        String sql = "SELECT dp.maDat, dp.ngayDat, dp.ngayCheckIn, dp.ngayCheckOut, " +
+                "kh.maKH, kh.tenKH, kh.soDT, kh.soCCCD, " +
+                "ctdp.giaCoc, lp.gia AS giaPhong, p.maPhong " +
+                "FROM Phong p " +
+                "JOIN ChiTietDatPhong ctdp ON p.maPhong = ctdp.maPhong " +
+                "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
+                "JOIN KH kh ON dp.maKH = kh.maKH " +
+                "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
+                "WHERE p.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+
+            pstmt.setString(1, maPhong);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                KhachHang kh = new KhachHang(
+                        rs.getString("maKH"),
+                        rs.getString("tenKH"),
+                        rs.getString("soCCCD"),
+                        rs.getString("soDT"));
+
+                DatPhong dp = new DatPhong();
+                dp.setMaDat(rs.getString("maDat"));
+                dp.setNgayDat(rs.getTimestamp("ngayDat") != null
+                        ? rs.getTimestamp("ngayDat").toLocalDateTime() : null);
+                dp.setKhachHang(kh);
+                dp.setNgayCheckIn(rs.getTimestamp("ngayCheckIn") != null
+                        ? rs.getTimestamp("ngayCheckIn").toLocalDateTime() : null);
+                dp.setNgayCheckOut(rs.getTimestamp("ngayCheckOut") != null
+                        ? rs.getTimestamp("ngayCheckOut").toLocalDateTime() : null);
+
+                double giaCoc = rs.getDouble("giaCoc");
+                double giaPhong = rs.getDouble("giaPhong");
+                String maPhongResult = rs.getString("maPhong");
+
+                return new Object[] { dp, giaCoc, giaPhong, maPhongResult };
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Lấy danh sách mã phòng đang sử dụng (DANGSUDUNG)
+     * Dùng cho Quick Suggestions trên giao diện Trả phòng
+     */
+    public List<String> getPhongDangSuDung() {
+        List<String> ds = new ArrayList<>();
+        String sql = "SELECT maPhong FROM Phong WHERE tinhTrang = N'DANGSUDUNG'";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                ds.add(rs.getString("maPhong"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
      * Lưu giỏ hàng dịch vụ vào database
+     * Luồng: maPhong → getMaHDByMaPhong → tìm maCTHD từ ChiTietHoaDon → MERGE
+     * DichVuSuDung
+     * Sử dụng MERGE để nếu dịch vụ đã tồn tại thì cộng dồn số lượng
      */
     public boolean saveServiceOrder(String maPhong, java.util.Map<model.entities.DichVu, Integer> cart) {
         String maHD = getMaHDByMaPhong(maPhong);
-        if (maHD == null) return false;
+        if (maHD == null)
+            return false;
 
-        String sql = "INSERT INTO DichVuSuDung (maDV, maHD, ngaySuDung, soLuong, giaDV, trangThai) VALUES (?, ?, GETDATE(), ?, ?, N'Chưa thanh toán')";
-        
+        // Tìm mã chi tiết hóa đơn (maCTHD) từ ChiTietHoaDon liên kết với HoaDon này
+        String maCTHD = findMaCTHDByMaHD(maHD);
+        if (maCTHD == null)
+            return false;
+
+        // MERGE: nếu dịch vụ đã tồn tại → cộng dồn soLuong, nếu chưa → INSERT mới
+        String sql = "MERGE INTO DichVuSuDung AS target " +
+                "USING (VALUES (?, ?, ?, ?)) AS source (maDV, maCTHD, soLuong, giaDV) " +
+                "ON target.maDV = source.maDV AND target.maCTHD = source.maCTHD " +
+                "WHEN MATCHED THEN " +
+                "    UPDATE SET target.soLuong = target.soLuong + source.soLuong, " +
+                "              target.ngaySuDung = GETDATE() " +
+                "WHEN NOT MATCHED THEN " +
+                "    INSERT (maDV, maCTHD, ngaySuDung, soLuong, giaDV, trangThai) " +
+                "    VALUES (source.maDV, source.maCTHD, GETDATE(), source.soLuong, source.giaDV, 0);";
+
         Connection con = null;
         try {
             con = ConnectDatabase.getInstance().getConnection();
             con.setAutoCommit(false);
-            
+
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 for (java.util.Map.Entry<model.entities.DichVu, Integer> entry : cart.entrySet()) {
                     ps.setString(1, entry.getKey().getMaDV());
-                    ps.setString(2, maHD);
+                    ps.setString(2, maCTHD);
                     ps.setInt(3, entry.getValue());
                     ps.setDouble(4, entry.getKey().getGia());
                     ps.addBatch();
                 }
                 ps.executeBatch();
             }
-            
+
             con.commit();
             return true;
         } catch (SQLException e) {
-            if (con != null) try { con.rollback(); } catch (SQLException ex) {}
+            if (con != null)
+                try {
+                    con.rollback();
+                } catch (SQLException ex) {
+                }
             e.printStackTrace();
             return false;
         } finally {
-            if (con != null) try { con.setAutoCommit(true); } catch (SQLException ex) {}
+            if (con != null)
+                try {
+                    con.setAutoCommit(true);
+                } catch (SQLException ex) {
+                }
         }
+    }
+
+    /**
+     * Tìm mã chi tiết hóa đơn (maCTHD) từ bảng ChiTietHoaDon dựa trên mã hóa đơn
+     */
+    private String findMaCTHDByMaHD(String maHD) {
+        String sql = "SELECT TOP 1 maCTHD FROM ChiTietHoaDon WHERE maHD = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maHD);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next())
+                return rs.getString("maCTHD");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

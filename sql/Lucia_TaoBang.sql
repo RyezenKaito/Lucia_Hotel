@@ -49,7 +49,8 @@ CREATE TABLE DV (
     gia DECIMAL(18,2),
     loaiDV NVARCHAR(20) CHECK (loaiDV IN (N'Thực phẩm', N'Giải trí', N'Sức khỏe', N'Tiện ích')),
     mieuTa NVARCHAR(255),
-    donVi NVARCHAR(20)
+    donVi NVARCHAR(20),
+    trangThai INT DEFAULT 0 -- 0: Active, 1: Hidden
 );
 
 -- =============================

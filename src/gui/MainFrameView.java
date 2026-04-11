@@ -428,7 +428,7 @@ public class MainFrameView {
             }
             // Phase 3 - đã migrate sang JavaFX
             case "checkin" -> showFX(new CheckInView());
-            case "checkout" -> showFX(new CheckOutView());
+            case "checkout" -> showFX(new CheckOutView(staff));
             case "invoices" -> showFX(new HoaDonView());
             // Phase 2 - đã migrate sang JavaFX
             case "service" -> showFX(new DichVuView());

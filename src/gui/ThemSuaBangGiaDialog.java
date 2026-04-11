@@ -37,7 +37,7 @@ import java.util.HashMap;
  * 
  * FIX:
  * - Thêm CheckBox trạng thái (bật/tắt áp dụng)
- * - Sinh mã bảng giá tuần tự (BG0001, BG0002...)
+ * - Sinh mã bảng giá tuần tự (BG001, BG002...)
  * - Kiểm tra xung đột thời gian trước khi lưu
  * - Validate ngày áp dụng (không cho chọn quá khứ khi tạo mới)
  */
@@ -92,7 +92,7 @@ public class ThemSuaBangGiaDialog {
         dialog.getDialogPane().setMinWidth(1000);
         dialog.getDialogPane().setPrefHeight(700);
 
-        ButtonType btnSubmit = new ButtonType(isEdit ? "💾 Cập nhật" : "Lưu bảng giá", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnSubmit = new ButtonType(isEdit ? "💾 Cập nhật" : "💾 Thêm mới", ButtonBar.ButtonData.OK_DONE);
         ButtonType btnCancel = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(btnSubmit, btnCancel);
         styleDialogButtons(dialog, btnSubmit, btnCancel);

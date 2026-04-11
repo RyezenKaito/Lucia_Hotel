@@ -323,17 +323,34 @@ public class NhanVienView extends BorderPane {
                     setGraphic(null);
                     return;
                 }
-                Label badge = new Label(item);
-                badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+
+                // HBox Badge chứa Text + Arrow - Thu nhỏ khung lại theo cả 2 trục
+                HBox badge = new HBox(4);
+                badge.setAlignment(Pos.CENTER);
+                badge.setPadding(new Insets(2, 8, 2, 8));
+                badge.setMaxWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+                badge.setMaxHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
+                badge.setCursor(javafx.scene.Cursor.HAND);
+
+                Label lblText = new Label(item);
+                lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+
+                Label lblArrow = new Label("▾");
+                lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+
+                badge.getChildren().addAll(lblText, lblArrow);
+
                 if ("Còn làm".equals(item)) {
-                    badge.setStyle(
-                            "-fx-background-color: #d1fae5; -fx-text-fill: #065f46; -fx-padding: 3 10 3 10; -fx-background-radius: 12; -fx-cursor: hand;");
+                    badge.setStyle("-fx-background-color: #d1fae5; -fx-background-radius: 12;");
+                    lblText.setStyle("-fx-text-fill: #065f46;");
+                    lblArrow.setStyle("-fx-text-fill: #065f46;");
                 } else {
-                    badge.setStyle(
-                            "-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-padding: 3 10 3 10; -fx-background-radius: 12; -fx-cursor: hand;");
+                    badge.setStyle("-fx-background-color: #fee2e2; -fx-background-radius: 12;");
+                    lblText.setStyle("-fx-text-fill: #b91c1c;");
+                    lblArrow.setStyle("-fx-text-fill: #b91c1c;");
                 }
 
-                // Click để đổi trạng thái (cả QUAN_LY lẫn ADMIN)
+                // Click để đổi trạng thái
                 ContextMenu statusMenu = new ContextMenu();
                 MenuItem mConLam = new MenuItem("✅  Còn làm");
                 mConLam.setOnAction(ev -> {

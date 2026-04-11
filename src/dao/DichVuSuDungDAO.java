@@ -11,12 +11,14 @@ public class DichVuSuDungDAO {
      */
     public List<DichVuSuDung> findByMaHD(String maHD) {
         List<DichVuSuDung> ds = new ArrayList<>();
-        String sql = "SELECT dv.*, d.tenDV, d.maDV, dv.giaDV, dv.soLuong, dv.ngaySuDung " +
-                     "FROM DichVuSuDung dv JOIN DichVu d ON dv.maDV = d.maDV " +
-                     "WHERE dv.maHD = ?";
-        
+        String sql = "SELECT dv.maDV, dv.soLuong, dv.giaDV, dv.ngaySuDung, d.tenDV " +
+                "FROM DichVuSuDung dv " +
+                "JOIN DV d ON dv.maDV = d.maDV " +
+                "JOIN ChiTietHoaDon cthd ON dv.maCTHD = cthd.maCTHD " +
+                "WHERE cthd.maHD = ?";
+
         try (java.sql.Connection con = connectDatabase.ConnectDatabase.getInstance().getConnection();
-             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maHD);
             java.sql.ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -29,10 +31,13 @@ public class DichVuSuDungDAO {
                 dvsd.setDichVu(d);
                 dvsd.setGiaDV(rs.getDouble("giaDV"));
                 dvsd.setSoLuong(rs.getInt("soLuong"));
-                dvsd.setNgaySuDung(rs.getTimestamp("ngaySuDung") != null ? rs.getTimestamp("ngaySuDung").toLocalDateTime().toLocalDate() : null);
+                java.sql.Date sqlDate = rs.getDate("ngaySuDung");
+                dvsd.setNgaySuDung(sqlDate != null ? sqlDate.toLocalDate() : null);
                 ds.add(dvsd);
             }
-        } catch (java.sql.SQLException e) { e.printStackTrace(); }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
         return ds;
     }
 }
