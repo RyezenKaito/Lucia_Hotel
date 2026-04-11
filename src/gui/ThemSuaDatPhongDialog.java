@@ -1,9 +1,11 @@
 package gui;
 
 import connectDatabase.ConnectDatabase;
+import dao.ChiTietDatPhongDAO;
+import dao.DatPhongDAO;
+import dao.KhachHangDAO;
 import dao.LoaiPhongDAO;
 import dao.PhongDAO;
-import model.entities.Phong;
 import model.utils.DatePicker;
 import model.utils.DimOverlay;
 import model.utils.EventUtils;
@@ -23,10 +25,12 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
-import java.sql.*;
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ThemSuaDatPhongDialog – Dialog thêm / sửa đơn đặt phòng.
@@ -49,16 +53,30 @@ public class ThemSuaDatPhongDialog extends Stage {
     private final Object[] editRow;    // null = thêm mới
     private final Runnable onSuccess; 
     private String editMaDat;          // mã đặt khi sửa
+    
+    // Lưu vết phòng cũ để nạp lại vào ComboBox khi Sửa
+    private String originalRoom = null; 
+    private String originalRoomType = null;
 
     /* ── Form fields ──────────────────────────────────────────────── */
     private TextField txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu;
     private ComboBox<String> cbLoaiPhong, cbPhong;
-    private DatePicker dpCheckIn, dpCheckOut;
-    private Label errTen, errSDT, errCCCD, errNgayIn, errNgayOut, errSoNguoi, errPhong;
-    private Label lblTongTien;
+    private DatePicker dpCheckIn, dpCheckOut, dpNgaySinh;
+    private Label errTen, errSDT, errCCCD, errNgayIn, errNgayOut, errSoNguoi, errPhong, errNS;
+    
+    // Giao diện tiền bạc mới
+    private Label lblTongTienPhong;
+    private Label lblCanThanhToan;
+    
     private Button btnSave;
-
     private Region overlay;
+
+    /* ── DAO ──────────────────────────────────────────────────────── */
+    private final DatPhongDAO datPhongDAO = new DatPhongDAO();
+    private final ChiTietDatPhongDAO ctdpDAO = new ChiTietDatPhongDAO();
+    private final KhachHangDAO khachHangDAO = new KhachHangDAO();
+    private final LoaiPhongDAO loaiPhongDAO = new LoaiPhongDAO();
+    private final PhongDAO phongDAO = new PhongDAO();
 
     /* ── Constructor ──────────────────────────────────────────────── */
     public ThemSuaDatPhongDialog(Window owner, Object[] editRow, Runnable onSuccess) {
@@ -68,29 +86,19 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         if (editRow != null) this.editMaDat = (String) editRow[0];
 
-        // KHẮC PHỤC LỖI TÀNG HÌNH: Dùng UNDECORATED thay vì TRANSPARENT
         if (owner != null) {
             initOwner(owner);
         }
         initModality(Modality.APPLICATION_MODAL);
         initStyle(StageStyle.UNDECORATED); 
 
-        // Khởi tạo Scene với nền trắng an toàn
-        Scene scene = new Scene(buildRoot(), 600, 680);
+        Scene scene = new Scene(buildRoot(), 600, 720); // Tăng height chút để chứa 2 dòng tính tiền
         scene.setFill(Color.WHITE);
         setScene(scene);
         centerOnScreen();
 
         initEvents();
 
-        Platform.runLater(() -> {
-            if (txtHoTen != null) {
-                txtHoTen.requestFocus();
-                txtHoTen.positionCaret(txtHoTen.getText().length());
-            }
-        });
-
-        // Load dữ liệu khi sửa
         if (editRow != null) {
             Platform.runLater(this::populateEditData);
         }
@@ -100,34 +108,22 @@ public class ThemSuaDatPhongDialog extends Stage {
         if (owner != null) {
             this.overlay = DimOverlay.show(owner);
         }
-        showAndWait(); // Lệnh này sẽ block màn hình chính cho tới khi form đóng
+        showAndWait();
         if (owner != null && this.overlay != null) {
             DimOverlay.hide(owner, this.overlay);
         }
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       SỰ KIỆN LOGIC (EventUtils)
-    ════════════════════════════════════════════════════════════════ */
     private void initEvents() {
-        // KHẮC PHỤC LỖI NGẦM: Bọc Try-Catch để đảm bảo form vẫn mở nếu tiện ích lỗi
         try {
             if (txtHoTen != null && txtSoDT != null) {
                 EventUtils.setupEnterNavigation(this::handleSave, txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu);
-                if (editRow != null && btnSave != null) {
-                    EventUtils.setupDirtyTracking(btnSave, txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu, dpCheckIn, dpCheckOut, cbLoaiPhong, cbPhong);
-                }
             }
         } catch (Exception e) {
             System.err.println("Bỏ qua lỗi EventUtils: " + e.getMessage());
         }
     }
 
-    /*
-     * ════════════════════════════════════════════════════════════════
-     * ROOT
-     * ════════════════════════════════════════════════════════════════
-     */
     private VBox buildRoot() {
         VBox root = new VBox();
         root.setStyle(
@@ -136,7 +132,6 @@ public class ThemSuaDatPhongDialog extends Stage {
                 "-fx-border-width: 2;" +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 4);");
         
-        // Không dùng Try-Catch bao bọc ngoài cùng ở đây để tránh tạo ra form rỗng
         root.getChildren().addAll(
                 buildHeader(),
                 buildFormBody(),
@@ -145,11 +140,6 @@ public class ThemSuaDatPhongDialog extends Stage {
         return root;
     }
 
-    /*
-     * ════════════════════════════════════════════════════════════════
-     * HEADER
-     * ════════════════════════════════════════════════════════════════
-     */
     private HBox buildHeader() {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
@@ -189,11 +179,6 @@ public class ThemSuaDatPhongDialog extends Stage {
         return header;
     }
 
-    /*
-     * ════════════════════════════════════════════════════════════════
-     * FORM BODY
-     * ════════════════════════════════════════════════════════════════
-     */
     private ScrollPane buildFormBody() {
         VBox form = new VBox(6);
         form.setPadding(new Insets(22, 32, 10, 32));
@@ -202,6 +187,14 @@ public class ThemSuaDatPhongDialog extends Stage {
         txtHoTen = makeField("", "Nhập họ và tên khách hàng");
         errTen = errLabel();
         form.getChildren().add(fieldBlock("Họ và tên *", txtHoTen, errTen, null));
+
+        int curYear = LocalDate.now().getYear();
+
+        dpNgaySinh = new DatePicker(curYear - 100, curYear + 25);
+        dpNgaySinh.setPromptText("Chọn ngày sinh khách hàng");
+        dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
+        errNS = errLabel();
+        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
 
         txtSoDT = makeField("", "Nhập số điện thoại");
         try { ValidationUtils.applyNumericOnlyFilter(txtSoDT, 10); } catch (Exception ignored) {}
@@ -218,7 +211,6 @@ public class ThemSuaDatPhongDialog extends Stage {
         rowSDT.getChildren().addAll(colSDT, colCCCD);
         form.getChildren().add(rowSDT);
 
-        int curYear = LocalDate.now().getYear();
         dpCheckIn = new DatePicker(curYear, curYear + 2);
         dpCheckIn.setPromptText("Chọn ngày nhận phòng");
         dpCheckIn.setValue(LocalDate.now());
@@ -253,7 +245,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         cbLoaiPhong = new ComboBox<>(); styleCombo(cbLoaiPhong);
         cbLoaiPhong.setPromptText("Chọn loại phòng");
         loadLoaiPhong();
-        cbLoaiPhong.setOnAction(e -> reloadPhongTrong());
+        cbLoaiPhong.setOnAction(e -> { reloadPhongTrong(); updateTongTien(); });
 
         cbPhong = new ComboBox<>(); styleCombo(cbPhong);
         cbPhong.setPromptText("Chọn phòng trống");
@@ -283,17 +275,35 @@ public class ThemSuaDatPhongDialog extends Stage {
         txtGhiChu = makeField("", "Ghi chú (không bắt buộc)");
         form.getChildren().add(fieldBlock("Ghi chú", txtGhiChu, null, null));
 
-        lblTongTien = new Label("0 đ");
-        lblTongTien.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        lblTongTien.setTextFill(Color.web(C_ACTIVE));
+        // ─────────────────────────────────────────────────────────────────
+        // TÍNH TIỀN UX MỚI RÕ RÀNG HƠN
+        // ─────────────────────────────────────────────────────────────────
+        lblTongTienPhong = new Label("0 đ");
+        lblTongTienPhong.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblTongTienPhong.setTextFill(Color.web("#4b5563"));
 
-        HBox totalRow = new HBox(8);
-        totalRow.setAlignment(Pos.CENTER_LEFT);
-        totalRow.setPadding(new Insets(10, 0, 0, 0));
-        totalRow.setStyle("-fx-border-color: " + C_BORDER + " transparent transparent transparent; -fx-border-width: 1 0 0 0;");
-        Label lbl = new Label("Tạm tính:"); lbl.setFont(Font.font("Segoe UI", 14)); lbl.setTextFill(Color.web(C_TEXT_GRAY));
-        totalRow.getChildren().addAll(lbl, lblTongTien);
-        form.getChildren().add(totalRow);
+        lblCanThanhToan = new Label("0 đ");
+        lblCanThanhToan.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        lblCanThanhToan.setTextFill(Color.web(C_ACTIVE));
+
+        VBox totalBox = new VBox(6);
+        totalBox.setPadding(new Insets(10, 0, 0, 0));
+        totalBox.setStyle("-fx-border-color: " + C_BORDER + " transparent transparent transparent; -fx-border-width: 1 0 0 0;");
+
+        HBox rowTongPhong = new HBox(8);
+        rowTongPhong.setAlignment(Pos.CENTER_LEFT);
+        Label lbl1 = new Label("Tổng tiền phòng:"); 
+        lbl1.setFont(Font.font("Segoe UI", 14)); lbl1.setTextFill(Color.web(C_TEXT_GRAY));
+        rowTongPhong.getChildren().addAll(lbl1, lblTongTienPhong);
+
+        HBox rowThanhToan = new HBox(8);
+        rowThanhToan.setAlignment(Pos.CENTER_LEFT);
+        Label lbl2 = new Label("Cần thanh toán:"); 
+        lbl2.setFont(Font.font("Segoe UI", 14)); lbl2.setTextFill(Color.web(C_TEXT_GRAY));
+        rowThanhToan.getChildren().addAll(lbl2, lblCanThanhToan);
+
+        totalBox.getChildren().addAll(rowTongPhong, rowThanhToan);
+        form.getChildren().add(totalBox);
 
         setupValidation();
         Platform.runLater(this::reloadPhongTrong);
@@ -306,11 +316,6 @@ public class ThemSuaDatPhongDialog extends Stage {
         return scroll;
     }
 
-    /*
-     * ════════════════════════════════════════════════════════════════
-     * FOOTER
-     * ════════════════════════════════════════════════════════════════
-     */
     private HBox buildFooter() {
         HBox footer = new HBox(12);
         footer.setAlignment(Pos.CENTER_RIGHT);
@@ -322,49 +327,69 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         btnSave = makeFooterBtn(editRow == null ? "💾  Thêm mới" : "💾  Cập nhật", C_SIDEBAR, "white", "transparent", C_ACTIVE);
         btnSave.setOnAction(e -> handleSave());
+        if (editRow != null) btnSave.setDisable(true);
 
         footer.getChildren().addAll(btnCancel, btnSave);
         return footer;
     }
 
-    /*
-     * ════════════════════════════════════════════════════════════════
-     * VALIDATION
-     * ════════════════════════════════════════════════════════════════
-     */
     private void setupValidation() {
         txtHoTen.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateTen(); });
         txtSoDT.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateSDT(); });
         txtCCCD.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateCCCD(); });
+        dpNgaySinh.focusedProperty().addListener((o, ov, nv) -> { if (!nv) validateNS(); });
+    }
+
+    private boolean validateNS() {
+        LocalDate ns = dpNgaySinh.getValue();
+        if (ns == null) { showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh."); return false; }
+        if (LocalDate.now().minusYears(16).isBefore(ns)) { showErrorField(dpNgaySinh, errNS, "⚠ Khách hàng phải từ đủ 16 tuổi."); return false; }
+        clearErrorField(dpNgaySinh, errNS); return true;
     }
 
     private boolean validateTen() {
         String ten = txtHoTen.getText().trim().replaceAll("\\s+", " ");
         if (ten.isEmpty()) { showErrorField(txtHoTen, errTen, "⚠ Vui lòng nhập họ và tên."); return false; }
+        if (!ten.matches(ValidationUtils.REGEX_NAME)) { showErrorField(txtHoTen, errTen, "⚠ Chỉ được chứa chữ cái và khoảng trắng."); return false; }
+        if (ten.matches(ValidationUtils.REGEX_SPAM_CHAR)) { showErrorField(txtHoTen, errTen, "⚠ Tên có chứa ký tự lặp lại bất thường."); return false; }
+        if (!ValidationUtils.isValidNameLength(ten)) { showErrorField(txtHoTen, errTen, "⚠ Họ và tên phải chứa ít nhất 1 ký tự"); return false; }
         clearErrorField(txtHoTen, errTen); return true;
     }
 
     private boolean validateSDT() {
         String sdt = txtSoDT.getText().trim();
         if (sdt.isEmpty()) { showErrorField(txtSoDT, errSDT, "⚠ Vui lòng nhập số điện thoại."); return false; }
+        if (!sdt.matches(ValidationUtils.REGEX_PHONE_VN)) { showErrorField(txtSoDT, errSDT, "⚠ Sai đầu số nhà mạng Việt Nam."); return false; }
         clearErrorField(txtSoDT, errSDT); return true;
     }
 
     private boolean validateCCCD() {
         String cccd = txtCCCD.getText().trim();
         if (cccd.isEmpty()) { showErrorField(txtCCCD, errCCCD, "⚠ Vui lòng nhập số CCCD."); return false; }
+        if (!cccd.matches(ValidationUtils.REGEX_CCCD_FORMAT)) { showErrorField(txtCCCD, errCCCD, "⚠ Phải gồm đúng 12 chữ số."); return false; }
+        if (!ValidationUtils.isValidProvinceCode(cccd)) { showErrorField(txtCCCD, errCCCD, "⚠ Mã tỉnh/thành phố không hợp lệ."); return false; }
+        if (dpNgaySinh != null && dpNgaySinh.getValue() != null) {
+            int namSinh = dpNgaySinh.getValue().getYear();
+            if (!ValidationUtils.isValidCCCDCenturyAndGender(cccd, namSinh)) {
+                showErrorField(txtCCCD, errCCCD, "⚠ Số thứ 4 không khớp năm sinh/giới tính."); return false;
+            }
+            if (!ValidationUtils.isValidCCCDBirthYear(cccd, namSinh)) {
+                showErrorField(txtCCCD, errCCCD, "⚠ 2 số năm sinh trên CCCD bị sai (số 5,6)."); return false;
+            }
+        }
         clearErrorField(txtCCCD, errCCCD); return true;
     }
 
     /*
      * ════════════════════════════════════════════════════════════════
-     * SAVE
+     * LƯU DỮ LIỆU ĐA LUỒNG (TRÁNH ĐƠ GIAO DIỆN)
      * ════════════════════════════════════════════════════════════════
      */
     private void handleSave() {
         boolean ok = true;
         if (!validateTen()) ok = false;
         if (!validateSDT()) ok = false;
+        if (!validateNS()) ok = false;
         if (!validateCCCD()) ok = false;
 
         if (dpCheckIn.getValue() == null) { errNgayIn.setText("⚠ Chọn ngày nhận phòng"); ok = false; } else errNgayIn.setText("");
@@ -379,80 +404,86 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         if (!ok) return;
 
-        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-            con.setAutoCommit(false);
-            try {
-                String hoTen = txtHoTen.getText().trim();
-                String soDT = txtSoDT.getText().trim();
-                String cccd = txtCCCD.getText().trim();
-                LocalDate checkIn = dpCheckIn.getValue();
-                LocalDate checkOut = dpCheckOut.getValue();
-                int soNguoi = Integer.parseInt(txtSoNguoi.getText().trim());
-                double tienCoc = parseTienCoc();
-                String ghiChu = txtGhiChu.getText().trim();
-                
-                String maPhong = cbPhong.getValue().split(" ")[0];
+        // 1. Trích xuất toàn bộ dữ liệu trên Main Thread (FX Thread)
+        final String hoTen = ValidationUtils.toTitleCase(txtHoTen.getText().trim().replaceAll("\\s+", " "));
+        final String soDT = txtSoDT.getText().trim();
+        final String cccd = txtCCCD.getText().trim();
+        final LocalDate ngaySinh = dpNgaySinh.getValue();
+        final LocalDate checkIn = dpCheckIn.getValue();
+        final LocalDate checkOut = dpCheckOut.getValue();
+        final int soNguoi = Integer.parseInt(txtSoNguoi.getText().trim());
+        final double tienCoc = parseTienCoc();
+        final String ghiChu = txtGhiChu.getText().trim();
+        final String maPhong = cbPhong.getValue().split(" ")[0]; // Lấy phần đầu (mã phòng)
 
-                if (editRow != null) {
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "UPDATE KH SET tenKH=?, soDT=?, soCCCD=? WHERE maKH=(SELECT maKH FROM DatPhong WHERE maDat=?)")) {
-                        ps.setString(1, hoTen); ps.setString(2, soDT); ps.setString(3, cccd); ps.setString(4, editMaDat);
-                        ps.executeUpdate();
-                    }
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "UPDATE DatPhong SET ngayCheckIn=?, ngayCheckOut=? WHERE maDat=?")) {
-                        ps.setDate(1, Date.valueOf(checkIn)); ps.setDate(2, Date.valueOf(checkOut)); ps.setString(3, editMaDat);
-                        ps.executeUpdate();
-                    }
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "UPDATE ChiTietDatPhong SET maPhong=?, giaCoc=?, soNguoi=?, ghiChu=? WHERE maDat=?")) {
-                        ps.setString(1, maPhong); ps.setDouble(2, tienCoc); ps.setInt(3, soNguoi); ps.setString(4, ghiChu); ps.setString(5, editMaDat);
-                        ps.executeUpdate();
-                    }
-                } else {
-                    String maKH = findOrCreateKH(con, hoTen, soDT, cccd);
-                    String maDat = generateId("DP");
+        final String preGenMaKH   = editRow == null ? khachHangDAO.getNextMaKH() : null;
+        final String preGenMaDat  = editRow == null ? datPhongDAO.generateMaDat() : null;
+        final String preGenMaCTDP = editRow == null ? ctdpDAO.generateMaCTDP() : null;
 
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut) VALUES(?,?,?,?,?)")) {
-                        ps.setString(1, maDat); ps.setDate(2, Date.valueOf(LocalDate.now()));
-                        ps.setString(3, maKH); ps.setDate(4, Date.valueOf(checkIn)); ps.setDate(5, Date.valueOf(checkOut));
-                        ps.executeUpdate();
+        // 2. Cập nhật UI sang trạng thái Đang lưu
+        String oldBtnText = btnSave.getText();
+        btnSave.setDisable(true);
+        btnSave.setText("⏳ Đang lưu...");
+
+        // 3. Đưa thao tác nặng xuống Background Thread
+        new Thread(() -> {
+            boolean success = false;
+            String errorMsg = "";
+            
+            try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+                con.setAutoCommit(false);
+                try {
+                    if (editRow != null) {
+                        khachHangDAO.updateByMaDat(con, editMaDat, hoTen, soDT, cccd, ngaySinh);
+                        datPhongDAO.updateNgayCheckInOut(con, editMaDat, checkIn, checkOut);
+                        ctdpDAO.updateByMaDat(con, editMaDat, maPhong, tienCoc, soNguoi, ghiChu);
+                    } else {
+                        String maKH = khachHangDAO.findOrCreate(con, hoTen, soDT, cccd, ngaySinh, preGenMaKH);
+                        datPhongDAO.insertWithConnection(con, preGenMaDat, maKH, checkIn, checkOut);
+                        ctdpDAO.insertWithConnection(con, preGenMaCTDP, maPhong, preGenMaDat, tienCoc, soNguoi, ghiChu);
                     }
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO ChiTietDatPhong(maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES(?,?,?,?,?,?)")) {
-                        ps.setString(1, generateId("CTDP")); ps.setString(2, maPhong);
-                        ps.setString(3, maDat); ps.setDouble(4, tienCoc); ps.setInt(5, soNguoi); ps.setString(6, ghiChu);
-                        ps.executeUpdate();
-                    }
+                    con.commit();
+                    success = true;
+                } catch (Exception ex) {
+                    try { con.rollback(); } catch (Exception ignored) {}
+                    errorMsg = ex.getMessage();
+                    ex.printStackTrace();
+                } finally {
+                    try { con.setAutoCommit(true); } catch (Exception ignored) {}
                 }
+            } catch (Exception ex) { 
+                errorMsg = "Lỗi kết nối Server: " + ex.getMessage(); 
+            }
 
-                con.commit();
-                showInfo("Thành công!", editRow == null ? "Đã thêm đơn đặt phòng." : "Đã cập nhật đơn đặt phòng.");
-                if (onSuccess != null) onSuccess.run();
-                close();
-
-            } catch (Exception ex) {
-                con.rollback(); ex.printStackTrace();
-                showError("Lỗi CSDL: " + ex.getMessage());
-            } finally { con.setAutoCommit(true); }
-        } catch (Exception ex) { ex.printStackTrace(); showError("Lỗi kết nối Server!"); }
+            // 4. Trả kết quả về Main Thread
+            final boolean finalSuccess = success;
+            final String finalErrorMsg = errorMsg;
+            Platform.runLater(() -> {
+                if (finalSuccess) {
+                    showInfo("Thành công!", editRow == null ? "Đã thêm đơn đặt phòng." : "Đã cập nhật đơn đặt phòng.");
+                    if (onSuccess != null) onSuccess.run();
+                    close();
+                } else {
+                    showError("Lỗi CSDL: " + finalErrorMsg);
+                    btnSave.setDisable(false);
+                    btnSave.setText(oldBtnText);
+                }
+            });
+        }).start();
     }
 
-    /*
-     * ════════════════════════════════════════════════════════════════
-     * HELPERS
-     * ════════════════════════════════════════════════════════════════
-     */
     private void loadLoaiPhong() {
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT maLoaiPhong FROM LoaiPhong")) {
-            while (rs.next()) cbLoaiPhong.getItems().add(rs.getString("maLoaiPhong"));
+        try {
+            cbLoaiPhong.getItems().addAll(loaiPhongDAO.getAllMaLoaiPhong());
             if (!cbLoaiPhong.getItems().isEmpty()) cbLoaiPhong.getSelectionModel().selectFirst();
         } catch (Exception e) { System.err.println("Lỗi load loại phòng: " + e.getMessage()); }
     }
 
+    /*
+     * ════════════════════════════════════════════════════════════════
+     * LOGIC COMBOBOX PHÒNG (GIỮ LẠI PHÒNG CŨ KHI SỬA)
+     * ════════════════════════════════════════════════════════════════
+     */
     private void reloadPhongTrong() {
         if (cbPhong == null || cbLoaiPhong == null) return;
         cbPhong.getItems().clear();
@@ -460,104 +491,103 @@ public class ThemSuaDatPhongDialog extends Stage {
         LocalDate dIn = dpCheckIn.getValue(), dOut = dpCheckOut.getValue();
         if (loai == null || dIn == null || dOut == null) return;
 
-        String sql = "SELECT maPhong, tenPhong FROM Phong WHERE loaiPhong = ? AND tinhTrang = N'CONTRONG'";
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, loai);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) cbPhong.getItems().add(rs.getString("maPhong") + " - " + rs.getString("tenPhong"));
-            if (!cbPhong.getItems().isEmpty()) cbPhong.getSelectionModel().selectFirst();
-        } catch (Exception e) {}
+        // Bỏ vào ArrayList có thể thêm bớt phần tử
+        List<String> emptyRooms = new ArrayList<>(phongDAO.getPhongTrongByLoai(loai));
+
+        // Nếu Đang Sửa + Đang chọn đúng loại phòng cũ của đơn này -> Phải nạp phòng cũ vào
+        if (editRow != null && originalRoom != null && loai.equals(originalRoomType)) {
+            boolean isRoomExist = emptyRooms.stream().anyMatch(r -> r.startsWith(originalRoom));
+            if (!isRoomExist) {
+                emptyRooms.add(0, originalRoom + " (Phòng đang giữ)");
+            }
+        }
+
+        cbPhong.getItems().addAll(emptyRooms);
+        if (!cbPhong.getItems().isEmpty()) cbPhong.getSelectionModel().selectFirst();
     }
 
     private void populateEditData() {
         if (editRow == null) return;
-        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-            String sql = """
-                SELECT dp.maDat, kh.tenKH, kh.soDT, kh.soCCCD,
-                       dp.ngayCheckIn, dp.ngayCheckOut,
-                       ctdp.maPhong, ctdp.soNguoi, ctdp.giaCoc, ctdp.ghiChu,
-                       p.loaiPhong
-                FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH
-                LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
-                LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
-                WHERE dp.maDat = ?
-                """;
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, editMaDat);
-                ResultSet rs = ps.executeQuery();
-                if (rs.next()) {
-                    txtHoTen.setText(rs.getString("tenKH") != null ? rs.getString("tenKH") : "");
-                    txtSoDT.setText(rs.getString("soDT") != null ? rs.getString("soDT") : "");
-                    txtCCCD.setText(rs.getString("soCCCD") != null ? rs.getString("soCCCD") : "");
-                    if (rs.getDate("ngayCheckIn") != null) dpCheckIn.setValue(rs.getDate("ngayCheckIn").toLocalDate());
-                    if (rs.getDate("ngayCheckOut") != null) dpCheckOut.setValue(rs.getDate("ngayCheckOut").toLocalDate());
-                    txtSoNguoi.setText(rs.getObject("soNguoi") != null ? String.valueOf(rs.getInt("soNguoi")) : "1");
-                    txtTienCoc.setText(rs.getObject("giaCoc") != null ? DF.format(rs.getDouble("giaCoc")) : "0");
-                    txtGhiChu.setText(rs.getString("ghiChu") != null ? rs.getString("ghiChu") : "");
+        Object[] data = datPhongDAO.findEditDetail(editMaDat);
+        if (data == null) return;
 
-                    String loai = rs.getString("loaiPhong");
-                    if (loai != null) cbLoaiPhong.setValue(loai);
-                    reloadPhongTrong();
+        txtHoTen.setText(data[0] != null ? (String) data[0] : "");
+        txtSoDT.setText(data[1] != null ? (String) data[1] : "");
+        txtCCCD.setText(data[2] != null ? (String) data[2] : "");
+        if (data[3] != null) dpNgaySinh.setValue((LocalDate) data[3]);
+        if (data[4] != null) dpCheckIn.setValue((LocalDate) data[4]);
+        if (data[5] != null) dpCheckOut.setValue((LocalDate) data[5]);
+        
+        // Lưu vết phòng gốc để không bị mất trong ComboBox
+        this.originalRoom = (String) data[6];
+        this.originalRoomType = (String) data[10];
 
-                    String maPhong = rs.getString("maPhong");
-                    if (maPhong != null) {
-                        for (String item : cbPhong.getItems()) {
-                            if (item.startsWith(maPhong)) { cbPhong.setValue(item); break; }
-                        }
-                    }
-                    updateTongTien();
-                }
+        txtSoNguoi.setText(String.valueOf((int) data[7]));
+        txtTienCoc.setText(DF.format((double) data[8]));
+        txtGhiChu.setText(data[9] != null ? (String) data[9] : "");
+
+        if (originalRoomType != null) cbLoaiPhong.setValue(originalRoomType);
+        
+        // Cần gọi lại vì hàm setValue loaiPhong không trigger event tự động
+        reloadPhongTrong();
+
+        if (originalRoom != null) {
+            for (String item : cbPhong.getItems()) {
+                if (item.startsWith(originalRoom)) { cbPhong.setValue(item); break; }
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        }
+        updateTongTien();
+
+        Platform.runLater(() -> {
+            if (btnSave != null) {
+                EventUtils.setupDirtyTracking(btnSave, 
+                    txtHoTen, txtSoDT, txtCCCD, dpNgaySinh, 
+                    dpCheckIn, dpCheckOut, txtSoNguoi, txtTienCoc, txtGhiChu, 
+                    cbLoaiPhong, cbPhong
+                );
+            }
+        });
+
+        Platform.runLater(() -> {
+            if (txtHoTen != null) {
+                txtHoTen.requestFocus();
+                txtHoTen.positionCaret(txtHoTen.getText().length());
+            }
+        });
     }
 
     private void updateTongTien() {
-        if (lblTongTien == null || cbLoaiPhong == null || txtTienCoc == null) return;
+        if (lblTongTienPhong == null || cbLoaiPhong == null || txtTienCoc == null) return;
         try {
             LocalDate dIn = dpCheckIn.getValue(), dOut = dpCheckOut.getValue();
-            if (dIn == null || dOut == null) { lblTongTien.setText("0 đ"); return; }
+            if (dIn == null || dOut == null) { 
+                lblTongTienPhong.setText("0 đ"); 
+                lblCanThanhToan.setText("0 đ");
+                return; 
+            }
             long days = ChronoUnit.DAYS.between(dIn, dOut);
             if (days <= 0) days = 1;
 
             double giaPhong = 0;
             String loai = cbLoaiPhong.getValue();
             if (loai != null) {
-                try (Connection con = ConnectDatabase.getInstance().getConnection();
-                     PreparedStatement ps = con.prepareStatement("SELECT gia FROM LoaiPhong WHERE maLoaiPhong = ?")) {
-                    ps.setString(1, loai);
-                    ResultSet rs = ps.executeQuery();
-                    if (rs.next()) giaPhong = rs.getDouble("gia");
-                } catch (Exception ignored) {}
+                giaPhong = loaiPhongDAO.getGiaByMaLoai(loai);
             }
-            double total = (giaPhong * days) - parseTienCoc();
-            lblTongTien.setText(DF.format(Math.max(total, 0)) + " đ");
-        } catch (Exception e) { lblTongTien.setText("0 đ"); }
+            
+            double tongPhong = giaPhong * days;
+            double canThanhToan = tongPhong - parseTienCoc();
+
+            lblTongTienPhong.setText(DF.format(tongPhong) + " đ");
+            lblCanThanhToan.setText(DF.format(Math.max(canThanhToan, 0)) + " đ");
+        } catch (Exception e) { 
+            lblTongTienPhong.setText("0 đ"); 
+            lblCanThanhToan.setText("0 đ");
+        }
     }
 
     private double parseTienCoc() {
         String raw = txtTienCoc.getText().replaceAll("[^\\d]", "");
         return raw.isEmpty() ? 0 : Double.parseDouble(raw);
-    }
-
-    private String findOrCreateKH(Connection con, String ten, String sdt, String cccd) throws SQLException {
-        for (String col : new String[]{"soCCCD", "soDT"}) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT maKH FROM KH WHERE " + col + " = ?")) {
-                ps.setString(1, col.equals("soCCCD") ? cccd : sdt);
-                ResultSet rs = ps.executeQuery();
-                if (rs.next()) return rs.getString("maKH");
-            }
-        }
-        String maKH = generateId("KH");
-        try (PreparedStatement ps = con.prepareStatement("INSERT INTO KH(maKH, tenKH, soDT, soCCCD) VALUES(?,?,?,?)")) {
-            ps.setString(1, maKH); ps.setString(2, ten); ps.setString(3, sdt); ps.setString(4, cccd);
-            ps.executeUpdate();
-        }
-        return maKH;
-    }
-
-    private String generateId(String prefix) {
-        return prefix + String.format("%03d", (int)(Math.random() * 900) + 100);
     }
 
     /* ── UI Factory ──────────────────── */
@@ -591,6 +621,8 @@ public class ThemSuaDatPhongDialog extends Stage {
     private VBox fieldBlock(String label, javafx.scene.Node field, Label errLbl, String hint) {
         VBox b = new VBox(4);
         b.setPadding(new Insets(0, 0, 2, 0));
+        b.setMaxWidth(Double.MAX_VALUE);
+        b.setPrefWidth(400);
         HBox lblBox = new HBox(4);
 
         if (label.endsWith("*")) {
