@@ -428,6 +428,13 @@ public class CheckInView extends BorderPane {
                         hoaDonDAO.insert(hd);
                     }
 
+                    // 1. Lấy tổng tiền cọc cũ của mã đơn này (Lấy thông qua DAO của bạn)
+                    double tongTienCocCu = chiTietDatPhongDAO.getTongCocByMaDat(currentDatPhong.getMaDat());
+                    double tienCocMoiPhong = tongTienCocCu / count; // Chia đều tiền cọc ra các phòng
+                    
+                    // 2. XÓA tất cả ChiTietDatPhong dự kiến cũ đi để tránh bị x2 đơn trên giao diện
+                    chiTietDatPhongDAO.deleteByMaDat(currentDatPhong.getMaDat());
+
                     int successCount = 0;
                     List<String> roomIds = new ArrayList<>();
 
@@ -441,7 +448,7 @@ public class CheckInView extends BorderPane {
                         ctdp.setMaCTDP(chiTietDatPhongDAO.generateMaCTDP());
                         ctdp.setPhong(p);
                         ctdp.setDatPhong(currentDatPhong);
-                        ctdp.setGiaCoc(0.0);
+                        ctdp.setGiaCoc(tienCocMoiPhong);
                         ctdp.setSoNguoi(p.getLoaiPhong().getSucChua());
                         ctdp.setGhiChu("Check-in nhóm tại quầy");
                         boolean cUpdate = chiTietDatPhongDAO.insert(ctdp);
