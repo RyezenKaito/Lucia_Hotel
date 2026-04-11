@@ -334,6 +334,13 @@ public class DatPhongView extends BorderPane {
             try (Connection con = ConnectDatabase.getInstance().getConnection()) {
                 con.setAutoCommit(false);
                 try {
+                    // Trước khi xóa, cập nhật trạng thái phòng về CONTRONG
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "UPDATE Phong SET tinhTrang = N'CONTRONG' WHERE maPhong IN (SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?) AND tinhTrang = N'DANGSUDUNG'")) {
+                        ps.setString(1, maDat);
+                        ps.executeUpdate();
+                    }
+
                     String[] sqls = {
                         "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietHoaDon cthd ON dvsd.maCTHD = cthd.maCTHD JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
                         "DELETE cthd FROM ChiTietHoaDon cthd JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
