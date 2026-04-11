@@ -64,4 +64,28 @@ public class ChiTietDatPhongDAO {
         ctdp.setGhiChu(rs.getString("ghiChu"));
         return ctdp;
     }
+
+    /**
+     * Tự động phát sinh mã chi tiết đặt phòng
+     */
+    public String generateMaCTDP() {
+        String sql = "SELECT maCTDP FROM ChiTietDatPhong WHERE maCTDP LIKE 'CTDP%'";
+        int max = 0;
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String last = rs.getString(1);
+                if (last != null && last.length() > 4) {
+                    try {
+                        int num = Integer.parseInt(last.substring(4));
+                        if(num > max) max = num;
+                    } catch(Exception ignored) {}
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return String.format("CTDP%03d", max + 1);
+    }
 }

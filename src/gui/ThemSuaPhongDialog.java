@@ -18,16 +18,13 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
-import javafx.scene.input.KeyCode;
 import javafx.collections.FXCollections;
 
 import java.util.List;
 
 public class ThemSuaPhongDialog extends Stage {
 
-    private static final String C_BG = "#f8f9fa";
     private static final String C_BORDER = "#e9ecef";
-    private static final String C_TEXT_DARK = "#111827";
     private static final String C_TEXT_GRAY = "#6b7280";
     private static final String C_SIDEBAR = "#1e3a8a";
     private static final String C_ACTIVE = "#1d4ed8";
