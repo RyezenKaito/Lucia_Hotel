@@ -128,4 +128,5 @@ public class HoaDonDAO {
         }
         return String.format("HD%03d", max + 1);
     }
+
 }
