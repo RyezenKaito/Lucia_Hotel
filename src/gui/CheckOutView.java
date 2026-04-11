@@ -250,12 +250,53 @@ public class CheckOutView extends BorderPane {
             calculateBilling();
             updateBillingUI();
         } else {
-            resetView();
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Thông báo");
-            alert.setHeaderText("Không tìm thấy khách đang ở tại phòng này");
-            alert.setContentText("Phòng \"" + maPhong + "\" không đang được sử dụng hoặc không tồn tại.");
-            alert.showAndWait();
+            // Kiểm tra xem phòng có đang ở trạng thái DANGSUDUNG nhưng mất dữ liệu đặt phòng không
+            boolean isStuckRoom = checkStuckRoom(maPhong);
+            if (isStuckRoom) {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Phòng bị kẹt trạng thái");
+                alert.setHeaderText("Phòng \"" + maPhong + "\" đang ở trạng thái 'Đang sử dụng' nhưng không tìm thấy đơn đặt phòng.");
+                alert.setContentText("Có thể đơn đặt phòng đã bị xóa. Bạn có muốn giải phóng phòng này về 'Còn trống' không?");
+                alert.showAndWait().ifPresent(type -> {
+                    if (type == ButtonType.OK) {
+                        if (phongDAO.updateTrangThai(maPhong, "CONTRONG")) {
+                            Alert success = new Alert(Alert.AlertType.INFORMATION);
+                            success.setTitle("Thành công");
+                            success.setHeaderText("Đã giải phóng phòng " + maPhong);
+                            success.setContentText("Trạng thái phòng đã được cập nhật thành 'Còn trống'.");
+                            success.showAndWait();
+                            resetView();
+                            loadQuickSuggestions();
+                        } else {
+                            Alert error = new Alert(Alert.AlertType.ERROR);
+                            error.setHeaderText("Không thể cập nhật trạng thái phòng.");
+                            error.showAndWait();
+                        }
+                    }
+                });
+            } else {
+                resetView();
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Thông báo");
+                alert.setHeaderText("Không tìm thấy khách đang ở tại phòng này");
+                alert.setContentText("Phòng \"" + maPhong + "\" không đang được sử dụng hoặc không tồn tại.");
+                alert.showAndWait();
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra phòng có đang ở trạng thái DANGSUDUNG nhưng không có dữ liệu đặt phòng hợp lệ
+     */
+    private boolean checkStuckRoom(String maPhong) {
+        try (java.sql.Connection con = connectDatabase.ConnectDatabase.getInstance().getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(
+                     "SELECT 1 FROM Phong WHERE maPhong = ? AND tinhTrang = N'DANGSUDUNG'")) {
+            ps.setString(1, maPhong);
+            java.sql.ResultSet rs = ps.executeQuery();
+            return rs.next();
+        } catch (Exception e) {
+            return false;
         }
     }
 
