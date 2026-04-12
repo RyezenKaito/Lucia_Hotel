@@ -466,8 +466,8 @@ public class BangGiaDichVuDAO {
                 ps1.executeUpdate();
             }
 
-            // 2. Không cần chốt ngày kết thúc tự động nữa (Theo yêu cầu: giữ nguyên ngày đã set)
-
+            // 2. Không cần chốt ngày kết thúc tự động nữa (Theo yêu cầu: giữ nguyên ngày đã
+            // set)
 
             conn.commit();
             syncActivePricesToDB();

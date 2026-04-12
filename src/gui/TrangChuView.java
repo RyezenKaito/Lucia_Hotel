@@ -25,26 +25,26 @@ import java.util.*;
 public class TrangChuView extends BorderPane {
 
     /* ── Màu giao diện ───────────────────────────────────────────────── */
-    private static final String C_BG        = "#f8f9fa";
-    private static final String C_CARD_BG   = "white";
-    private static final String C_BORDER    = "#e9ecef";
+    private static final String C_BG = "#f8f9fa";
+    private static final String C_CARD_BG = "white";
+    private static final String C_BORDER = "#e9ecef";
     private static final String C_TEXT_DARK = "#111827";
     private static final String C_TEXT_GRAY = "#6b7280";
-    private static final String C_NAVY      = "#1e3a8a";
-    private static final String C_RED       = "#dc2626";
-    private static final String C_GREEN     = "#16a34a";
-    private static final String C_GOLD      = "#d97706";
+    private static final String C_NAVY = "#1e3a8a";
+    private static final String C_RED = "#dc2626";
+    private static final String C_GREEN = "#16a34a";
+    private static final String C_GOLD = "#d97706";
 
     /*
      * FIX: màu phòng khớp với label thực trong enum TrangThaiPhong:
-     *   CONTRONG("Trống")  → xanh lá
-     *   DACOKHACH("Đang ở") → vàng cam
-     *   BAN("Bận")          → đỏ
+     * CONTRONG("Trống") → xanh lá
+     * DACOKHACH("Đang ở") → vàng cam
+     * BAN("Bận") → đỏ
      */
-    private static final Color COLOR_CONTRONG  = Color.web("#22c55e");
+    private static final Color COLOR_CONTRONG = Color.web("#22c55e");
     private static final Color COLOR_DACOKHACH = Color.web("#f59e0b");
-    private static final Color COLOR_BAN       = Color.web("#ef4444");
-    private static final Color COLOR_DEFAULT   = Color.web("#9ca3af");
+    private static final Color COLOR_BAN = Color.web("#ef4444");
+    private static final Color COLOR_DEFAULT = Color.web("#9ca3af");
 
     private final PhongDAO phongDAO = new PhongDAO();
     private Label lblTotal, lblOccupied, lblAvailable, lblRevenue;
@@ -62,11 +62,10 @@ public class TrangChuView extends BorderPane {
         // Card sơ đồ phòng
         VBox center = new VBox(0);
         center.setStyle(
-            "-fx-background-color: " + C_CARD_BG + ";" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 10;" +
-            "-fx-background-radius: 10;"
-        );
+                "-fx-background-color: " + C_CARD_BG + ";" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;");
 
         center.getChildren().add(buildSectionHeader());
 
@@ -87,33 +86,35 @@ public class TrangChuView extends BorderPane {
         loadStats();
     }
 
-    /* ════════════════════════════════════════════════════════════════════
-       THỐNG KÊ
-    ════════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════════
+     * THỐNG KÊ
+     * ════════════════════════════════════════════════════════════════════
+     */
     private HBox buildStatsRow() {
         HBox row = new HBox(20);
         row.setAlignment(Pos.CENTER_LEFT);
 
         String[][] defs = {
-            { "🛏", "TỔNG PHÒNG",     "--", C_NAVY  },
-            { "👥", "ĐÃ CÓ KHÁCH",    "--", C_RED   },
-            { "🏠", "PHÒNG TRỐNG",    "--", C_GREEN },
-            { "💰", "DOANH THU (VND)", "--", C_GOLD  },
+                { "🛏", "TỔNG PHÒNG", "--", C_NAVY },
+                { "👥", "ĐÃ CÓ KHÁCH", "--", C_RED },
+                { "🏠", "PHÒNG TRỐNG", "--", C_GREEN },
+                { "💰", "DOANH THU (VND)", "--", C_GOLD },
         };
 
         Label[] vals = new Label[4];
         for (int i = 0; i < 4; i++) {
             Object[] result = createStatCard(defs[i][0], defs[i][1], defs[i][2], defs[i][3]);
             VBox card = (VBox) result[0];
-            vals[i]   = (Label) result[1];
+            vals[i] = (Label) result[1];
             HBox.setHgrow(card, Priority.ALWAYS);
             row.getChildren().add(card);
         }
 
-        lblTotal     = vals[0];
-        lblOccupied  = vals[1];
+        lblTotal = vals[0];
+        lblOccupied = vals[1];
         lblAvailable = vals[2];
-        lblRevenue   = vals[3]; // doanh thu cần HoaDonDAO, giữ "--"
+        lblRevenue = vals[3]; // doanh thu cần HoaDonDAO, giữ "--"
 
         return row;
     }
@@ -123,11 +124,10 @@ public class TrangChuView extends BorderPane {
         VBox card = new VBox(8);
         card.setPadding(new Insets(22));
         card.setStyle(
-            "-fx-background-color: " + C_CARD_BG + ";" +
-            "-fx-border-color: " + C_BORDER + ";" +
-            "-fx-border-radius: 10;" +
-            "-fx-background-radius: 10;"
-        );
+                "-fx-background-color: " + C_CARD_BG + ";" +
+                        "-fx-border-color: " + C_BORDER + ";" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-background-radius: 10;");
         card.setEffect(new DropShadow(8, 0, 2, Color.web("#00000018")));
 
         /* Hàng trên: text + badge icon */
@@ -152,7 +152,8 @@ public class TrangChuView extends BorderPane {
         badge.setMinSize(46, 46);
         badge.setPrefSize(46, 46);
         Rectangle badgeBg = new Rectangle(46, 46);
-        badgeBg.setArcWidth(10); badgeBg.setArcHeight(10);
+        badgeBg.setArcWidth(10);
+        badgeBg.setArcHeight(10);
         Color accent = Color.web(accentHex);
         badgeBg.setFill(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 0.12));
         Label iconLbl = new Label(icon);
@@ -168,7 +169,7 @@ public class TrangChuView extends BorderPane {
         bar.setStyle("-fx-background-color: " + accentHex + "; -fx-background-radius: 2;");
         card.getChildren().add(bar);
 
-        return new Object[]{ card, lblVal };
+        return new Object[] { card, lblVal };
     }
 
     private void loadStats() {
@@ -180,21 +181,24 @@ public class TrangChuView extends BorderPane {
              * FIX: so sánh trực tiếp với giá trị enum TrangThaiPhong,
              * không dùng .equals(String) vì getTrangThai() trả về enum.
              */
-            long occupied  = all.stream()
-                .filter(p -> p.getTrangThai() == TrangThaiPhong.DACOKHACH).count();
+            long occupied = all.stream()
+                    .filter(p -> p.getTrangThai() == TrangThaiPhong.DACOKHACH).count();
             long available = all.stream()
-                .filter(p -> p.getTrangThai() == TrangThaiPhong.CONTRONG).count();
+                    .filter(p -> p.getTrangThai() == TrangThaiPhong.CONTRONG).count();
 
             lblTotal.setText(String.valueOf(total));
             lblOccupied.setText(String.valueOf(occupied));
             lblAvailable.setText(String.valueOf(available));
             lblRevenue.setText("--"); // cần HoaDonDAO để tính
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
-    /* ════════════════════════════════════════════════════════════════════
-       SƠ ĐỒ PHÒNG
-    ════════════════════════════════════════════════════════════════════ */
+    /*
+     * ════════════════════════════════════════════════════════════════════
+     * SƠ ĐỒ PHÒNG
+     * ════════════════════════════════════════════════════════════════════
+     */
     private HBox buildSectionHeader() {
         HBox h = new HBox();
         h.setPadding(new Insets(18, 22, 14, 22));
@@ -209,9 +213,9 @@ public class TrangChuView extends BorderPane {
         HBox legend = new HBox(16);
         legend.setAlignment(Pos.CENTER_RIGHT);
         legend.getChildren().addAll(
-            legendDot(COLOR_CONTRONG,  TrangThaiPhong.CONTRONG.getLabel()),   // "Trống"
-            legendDot(COLOR_DACOKHACH, TrangThaiPhong.DACOKHACH.getLabel()),  // "Đang ở"
-            legendDot(COLOR_BAN,       TrangThaiPhong.BAN.getLabel())         // "Bận"
+                legendDot(COLOR_CONTRONG, TrangThaiPhong.CONTRONG.getLabel()), // "Trống"
+                legendDot(COLOR_DACOKHACH, TrangThaiPhong.DACOKHACH.getLabel()), // "Đang ở"
+                legendDot(COLOR_BAN, TrangThaiPhong.BAN.getLabel()) // "Bận"
         );
 
         h.getChildren().addAll(title, legend);
@@ -222,7 +226,8 @@ public class TrangChuView extends BorderPane {
         HBox item = new HBox(6);
         item.setAlignment(Pos.CENTER);
         Rectangle dot = new Rectangle(12, 12);
-        dot.setArcWidth(4); dot.setArcHeight(4);
+        dot.setArcWidth(4);
+        dot.setArcHeight(4);
         dot.setFill(color);
         Label lbl = new Label(label);
         lbl.setFont(Font.font("Segoe UI", 12));
@@ -240,7 +245,10 @@ public class TrangChuView extends BorderPane {
             Map<Integer, List<Phong>> byFloor = new TreeMap<>();
             for (Phong p : all) {
                 int floor = 0;
-                try { floor = p.getSoTang(); } catch (Exception e) {}
+                try {
+                    floor = p.getSoTang();
+                } catch (Exception e) {
+                }
                 byFloor.computeIfAbsent(floor, k -> new ArrayList<>()).add(p);
             }
 
@@ -281,30 +289,34 @@ public class TrangChuView extends BorderPane {
     private StackPane buildRoomCard(Phong phong) {
         /*
          * FIX 1: getTrangThai() trả về TrangThaiPhong enum, không phải String.
-         *         Gọi .toString() để lấy label hiển thị ("Trống", "Đang ở", "Bận").
+         * Gọi .toString() để lấy label hiển thị ("Trống", "Đang ở", "Bận").
          */
         TrangThaiPhong trangThai = phong.getTrangThai();
         String status = (trangThai != null) ? trangThai.toString() : "Không rõ";
         String maPhong = phong.getMaPhong();
         LoaiPhong loaiPhong = phong.getLoaiPhong();
-        
+
         String loaiStr = (loaiPhong != null && loaiPhong.getTenLoai() != null)
-        		? loaiPhong.getTenLoai() // "DOUBLE", "SINGLE"
-        		: "--";
+                ? loaiPhong.getTenLoai() // "DOUBLE", "SINGLE"
+                : "--";
         String priceStr = (loaiPhong != null && loaiPhong.getGiaPerNgay() > 0)
-        		? String.format("%,.0f đ", loaiPhong.getGiaPerNgay())
-        		: "";
+                ? String.format("%,.0f đ", loaiPhong.getGiaPerNgay())
+                : "";
 
         /* FIX 2: switch trên enum thay vì String để tránh nhầm label */
         Color colorTop, colorBottom;
         if (trangThai == TrangThaiPhong.CONTRONG) {
-            colorTop = Color.web("#22c55e"); colorBottom = Color.web("#16a34a");
+            colorTop = Color.web("#22c55e");
+            colorBottom = Color.web("#16a34a");
         } else if (trangThai == TrangThaiPhong.DACOKHACH) {
-            colorTop = Color.web("#f59e0b"); colorBottom = Color.web("#d97706");
+            colorTop = Color.web("#f59e0b");
+            colorBottom = Color.web("#d97706");
         } else if (trangThai == TrangThaiPhong.BAN) {
-            colorTop = Color.web("#ef4444"); colorBottom = Color.web("#dc2626");
+            colorTop = Color.web("#ef4444");
+            colorBottom = Color.web("#dc2626");
         } else {
-            colorTop = Color.web("#9ca3af"); colorBottom = Color.web("#6b7280");
+            colorTop = Color.web("#9ca3af");
+            colorBottom = Color.web("#6b7280");
         }
 
         StackPane card = new StackPane();
@@ -316,11 +328,10 @@ public class TrangChuView extends BorderPane {
         Region bg = new Region();
         bg.setPrefSize(147, 93);
         bg.setStyle(String.format(
-            "-fx-background-color: linear-gradient(to bottom, %s, %s);" +
-            "-fx-background-radius: 10;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 6, 0, 2, 2);",
-            toHex(colorTop), toHex(colorBottom)
-        ));
+                "-fx-background-color: linear-gradient(to bottom, %s, %s);" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 6, 0, 2, 2);",
+                toHex(colorTop), toHex(colorBottom)));
 
         /* Nội dung card */
         VBox content = new VBox(3);
@@ -343,29 +354,28 @@ public class TrangChuView extends BorderPane {
         Label lblPrice = new Label(priceStr);
         lblPrice.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
         lblPrice.setTextFill(Color.WHITE);
-        
-        content.getChildren().addAll(lblName, lblType,lblPrice, lblStatus);
+
+        content.getChildren().addAll(lblName, lblType, lblPrice, lblStatus);
         card.getChildren().addAll(bg, content);
-        
+
         /* Hiệu ứng hover: scale nhẹ toàn card */
         card.setOnMouseEntered(e -> card.setScaleX(1.04));
-        card.setOnMouseExited(e  -> card.setScaleX(1.0));
+        card.setOnMouseExited(e -> card.setScaleX(1.0));
 
         /*
          * FIX 5: ChiTietPhongDialog (JavaFX) thay thế ChiTietPhongFrame (Swing).
-         *         Truyền loaiPhong dạng String để Dialog không phụ thuộc enum.
+         * Truyền loaiPhong dạng String để Dialog không phụ thuộc enum.
          */
         card.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 Window owner = getScene() != null ? getScene().getWindow() : null;
                 new ChiTietPhongDialog(
-                    owner,
-                    maPhong,
-                    loaiStr,
-                    priceStr,
-                    "Tầng " + phong.getSoTang(),
-                    status
-                ).show();
+                        owner,
+                        maPhong,
+                        loaiStr,
+                        priceStr,
+                        "Tầng " + phong.getSoTang(),
+                        status).show();
             }
         });
 
@@ -375,8 +385,8 @@ public class TrangChuView extends BorderPane {
     /* ── Utility ─────────────────────────────────────────────────────── */
     private static String toHex(Color c) {
         return String.format("#%02x%02x%02x",
-            (int)(c.getRed()   * 255),
-            (int)(c.getGreen() * 255),
-            (int)(c.getBlue()  * 255));
+                (int) (c.getRed() * 255),
+                (int) (c.getGreen() * 255),
+                (int) (c.getBlue() * 255));
     }
 }

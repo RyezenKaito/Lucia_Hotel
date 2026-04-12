@@ -558,11 +558,13 @@ public class KhachHangView extends BorderPane {
     }
 
     private static String toTitleCaseLocal(String s) {
-        if (s == null || s.isBlank()) return s;
+        if (s == null || s.isBlank())
+            return s;
         String[] words = s.trim().toLowerCase().split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (String w : words) {
-            if (!sb.isEmpty()) sb.append(' ');
+            if (!sb.isEmpty())
+                sb.append(' ');
             sb.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
         }
         return sb.toString();

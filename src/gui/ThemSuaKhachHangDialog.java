@@ -337,7 +337,8 @@ public class ThemSuaKhachHangDialog extends Stage {
             } else
                 showError("Cập nhật thất bại");
         } else {
-            KhachHang newKH = new KhachHang(ten, cccd, sdt, ns);
+            String newMaKH = dao.getNextMaKH();
+            KhachHang newKH = new KhachHang(newMaKH, ten, cccd, sdt, ns);
             if (dao.insert(newKH)) {
                 showInfo("Thêm thành công!");
                 if (onSuccess != null)
