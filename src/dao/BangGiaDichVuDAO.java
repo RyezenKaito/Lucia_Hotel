@@ -291,7 +291,7 @@ public class BangGiaDichVuDAO {
                 String numPart = last.replace("BG", "");
                 try {
                     int num = Integer.parseInt(numPart) + 1;
-                    return String.format("BG%04d", num);
+                    return String.format("BG%03d", num);
                 } catch (NumberFormatException e) {
                     // fallback
                 }
@@ -299,7 +299,7 @@ public class BangGiaDichVuDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return String.format("BG%03d", max + 1);
+        return "BG001";
     }
 
     /**
@@ -481,20 +481,4 @@ public class BangGiaDichVuDAO {
         }
     }
 
-    // /**
-    // * Hỗ trợ cập nhật ngày hết hạn về thời điểm hiện tại khi người dùng chọn
-    // "Ngưng
-    // * áp dụng" thủ công
-    // */
-    // private void updateNgayHetHanKhiDung(String maBG) {
-    // String sql = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = GETDATE() WHERE
-    // maBangGia = ? AND ngayHetHieuLuc > GETDATE()";
-    // try (Connection conn = ConnectDatabase.getInstance().getConnection();
-    // PreparedStatement ps = conn.prepareStatement(sql)) {
-    // ps.setString(1, maBG);
-    // ps.executeUpdate();
-    // } catch (SQLException e) {
-    // e.printStackTrace();
-    // }
-    // }
 }

@@ -240,7 +240,7 @@ public class TrangChuView extends BorderPane {
             Map<Integer, List<Phong>> byFloor = new TreeMap<>();
             for (Phong p : all) {
                 int floor = 0;
-                try { floor = Integer.parseInt(p.getVitri()); } catch (Exception e) {}
+                try { floor = p.getSoTang(); } catch (Exception e) {}
                 byFloor.computeIfAbsent(floor, k -> new ArrayList<>()).add(p);
             }
 
@@ -363,7 +363,7 @@ public class TrangChuView extends BorderPane {
                     maPhong,
                     loaiStr,
                     priceStr,
-                    "Tầng " + phong.getVitri(),
+                    "Tầng " + phong.getSoTang(),
                     status
                 ).show();
             }

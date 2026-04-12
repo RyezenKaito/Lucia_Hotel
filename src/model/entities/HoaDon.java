@@ -74,9 +74,4 @@ public class HoaDon {
 
     @Override
     public String toString() { return maHD; }
-
-    // --- Legacy compatibility ---
-    public LocalDateTime getNgayLap() { return ngayTaoHD; }
-    public void setNgayLap(LocalDateTime ngayLap) { this.ngayTaoHD = ngayLap; }
-    public String getMaHoaDon() { return maHD; }
 }

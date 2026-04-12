@@ -455,6 +455,8 @@ public class ThemSuaBangGiaDialog {
         DichVuDAO dvDAO = new DichVuDAO();
         List<DichVu> allDV = dvDAO.getAll();
 
+        Map<String, String> giaApDungMap = new HashMap<>();
+
         if (isEdit && dsChiTietGoc != null) {
             // Nạp full thông tin dịch vụ để tránh bị 0 (giá gốc) hoặc null (tên/loại)
             Map<String, DichVu> dvMap = new HashMap<>();
@@ -475,7 +477,7 @@ public class ThemSuaBangGiaDialog {
         }
 
         tableData.clear();
-        for (DichVu dv : tatCa) {
+        for (DichVu dv : allDV) {
             // Nếu có giá từ bảng giá active/cũ thì dùng, không thì lấy giá gốc
             String rawGia = giaApDungMap.getOrDefault(dv.getMaDV(), String.valueOf((long) dv.getGia()));
             String formatted;

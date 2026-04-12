@@ -62,17 +62,18 @@ public class HoaDonDAO {
      */
     public HoaDon getByMaDat(String maDat) {
         String sql = "SELECT * FROM HoaDon WHERE maDat = ?";
+        HoaDon hd = null;
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDat);
             ResultSet rs = ps.executeQuery();
             if (rs.next())
-                return mapRow(rs);
+                hd = mapRow(rs);
         } catch (Exception e) {
             System.err.println("Lỗi khi lấy hóa đơn theo mã đặt phòng: " + e.getMessage());
         }
 
-        if (hd != null && hd.getNhanVien() != null) {
+        if (hd != null && hd.getNhanVien() != null && hd.getNhanVien().getMaNV() != null) {
             hd.setNhanVien(new NhanVienDAO().getById(hd.getNhanVien().getMaNV()));
         }
 
@@ -157,7 +158,7 @@ public class HoaDonDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "HD001";
+        return String.format("HD%03d", max + 1);
     }
 
     /**

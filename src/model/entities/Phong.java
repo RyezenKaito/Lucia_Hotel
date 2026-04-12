@@ -80,10 +80,8 @@ public class Phong {
         return tenPhong != null ? tenPhong : maPhong;
     }
 
-    // --- Legacy compatibility ---
     public TrangThaiPhong getTrangThai() { return tinhTrang; }
     public void setTrangThai(TrangThaiPhong tt) { this.tinhTrang = tt; }
-    public String getVitri() { return String.valueOf(soTang); }
 
     /**
      * Tự động phát sinh mã phòng theo tầng (Ví dụ: Tầng 2 -> P201, P202..., P2100)
