@@ -301,7 +301,7 @@ public class DichVuView extends BorderPane {
         Label lblName = new Label(dv.getTenDV());
         lblName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblName.setTextFill(Color.web(C_TEXT_DARK));
-        Label lblPrice = new Label(String.format("%,.0f đ", dv.getGia()));
+        Label lblPrice = new Label(dv.getGia() != null ? String.format("%,.0f đ", dv.getGia()) : "---");
         lblPrice.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
         lblPrice.setTextFill(Color.web(C_ACTIVE));
         info.getChildren().addAll(lblName, lblPrice);
@@ -366,7 +366,7 @@ public class DichVuView extends BorderPane {
     private void refreshServices(model.enums.LoaiDichVu cat) {
         servicePane.getChildren().clear();
         DichVuDAO dichVuDAO = new DichVuDAO();
-        List<DichVu> list = dichVuDAO.getByType(cat.getDbKey());
+        List<DichVu> list = dichVuDAO.getActiveByType(cat.getDbKey());
 
         // Lấy bản đồ giá đang áp dụng (Trạng thái = 0 và trong thời gian hiệu lực)
         Map<String, Double> activePrices = bangGiaDAO.getActivePriceMap();
@@ -376,7 +376,10 @@ public class DichVuView extends BorderPane {
             if (activePrices.containsKey(dv.getMaDV())) {
                 dv.setGia(activePrices.get(dv.getMaDV()));
             }
-            servicePane.getChildren().add(buildServiceCard(dv));
+            // Chỉ hiển thị dịch vụ đã có giá (từ bảng giá hoặc giá gốc)
+            if (dv.getGia() != null) {
+                servicePane.getChildren().add(buildServiceCard(dv));
+            }
         }
 
         // 2. Cập nhật giá cho các dịch vụ đang có trong giỏ hàng
@@ -387,7 +390,7 @@ public class DichVuView extends BorderPane {
                 } else {
                     // Nếu không có trong bảng giá active, lấy lại giá gốc từ DB
                     DichVu base = dichVuDAO.getServiceByID(dvInCart.getMaDV());
-                    if (base != null) {
+                    if (base != null && base.getGia() != null) {
                         dvInCart.setGia(base.getGia());
                     }
                 }
@@ -402,7 +405,8 @@ public class DichVuView extends BorderPane {
         for (Map.Entry<DichVu, Integer> entry : cart.entrySet()) {
             DichVu dv = entry.getKey();
             int qty = entry.getValue();
-            double sub = dv.getGia() * qty;
+            double price = dv.getGia() != null ? dv.getGia() : 0;
+            double sub = price * qty;
             total += sub;
 
             HBox row = new HBox(8);

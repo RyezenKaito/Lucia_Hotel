@@ -6,6 +6,7 @@ import javafx.scene.Cursor;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -267,7 +268,22 @@ public class DatePicker extends HBox {
                 "-fx-font-size: 12px; -fx-font-family: 'Segoe UI';" +
                         "-fx-background-radius: 6; -fx-border-radius: 6;" +
                         "-fx-background-color: rgba(255,255,255,0.15);" +
-                        "-fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3);");
+                        "-fx-text-fill: white; -fx-prompt-text-fill: white;" +
+                        "-fx-border-color: rgba(255,255,255,0.3);");
+        // FIX: Đảm bảo text hiển thị bên trong ComboBox cũng màu trắng
+        cbMonth.setButtonCell(new ListCell<String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item);
+                    setTextFill(Color.WHITE);
+                    setFont(Font.font("Segoe UI", 12));
+                }
+            }
+        });
         cbMonth.setOnAction(e -> {
             int m = cbMonth.getSelectionModel().getSelectedIndex() + 1;
             if (m > 0) {
@@ -287,7 +303,22 @@ public class DatePicker extends HBox {
                 "-fx-font-size: 12px; -fx-font-family: 'Segoe UI';" +
                         "-fx-background-radius: 6; -fx-border-radius: 6;" +
                         "-fx-background-color: rgba(255,255,255,0.15);" +
-                        "-fx-text-fill: white; -fx-border-color: rgba(255,255,255,0.3);");
+                        "-fx-text-fill: white; -fx-prompt-text-fill: white;" +
+                        "-fx-border-color: rgba(255,255,255,0.3);");
+        // FIX: Đảm bảo text hiển thị bên trong ComboBox cũng màu trắng
+        cbYear.setButtonCell(new ListCell<Integer>() {
+            @Override
+            protected void updateItem(Integer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.toString());
+                    setTextFill(Color.WHITE);
+                    setFont(Font.font("Segoe UI", 12));
+                }
+            }
+        });
         cbYear.setOnAction(e -> {
             Integer y = cbYear.getValue();
             if (y != null) {
@@ -345,6 +376,8 @@ public class DatePicker extends HBox {
      * ══════════════════════════════════════════════════════════════════
      */
     private void refreshCalendar() {
+        if (calendarGrid == null)
+            return;
         calendarGrid.getChildren().clear();
 
         LocalDate first = viewMonth.atDay(1);

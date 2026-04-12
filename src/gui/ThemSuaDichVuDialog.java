@@ -42,9 +42,9 @@ public class ThemSuaDichVuDialog extends Stage {
     private final Runnable onSuccess;
     private final boolean isEdit;
 
-    private TextField txtMaDV, txtTenDV, txtGia, txtDonVi;
-    private ComboBox<String> cbLoai;
-    private Label errTen, errGia, errDonVi;
+    private TextField txtMaDV, txtTenDV, txtDonVi;
+    private ComboBox<String> cbLoai, cbTrangThai;
+    private Label errTen, errDonVi;
     private Button btnSave;
 
     private Region overlay;
@@ -74,9 +74,9 @@ public class ThemSuaDichVuDialog extends Stage {
     }
 
     private void initEvents() {
-        EventUtils.setupEnterNavigation(this::handleSave, txtTenDV, txtGia, txtDonVi);
+        EventUtils.setupEnterNavigation(this::handleSave, txtTenDV, txtDonVi);
         if (isEdit && btnSave != null) {
-            EventUtils.setupDirtyTracking(btnSave, txtTenDV, txtGia, txtDonVi, cbLoai);
+            EventUtils.setupDirtyTracking(btnSave, txtTenDV, txtDonVi, cbLoai, cbTrangThai);
         }
     }
 
@@ -162,19 +162,19 @@ public class ThemSuaDichVuDialog extends Stage {
         cbLoai.setMaxWidth(Double.MAX_VALUE);
         cbLoai.setStyle(fieldStyle());
 
-        // 4. Đơn giá
-        txtGia = makeField(isEdit ? String.format("%.0f", dichVu.getGia()) : "", "Nhập đơn giá gốc");
-        errGia = errLabel();
-        // Numeric filter for price
-        txtGia.textProperty().addListener((obs, oldV, newV) -> {
-            if (!newV.matches("\\d*")) {
-                txtGia.setText(newV.replaceAll("[^\\d]", ""));
-            }
-        });
-
-        // 5. Đơn vị tính
+        // 4. Đơn vị tính
         txtDonVi = makeField(isEdit ? dichVu.getDonVi() : "Cái", "Ví dụ: Chai, Lượt, Cái...");
         errDonVi = errLabel();
+
+        // 5. Trạng thái
+        cbTrangThai = new ComboBox<>(FXCollections.observableArrayList("Đang phục vụ", "Tạm ngưng phục vụ"));
+        if (isEdit) {
+            cbTrangThai.setValue(dichVu.getTrangThai() == 0 ? "Đang phục vụ" : "Tạm ngưng phục vụ");
+        } else {
+            cbTrangThai.setValue("Đang phục vụ");
+        }
+        cbTrangThai.setMaxWidth(Double.MAX_VALUE);
+        cbTrangThai.setStyle(fieldStyle());
 
         setupValidation();
 
@@ -182,8 +182,8 @@ public class ThemSuaDichVuDialog extends Stage {
                 fieldBlock("Mã dịch vụ", txtMaDV, null, "Mã định danh tự động"),
                 fieldBlock("Tên dịch vụ *", txtTenDV, errTen, "Nhập tên sản phẩm hoặc dịch vụ"),
                 fieldBlock("Loại dịch vụ", cbLoai, null, null),
-                fieldBlock("Đơn giá gốc (VNĐ) *", txtGia, errGia, "Giá chưa bao gồm ưu đãi"),
-                fieldBlock("Đơn vị tính *", txtDonVi, errDonVi, "Đơn vị định lượng (Lon, Bộ...)"));
+                fieldBlock("Đơn vị tính *", txtDonVi, errDonVi, "Đơn vị định lượng (Lon, Bộ...)"),
+                fieldBlock("Trạng thái", cbTrangThai, null, "Trạng thái phục vụ khách hàng"));
 
         ScrollPane scroll = new ScrollPane(form);
         scroll.setFitToWidth(true);
@@ -216,10 +216,6 @@ public class ThemSuaDichVuDialog extends Stage {
             if (!nv)
                 validateTen();
         });
-        txtGia.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateGia();
-        });
         txtDonVi.focusedProperty().addListener((o, ov, nv) -> {
             if (!nv)
                 validateDonVi();
@@ -240,24 +236,6 @@ public class ThemSuaDichVuDialog extends Stage {
         return true;
     }
 
-    private boolean validateGia() {
-        String s = txtGia.getText().trim();
-        if (s.isEmpty()) {
-            showErrorField(txtGia, errGia, "⚠ Vui lòng nhập đơn giá.");
-            return false;
-        }
-        try {
-            double v = Double.parseDouble(s);
-            if (v < 0)
-                throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            showErrorField(txtGia, errGia, "⚠ Giá phải là số dương.");
-            return false;
-        }
-        clearErrorField(txtGia, errGia);
-        return true;
-    }
-
     private boolean validateDonVi() {
         if (txtDonVi.getText().trim().isEmpty()) {
             showErrorField(txtDonVi, errDonVi, "⚠ Đơn vị tính không được để trống.");
@@ -268,16 +246,17 @@ public class ThemSuaDichVuDialog extends Stage {
     }
 
     private void handleSave() {
-        boolean ok = validateTen() && validateGia() && validateDonVi();
+        boolean ok = validateTen() && validateDonVi();
         if (!ok)
             return;
 
         String ma = txtMaDV.getText().trim();
         String ten = ValidationUtils.toTitleCase(txtTenDV.getText().trim());
-        double gia = Double.parseDouble(txtGia.getText().trim());
+        Double gia = isEdit ? dichVu.getGia() : null;
         String loaiDisplayName = cbLoai.getValue();
         String loaiKey = model.enums.LoaiDichVu.fromDisplayName(loaiDisplayName).getDbKey();
         String donVi = txtDonVi.getText().trim();
+        int trangThai = cbTrangThai.getValue().equals("Đang phục vụ") ? 0 : 1;
 
         DichVuDAO dao = new DichVuDAO();
         if (isEdit) {
@@ -285,6 +264,7 @@ public class ThemSuaDichVuDialog extends Stage {
             dichVu.setGia(gia);
             dichVu.setLoaiDV(loaiKey);
             dichVu.setDonVi(donVi);
+            dichVu.setTrangThai(trangThai);
             if (dao.update(dichVu)) {
                 showInfo("Cập nhật dịch vụ thành công!");
                 if (onSuccess != null)
@@ -300,7 +280,7 @@ public class ThemSuaDichVuDialog extends Stage {
                 return;
             }
             // 2. Thêm mới
-            DichVu newDv = new DichVu(ma, ten, gia, loaiKey, "", donVi, 0);
+            DichVu newDv = new DichVu(ma, ten, gia, loaiKey, "", donVi, trangThai);
             if (dao.insert(newDv)) {
                 showInfo("Thêm dịch vụ mới thành công!");
                 if (onSuccess != null)

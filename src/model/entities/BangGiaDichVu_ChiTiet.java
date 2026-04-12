@@ -10,7 +10,7 @@ public class BangGiaDichVu_ChiTiet {
     private String maChiTietBangGia; // maChiTietBangGia (Primary Key)
     private BangGiaDichVu maBangGia;        // maBangGia (Foreign Key)
     private DichVu maDichVu;         // maDichVu (Foreign Key)
-    private double giaDichVu;        // giaDichVu
+    private Double giaDichVu;        // giaDichVu
     private String donViTinh;        // donViTinh
 
     // Constructor không tham số
@@ -19,7 +19,7 @@ public class BangGiaDichVu_ChiTiet {
 
     // Constructor đầy đủ tham số
     public BangGiaDichVu_ChiTiet(String maChiTietBangGia, BangGiaDichVu maBangGia, DichVu maDichVu, 
-                                double giaDichVu, String donViTinh) {
+                                Double giaDichVu, String donViTinh) {
         this.maChiTietBangGia = maChiTietBangGia;
         this.maBangGia = maBangGia;
         this.maDichVu = maDichVu;
@@ -52,11 +52,11 @@ public class BangGiaDichVu_ChiTiet {
         this.maDichVu = maDichVu;
     }
 
-    public double getGiaDichVu() {
+    public Double getGiaDichVu() {
         return giaDichVu;
     }
 
-    public void setGiaDichVu(double giaDichVu) {
+    public void setGiaDichVu(Double giaDichVu) {
         this.giaDichVu = giaDichVu;
     }
 

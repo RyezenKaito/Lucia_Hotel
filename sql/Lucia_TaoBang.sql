@@ -1,4 +1,4 @@
---CREATE DATABASE QuanLyDatPhong;
+﻿--CREATE DATABASE QuanLyDatPhong;
 --GO
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'LuciaHT')
 BEGIN
@@ -18,7 +18,7 @@ CREATE TABLE KH (
     soDT     VARCHAR(10),
     ngaySinh DATE,
     soCCCD   VARCHAR(12),
-    email    NVARCHAR(100)  NULL   -- Dùng để gửi xác nhận đặt phòng / hóa đơn
+    email    NVARCHAR(100)  NULL   -- DÃ¹ng Ä‘á»ƒ gá»­i xÃ¡c nháº­n Ä‘áº·t phÃ²ng / hÃ³a Ä‘Æ¡n
 );
 
 CREATE TABLE NV (
@@ -40,30 +40,30 @@ CREATE TABLE NV (
 
 CREATE TABLE LoaiPhong (
     maLoaiPhong VARCHAR(20)    PRIMARY KEY,   -- SINGLE, DOUBLE, TWIN, TRIPLE, FAMILY
-    tenLoaiPhong NVARCHAR(50)  NOT NULL,       -- Tên hiển thị tiếng Việt (VD: "Phòng đơn")
+    tenLoaiPhong NVARCHAR(50)  NOT NULL,       -- TÃªn hiá»ƒn thá»‹ tiáº¿ng Viá»‡t (VD: "PhÃ²ng Ä‘Æ¡n")
     gia         DECIMAL(18,2)  NOT NULL,
-    sucChua     INT            NOT NULL        -- Sức chứa tối đa (người)
+    sucChua     INT            NOT NULL        -- Sá»©c chá»©a tá»‘i Ä‘a (ngÆ°á»i)
 );
 
 CREATE TABLE DV (
     maDV     VARCHAR(20)   PRIMARY KEY,
     tenDV    NVARCHAR(100) NOT NULL,
-    gia      DECIMAL(18,2),
-    -- Dùng ASCII key tránh lỗi collation khi so sánh
+    gia      DECIMAL(18,2) NULL,
+    -- DÃ¹ng ASCII key trÃ¡nh lá»—i collation khi so sÃ¡nh
     loaiDV   NVARCHAR(20)  CHECK (loaiDV IN (N'THUC_PHAM', N'GIAI_TRI', N'SUC_KHOE', N'TIEN_ICH')),
     mieuTa   NVARCHAR(255),
     donVi    NVARCHAR(20),
-    trangThai BIT DEFAULT 0   -- 0: Đang hoạt động, 1: Ẩn
+    trangThai BIT DEFAULT 0   -- 0: Đang phục vụ, 1: Tạm ngưng phục vụ
 );
 
 -- =============================
--- 2. NGHIỆP VỤ ĐẶT PHÒNG
+-- 2. NGHIá»†P Vá»¤ Äáº¶T PHÃ’NG
 -- =============================
 
 CREATE TABLE Phong (
     maPhong   VARCHAR(10)   PRIMARY KEY,
     tenPhong  NVARCHAR(50),
-    -- Bỏ CHECK trùng với FK; LoaiPhong FK đã đảm bảo giá trị hợp lệ
+    -- Bá» CHECK trÃ¹ng vá»›i FK; LoaiPhong FK Ä‘Ã£ Ä‘áº£m báº£o giÃ¡ trá»‹ há»£p lá»‡
     loaiPhong VARCHAR(20),
     tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG')),
     soPhong   INT,
@@ -75,16 +75,16 @@ CREATE TABLE DatPhong (
     maDat        VARCHAR(20)  PRIMARY KEY,
     ngayDat      DATETIME     NOT NULL DEFAULT GETDATE(),
     maKH         VARCHAR(20),
-    -- Dùng DATETIME thay DATE để lưu giờ check-in/out chính xác
+    -- DÃ¹ng DATETIME thay DATE Ä‘á»ƒ lÆ°u giá» check-in/out chÃ­nh xÃ¡c
     ngayCheckIn  DATETIME,
     ngayCheckOut DATETIME,
     trangThai    NVARCHAR(20) NOT NULL DEFAULT N'CHO_XACNHAN'
                  CHECK (trangThai IN (
-                     N'CHO_XACNHAN',  -- Vừa đặt, chờ nhân viên xác nhận
-                     N'DA_XACNHAN',   -- NV đã xác nhận, chờ khách đến
-                     N'DA_CHECKIN',   -- Khách đang ở
-                     N'DA_CHECKOUT',  -- Khách đã trả phòng, hóa đơn đã xuất
-                     N'DA_HUY'        -- Đơn bị hủy
+                     N'CHO_XACNHAN',  -- Vá»«a Ä‘áº·t, chá» nhÃ¢n viÃªn xÃ¡c nháº­n
+                     N'DA_XACNHAN',   -- NV Ä‘Ã£ xÃ¡c nháº­n, chá» khÃ¡ch Ä‘áº¿n
+                     N'DA_CHECKIN',   -- KhÃ¡ch Ä‘ang á»Ÿ
+                     N'DA_CHECKOUT',  -- KhÃ¡ch Ä‘Ã£ tráº£ phÃ²ng, hÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t
+                     N'DA_HUY'        -- ÄÆ¡n bá»‹ há»§y
                  )),
     CONSTRAINT FK_DatPhong_KH FOREIGN KEY (maKH) REFERENCES KH(maKH)
 );
@@ -93,7 +93,7 @@ CREATE TABLE ChiTietDatPhong (
     maCTDP   VARCHAR(20)   PRIMARY KEY,
     maPhong  VARCHAR(10),
     maDat    VARCHAR(20),
-    giaCoc   DECIMAL(18,2) DEFAULT 0,  -- Tiền cọc riêng từng phòng (không phải hóa đơn)
+    giaCoc   DECIMAL(18,2) DEFAULT 0,  -- Tiá»n cá»c riÃªng tá»«ng phÃ²ng (khÃ´ng pháº£i hÃ³a Ä‘Æ¡n)
     soNguoi  INT,
     ghiChu   NVARCHAR(255),
     CONSTRAINT FK_CTDP_Phong    FOREIGN KEY (maPhong) REFERENCES Phong(maPhong),
@@ -101,42 +101,42 @@ CREATE TABLE ChiTietDatPhong (
 );
 
 -- =============================
--- 3. HOÁ ĐƠN & DỊCH VỤ
+-- 3. HOÃ ÄÆ N & Dá»ŠCH Vá»¤
 -- =============================
 
 CREATE TABLE HoaDon (
     maHD                 VARCHAR(20)   PRIMARY KEY,
     maDat                VARCHAR(20),
     maNV                 VARCHAR(9),
-    ngayTaoHD            DATETIME      DEFAULT GETDATE(),  -- Thời điểm xuất hóa đơn (checkout)
+    ngayTaoHD            DATETIME      DEFAULT GETDATE(),  -- Thá»i Ä‘iá»ƒm xuáº¥t hÃ³a Ä‘Æ¡n (checkout)
     tienPhong            DECIMAL(18,2) DEFAULT 0,
     tienDV               DECIMAL(18,2) DEFAULT 0,
-    tienCoc              DECIMAL(18,2) DEFAULT 0,          -- Tổng tiền cọc đã thu (từ ChiTietDatPhong)
+    tienCoc              DECIMAL(18,2) DEFAULT 0,          -- Tá»•ng tiá»n cá»c Ä‘Ã£ thu (tá»« ChiTietDatPhong)
     thueVAT              DECIMAL(18,2) DEFAULT 0,
     tongTien             DECIMAL(18,2) DEFAULT 0,          -- = tienPhong + tienDV + thueVAT - tienCoc
 
-    -- Phân loại hóa đơn
+    -- PhÃ¢n loáº¡i hÃ³a Ä‘Æ¡n
     loaiHD               NVARCHAR(30)  NOT NULL DEFAULT N'HOA_DON_PHONG'
                          CHECK (loaiHD IN (
-                             N'HOA_DON_PHONG',      -- Hóa đơn thanh toán khi checkout (loại chính)
-                             N'HOA_DON_HOAN_TIEN'   -- Hóa đơn hoàn tiền (VD: hủy đặt phòng đã cọc)
+                             N'HOA_DON_PHONG',      -- HÃ³a Ä‘Æ¡n thanh toÃ¡n khi checkout (loáº¡i chÃ­nh)
+                             N'HOA_DON_HOAN_TIEN'   -- HÃ³a Ä‘Æ¡n hoÃ n tiá»n (VD: há»§y Ä‘áº·t phÃ²ng Ä‘Ã£ cá»c)
                          )),
 
-    -- Trạng thái thanh toán
+    -- Tráº¡ng thÃ¡i thanh toÃ¡n
     trangThaiThanhToan   NVARCHAR(30)  NOT NULL DEFAULT N'CHUA_THANH_TOAN'
                          CHECK (trangThaiThanhToan IN (
-                             N'CHUA_THANH_TOAN',     -- Hóa đơn đã xuất nhưng chưa thu tiền
-                             N'DA_THANH_TOAN_COC',   -- Đã thu cọc, chưa thanh toán toàn bộ
-                             N'DA_THANH_TOAN'        -- Đã thu đủ tiền
+                             N'CHUA_THANH_TOAN',     -- HÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t nhÆ°ng chÆ°a thu tiá»n
+                             N'DA_THANH_TOAN_COC',   -- ÄÃ£ thu cá»c, chÆ°a thanh toÃ¡n toÃ n bá»™
+                             N'DA_THANH_TOAN'        -- ÄÃ£ thu Ä‘á»§ tiá»n
                          )),
 
-    -- Thông tin thanh toán (điền khi DA_THANH_TOAN)
+    -- ThÃ´ng tin thanh toÃ¡n (Ä‘iá»n khi DA_THANH_TOAN)
     phuongThucThanhToan  NVARCHAR(30)  NULL
                          CHECK (phuongThucThanhToan IN (
                              N'TIEN_MAT', N'THE_TIN_DUNG', N'CHUYEN_KHOAN', N'VI_DIEN_TU'
                          )),
-    ngayThanhToan        DATETIME      NULL,   -- Thời điểm thu đủ tiền → bằng chứng khi khiếu nại
-    ghiChuThanhToan      NVARCHAR(500) NULL,   -- Mã giao dịch, lý do hoàn tiền, v.v.
+    ngayThanhToan        DATETIME      NULL,   -- Thá»i Ä‘iá»ƒm thu Ä‘á»§ tiá»n â†’ báº±ng chá»©ng khi khiáº¿u náº¡i
+    ghiChuThanhToan      NVARCHAR(500) NULL,   -- MÃ£ giao dá»‹ch, lÃ½ do hoÃ n tiá»n, v.v.
 
     CONSTRAINT FK_HoaDon_DatPhong FOREIGN KEY (maDat) REFERENCES DatPhong(maDat),
     CONSTRAINT FK_HoaDon_NV       FOREIGN KEY (maNV)  REFERENCES NV(maNV)
@@ -146,12 +146,12 @@ CREATE TABLE ChiTietHoaDon (
     maCTHD         VARCHAR(20)   PRIMARY KEY,
     maHD           VARCHAR(20),
     maCTDP         VARCHAR(20),
-    thoiGianLuuTru DECIMAL(5,2),   -- Số đêm lưu trú
-    thanhTien      DECIMAL(18,2),  -- Tiền phòng + dịch vụ của dòng này
+    thoiGianLuuTru DECIMAL(5,2),   -- Sá»‘ Ä‘Ãªm lÆ°u trÃº
+    thanhTien      DECIMAL(18,2),  -- Tiá»n phÃ²ng + dá»‹ch vá»¥ cá»§a dÃ²ng nÃ y
     CONSTRAINT FK_CTHD_HoaDon FOREIGN KEY (maHD)   REFERENCES HoaDon(maHD),
     CONSTRAINT FK_CTHD_CTDP   FOREIGN KEY (maCTDP) REFERENCES ChiTietDatPhong(maCTDP)
 );
--- Lưu ý: bỏ soLuongPhong vì mỗi CTDP đã gắn với 1 phòng cụ thể → đếm dòng là đủ
+-- LÆ°u Ã½: bá» soLuongPhong vÃ¬ má»—i CTDP Ä‘Ã£ gáº¯n vá»›i 1 phÃ²ng cá»¥ thá»ƒ â†’ Ä‘áº¿m dÃ²ng lÃ  Ä‘á»§
 
 CREATE TABLE DichVuSuDung (
     maDV         VARCHAR(20),
@@ -159,14 +159,14 @@ CREATE TABLE DichVuSuDung (
     ngaySuDung   DATE,
     soLuong      INT,
     giaDV        DECIMAL(18,2),
-    trangThai    BIT DEFAULT 0,  -- 0: chưa tính vào HĐ, 1: đã tính vào HĐ
+    trangThai    BIT DEFAULT 0,  -- 0: chÆ°a tÃ­nh vÃ o HÄ, 1: Ä‘Ã£ tÃ­nh vÃ o HÄ
     CONSTRAINT PK_DVSD   PRIMARY KEY (maDV, maCTHD),
     CONSTRAINT FK_DVSD_DV   FOREIGN KEY (maDV)   REFERENCES DV(maDV),
     CONSTRAINT FK_DVSD_CTHD FOREIGN KEY (maCTHD) REFERENCES ChiTietHoaDon(maCTHD)
 );
 
 -- =============================
--- 4. BẢNG GIÁ DỊCH VỤ
+-- 4. Báº¢NG GIÃ Dá»ŠCH Vá»¤
 -- =============================
 
 CREATE TABLE BangGiaDV_Header (
@@ -174,7 +174,7 @@ CREATE TABLE BangGiaDV_Header (
     tenBangGia     NVARCHAR(100),
     ngayApDung     DATE,
     ngayHetHieuLuc DATE,
-    trangThai      BIT DEFAULT 1  -- 1: đang áp dụng, 0: hết hiệu lực
+    trangThai      BIT DEFAULT 1  -- 1: Ä‘ang Ã¡p dá»¥ng, 0: háº¿t hiá»‡u lá»±c
 );
 
 CREATE TABLE BangGiaDV_Detail (

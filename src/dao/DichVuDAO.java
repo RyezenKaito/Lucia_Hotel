@@ -14,6 +14,26 @@ public class DichVuDAO {
      */
     public List<DichVu> getAll() {
         List<DichVu> ds = new ArrayList<>();
+        String sql = "SELECT * FROM DV";
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                ds.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Lấy tất cả dịch vụ Đang phục vụ (Trạng thái = 0)
+     */
+    public List<DichVu> getAllActive() {
+        List<DichVu> ds = new ArrayList<>();
         String sql = "SELECT * FROM DV WHERE trangThai = 0";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -33,6 +53,26 @@ public class DichVuDAO {
      * Lấy danh sách dịch vụ theo loại
      */
     public List<DichVu> getByType(String loaiDV) {
+        List<DichVu> ds = new ArrayList<>();
+        String sql = "SELECT * FROM DV WHERE loaiDV = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, loaiDV);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ds.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Lấy danh sách dịch vụ theo loại và đang phục vụ
+     */
+    public List<DichVu> getActiveByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
         String sql = "SELECT * FROM DV WHERE loaiDV = ? AND trangThai = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -58,7 +98,11 @@ public class DichVuDAO {
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
 
             pstmt.setString(1, dv.getTenDV());
-            pstmt.setDouble(2, dv.getGia());
+            if (dv.getGia() != null) {
+                pstmt.setDouble(2, dv.getGia());
+            } else {
+                pstmt.setNull(2, java.sql.Types.DECIMAL);
+            }
             pstmt.setString(3, dv.getLoaiDV());
             pstmt.setString(4, dv.getMieuTa());
             pstmt.setString(5, dv.getDonVi());
@@ -82,7 +126,11 @@ public class DichVuDAO {
 
             pstmt.setString(1, dv.getMaDV());
             pstmt.setString(2, dv.getTenDV());
-            pstmt.setDouble(3, dv.getGia());
+            if (dv.getGia() != null) {
+                pstmt.setDouble(3, dv.getGia());
+            } else {
+                pstmt.setNull(3, java.sql.Types.DECIMAL);
+            }
             pstmt.setString(4, dv.getLoaiDV());
             pstmt.setString(5, dv.getMieuTa());
             pstmt.setString(6, dv.getDonVi());
@@ -119,7 +167,8 @@ public class DichVuDAO {
         DichVu dv = new DichVu();
         dv.setMaDV(rs.getString("maDV"));
         dv.setTenDV(rs.getString("tenDV"));
-        dv.setGia(rs.getDouble("gia"));
+        Object giaObj = rs.getObject("gia");
+        dv.setGia(giaObj != null ? rs.getDouble("gia") : null);
         dv.setLoaiDV(rs.getString("loaiDV"));
         dv.setMieuTa(rs.getString("mieuTa"));
         dv.setDonVi(rs.getString("donVi"));

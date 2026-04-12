@@ -1,9 +1,9 @@
 package model.enums;
 
 public enum TrangThaiPhong {
-    CONTRONG("Trống"), 
-    BAN("Bận"), 
-    DACOKHACH("Đang ở");
+    CONTRONG("Còn trống"),
+    BAN("Bẩn"),
+    DACOKHACH("Đã có khách");
 
     private String label;
 
@@ -15,7 +15,7 @@ public enum TrangThaiPhong {
     public String toString() {
         return this.label;
     }
-    
+
     // Thêm hàm này để lấy chuỗi tiếng Việt nếu cần
     public String getLabel() {
         return label;

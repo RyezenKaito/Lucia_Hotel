@@ -6,13 +6,20 @@ import java.util.Objects;
  * Class thực thể đại diện cho bảng DV trong Database LuciaHT
  */
 public class DichVu {
+    public static final int DANG_PHUC_VU = 0;
+    public static final int TAM_NGUNG = 1;
+
     private String maDV;
     private String tenDV;
-    private double gia;
+    private Double gia;
     private String loaiDV;
     private String mieuTa;
     private String donVi;
-    private int trangThai; // 0: active, 1: hidden
+    private int trangThai; // 0: DANG_PHUC_VU, 1: TAM_NGUNG
+
+    public String getTrangThaiLabel() {
+        return trangThai == DANG_PHUC_VU ? "Đang phục vụ" : "Tạm ngưng phục vụ";
+    }
 
     public DichVu() {
     }
@@ -21,7 +28,7 @@ public class DichVu {
         this.maDV = maDV;
     }
 
-    public DichVu(String maDV, String tenDV, double gia, String loaiDV, String mieuTa, String donVi, int trangThai) {
+    public DichVu(String maDV, String tenDV, Double gia, String loaiDV, String mieuTa, String donVi, int trangThai) {
         this.maDV = maDV;
         this.tenDV = tenDV;
         this.gia = gia;
@@ -47,11 +54,11 @@ public class DichVu {
         this.tenDV = tenDV;
     }
 
-    public double getGia() {
+    public Double getGia() {
         return gia;
     }
 
-    public void setGia(double gia) {
+    public void setGia(Double gia) {
         this.gia = gia;
     }
 
@@ -116,8 +123,8 @@ public class DichVu {
     // --- Legacy compatibility ---
     public String getMaDichVu() { return maDV; }
     public String getTenDichVu() { return tenDV; }
-    public double getDonGia() { return gia; }
-    public double getGiaDichVu() { return gia; }
+    public Double getDonGia() { return gia; }
+    public Double getGiaDichVu() { return gia; }
     public String getLoaiDichVu() { return loaiDV; }
     public String getDonViTinh() { return donVi; }
 }

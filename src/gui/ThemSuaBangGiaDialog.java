@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * ThemSuaBangGiaDialog – JavaFX
@@ -57,10 +58,16 @@ public class ThemSuaBangGiaDialog {
     private final List<BangGiaDichVu_ChiTiet> dsChiTietGoc;
     private final Runnable onSuccess;
     private final boolean isEdit;
+    private Button btnSubmit;
+
+    // --- Dirty Tracking ---
+    private String initTen;
+    private java.time.LocalDate initAD, initHH;
+    private final Map<String, String> initPrices = new HashMap<>();
 
     // Controls
     private TextField txtMaBG, txtTenBG;
-    private DatePicker dpNgayAD, dpNgayHH;
+    private model.utils.DatePicker dpNgayAD, dpNgayHH;
     private TableView<Object[]> table; // [maDV, tenDV, loai, giaGoc, giaApDung]
     private ObservableList<Object[]> tableData;
     private FilteredList<Object[]> filteredData;
@@ -92,12 +99,20 @@ public class ThemSuaBangGiaDialog {
         dialog.getDialogPane().setMinWidth(1000);
         dialog.getDialogPane().setPrefHeight(700);
 
-        ButtonType btnSubmit = new ButtonType(isEdit ? "💾 Cập nhật" : "💾 Thêm mới", ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnCancel = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(btnSubmit, btnCancel);
-        styleDialogButtons(dialog, btnSubmit, btnCancel);
+        ButtonType btSubmit = new ButtonType(isEdit ? "💾 Cập nhật" : "💾 Thêm mới", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btCancel = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(btSubmit, btCancel);
+        styleDialogButtons(dialog, btSubmit, btCancel);
 
-        Button okBtn = (Button) dialog.getDialogPane().lookupButton(btnSubmit);
+        Button okBtn = (Button) dialog.getDialogPane().lookupButton(btSubmit);
+        this.btnSubmit = okBtn;
+
+        if (isEdit) {
+            captureInitialState();
+            setupDirtyTracking();
+            btnSubmit.setDisable(true); // Ban đầu chưa có thay đổi
+        }
+
         okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             if (!validateAndSubmit())
                 event.consume();
@@ -105,6 +120,63 @@ public class ThemSuaBangGiaDialog {
 
         dialog.showAndWait();
         DimOverlay.hide(owner, overlay);
+    }
+
+    private void captureInitialState() {
+        if (!isEdit)
+            return;
+        initTen = txtTenBG.getText().trim();
+        initAD = dpNgayAD.getValue();
+        initHH = dpNgayHH.getValue();
+
+        initPrices.clear();
+        for (Object[] row : tableData) {
+            String ma = str(row[0]);
+            String price = str(row[3]).replaceAll("[^\\d]", "");
+            initPrices.put(ma, price);
+        }
+    }
+
+    private void setupDirtyTracking() {
+        txtTenBG.textProperty().addListener((o, ov, nv) -> checkChanges());
+        dpNgayAD.valueProperty().addListener((o, ov, nv) -> checkChanges());
+        dpNgayHH.valueProperty().addListener((o, ov, nv) -> checkChanges());
+        // Lắng nghe sự thay đổi của danh sách (thêm/xóa dòng)
+        tableData.addListener((javafx.collections.ListChangeListener<Object[]>) c -> checkChanges());
+    }
+
+    private void checkChanges() {
+        if (!isEdit || btnSubmit == null)
+            return;
+
+        boolean changed = false;
+
+        // 1. Kiểm tra thông tin chung
+        if (!txtTenBG.getText().trim().equals(initTen))
+            changed = true;
+        if (!Objects.equals(dpNgayAD.getValue(), initAD))
+            changed = true;
+        if (!Objects.equals(dpNgayHH.getValue(), initHH))
+            changed = true;
+
+        if (!changed) {
+            // 2. Kiểm tra bảng giá
+            if (tableData.size() != initPrices.size()) {
+                changed = true;
+            } else {
+                for (Object[] row : tableData) {
+                    String ma = str(row[0]);
+                    String currentPrice = str(row[3]).replaceAll("[^\\d]", "");
+                    String initialPrice = initPrices.get(ma);
+                    if (initialPrice == null || !currentPrice.equals(initialPrice)) {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        btnSubmit.setDisable(!changed);
     }
 
     @SuppressWarnings("unchecked")
@@ -149,36 +221,16 @@ public class ThemSuaBangGiaDialog {
         txtTenBG.setStyle(fieldStyle());
         txtTenBG.setMaxWidth(Double.MAX_VALUE);
 
-        dpNgayAD = new DatePicker();
+        int currentYear = LocalDate.now().getYear();
+        dpNgayAD = new model.utils.DatePicker(currentYear - 5, currentYear + 15);
         dpNgayAD.setPromptText("dd/MM/yyyy");
         dpNgayAD.setMaxWidth(Double.MAX_VALUE);
         dpNgayAD.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 40;");
 
-        dpNgayHH = new DatePicker();
+        dpNgayHH = new model.utils.DatePicker(currentYear - 5, currentYear + 15);
         dpNgayHH.setPromptText("dd/MM/yyyy");
         dpNgayHH.setMaxWidth(Double.MAX_VALUE);
         dpNgayHH.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 40;");
-
-        // Force dd/MM/yyyy format for selected values
-        StringConverter<LocalDate> converter = new StringConverter<>() {
-            @Override
-            public String toString(LocalDate date) {
-                return (date != null) ? DTF.format(date) : "";
-            }
-
-            @Override
-            public LocalDate fromString(String string) {
-                if (string == null || string.isEmpty())
-                    return null;
-                try {
-                    return LocalDate.parse(string, DTF);
-                } catch (Exception e) {
-                    return null;
-                }
-            }
-        };
-        dpNgayAD.setConverter(converter);
-        dpNgayHH.setConverter(converter);
 
         if (isEdit && bangGia.getNgayApDung() != null)
             dpNgayAD.setValue(bangGia.getNgayApDung().toLocalDate());
@@ -190,21 +242,16 @@ public class ThemSuaBangGiaDialog {
         else
             dpNgayHH.setValue(LocalDate.now());
 
-        // Logic ngày giữ nguyên
+        // Lock chỉ khi ngày áp dụng ở quá khứ
         if (isEdit && bangGia.getNgayApDung() != null
-                && !bangGia.getNgayApDung().toLocalDate().isAfter(LocalDate.now())) {
+                && bangGia.getNgayApDung().toLocalDate().isBefore(LocalDate.now())) {
             dpNgayAD.setDisable(true);
             dpNgayAD.setStyle(dpNgayAD.getStyle() + "-fx-opacity: 0.7;");
         }
 
         // Khống chế ngày áp dụng >= hôm nay
-        dpNgayAD.setDayCellFactory(picker -> new DateCell() {
-            @Override
-            public void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                setDisable(empty || date.isBefore(LocalDate.now()));
-            }
-        });
+        dpNgayAD.setMinDate(LocalDate.now());
+
         dpNgayAD.valueProperty().addListener((obs, oldV, newV) -> {
             if (newV != null && dpNgayHH.getValue() != null && dpNgayHH.getValue().isBefore(newV)) {
                 dpNgayHH.setValue(newV.plusDays(1));
@@ -250,7 +297,7 @@ public class ThemSuaBangGiaDialog {
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
         txtSearch.textProperty().addListener((obs, oldV, newV) -> applyFilter(newV));
 
-        Button btnAddService = new Button("＋ Thêm dịch vụ");
+        Button btnAddService = new Button("＋ Chọn dịch vụ");
         btnAddService.setStyle("-fx-background-color: " + C_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; " +
                 "-fx-padding: 8 20; -fx-background-radius: 20; -fx-cursor: hand;");
         btnAddService
@@ -259,10 +306,7 @@ public class ThemSuaBangGiaDialog {
                 .setOnMouseExited(e -> btnAddService.setStyle(btnAddService.getStyle().replace(C_BLUE_HOVER, C_BLUE)));
         btnAddService.setOnAction(e -> showServicePicker());
 
-        tableToolbar.getChildren().addAll(lblTableTitle, txtSearch);
-        if (isEdit) {
-            tableToolbar.getChildren().add(btnAddService);
-        }
+        tableToolbar.getChildren().addAll(lblTableTitle, txtSearch, btnAddService);
 
         tableData = FXCollections.observableArrayList();
         loadAllServices();
@@ -272,23 +316,21 @@ public class ThemSuaBangGiaDialog {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         VBox.setVgrow(table, Priority.ALWAYS);
 
-        // Định nghĩa cột (Giữ nguyên tỷ lệ % đã fix)
+        // Định nghĩa cột (Bỏ cột Giá gốc, chỉ giữ Giá áp dụng)
         TableColumn<Object[], String> cMa = col("Mã DV", 0, false, "-fx-alignment: CENTER; -fx-font-weight: bold;");
         TableColumn<Object[], String> cTen = col("Tên dịch vụ", 1, false, null);
         TableColumn<Object[], String> cLoai = col("Loại", 2, false, "-fx-alignment: CENTER;");
-        TableColumn<Object[], String> cGocBase = col("Giá gốc (đ)", 3, false, "-fx-alignment: CENTER-RIGHT;");
         TableColumn<Object[], String> cGiaAD = new TableColumn<>("Giá áp dụng (đ)");
 
         cMa.setMaxWidth(1f * Integer.MAX_VALUE * 10);
-        cTen.setMaxWidth(1f * Integer.MAX_VALUE * 40);
+        cTen.setMaxWidth(1f * Integer.MAX_VALUE * 45);
         cLoai.setMaxWidth(1f * Integer.MAX_VALUE * 15);
-        cGocBase.setMaxWidth(1f * Integer.MAX_VALUE * 15);
-        cGiaAD.setMaxWidth(1f * Integer.MAX_VALUE * 20);
+        cGiaAD.setMaxWidth(1f * Integer.MAX_VALUE * 30);
 
         // Logic CellFactory giữ nguyên
         cGiaAD.setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: " + C_BLUE + ";");
         cGiaAD.setCellValueFactory(
-                p -> new SimpleStringProperty(p.getValue()[4] != null ? p.getValue()[4].toString() : ""));
+                p -> new SimpleStringProperty(p.getValue()[3] != null ? p.getValue()[3].toString() : ""));
         cGiaAD.setCellFactory(tc -> new TableCell<>() {
             private final TextField tf = new TextField();
             private boolean updating = false;
@@ -363,9 +405,10 @@ public class ThemSuaBangGiaDialog {
                 String digits = newVal != null ? newVal.replaceAll("[^\\d]", "") : "";
                 String display = digits.isEmpty() ? "" : String.format("%,d", Long.parseLong(digits));
                 super.commitEdit(display);
-                getTableRow().getItem()[4] = display;
+                getTableRow().getItem()[3] = display;
                 setGraphic(null);
                 setText(display);
+                checkChanges(); // Cập nhật trạng thái nút
             }
 
             @Override
@@ -378,7 +421,7 @@ public class ThemSuaBangGiaDialog {
             }
         });
 
-        table.getColumns().setAll(cMa, cTen, cLoai, cGocBase, cGiaAD);
+        table.getColumns().setAll(cMa, cTen, cLoai, cGiaAD);
         table.setEditable(true);
 
         // Thiết lập ContextMenu xóa dịch vụ khi ở chế độ Sửa
@@ -433,16 +476,10 @@ public class ThemSuaBangGiaDialog {
     }
 
     private void refreshDateHHConstraint() {
-        dpNgayHH.setDayCellFactory(picker -> new DateCell() {
-            @Override
-            public void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                LocalDate minFromAD = dpNgayAD.getValue() != null ? dpNgayAD.getValue() : LocalDate.now();
-                // Ngày hết hạn phải >= max(ngày áp dụng, hôm nay)
-                LocalDate minDate = minFromAD.isBefore(LocalDate.now()) ? LocalDate.now() : minFromAD;
-                setDisable(empty || date.isBefore(minDate));
-            }
-        });
+        LocalDate minFromAD = dpNgayAD.getValue() != null ? dpNgayAD.getValue() : LocalDate.now();
+        // Ngày hết hạn phải >= max(ngày áp dụng, hôm nay)
+        LocalDate minDate = minFromAD.isBefore(LocalDate.now()) ? LocalDate.now() : minFromAD;
+        dpNgayHH.setMinDate(minDate);
     }
 
     /**
@@ -453,7 +490,7 @@ public class ThemSuaBangGiaDialog {
     private void loadAllServices() {
         tableData.clear();
         DichVuDAO dvDAO = new DichVuDAO();
-        List<DichVu> allDV = dvDAO.getAll();
+        List<DichVu> allDV = dvDAO.getAllActive();
 
         Map<String, String> giaApDungMap = new HashMap<>();
 
@@ -465,7 +502,8 @@ public class ThemSuaBangGiaDialog {
             }
 
             for (BangGiaDichVu_ChiTiet ct : dsChiTietGoc) {
-                giaApDungMap.put(ct.getMaDichVu().getMaDV(), String.valueOf((long) ct.getGiaDichVu()));
+                giaApDungMap.put(ct.getMaDichVu().getMaDV(),
+                        String.valueOf(ct.getGiaDichVu() != null ? ct.getGiaDichVu().longValue() : 0L));
             }
         } else {
             // Thêm mới: lấy giá từ bảng giá đang Active
@@ -477,22 +515,31 @@ public class ThemSuaBangGiaDialog {
         }
 
         tableData.clear();
-        for (DichVu dv : allDV) {
-            // Nếu có giá từ bảng giá active/cũ thì dùng, không thì lấy giá gốc
-            String rawGia = giaApDungMap.getOrDefault(dv.getMaDV(), String.valueOf((long) dv.getGia()));
-            String formatted;
-            try {
-                long num = Long.parseLong(rawGia.replaceAll("[^\\d]", ""));
-                formatted = String.format("%,d", num);
-            } catch (NumberFormatException e) {
-                formatted = rawGia;
+        if (isEdit && dsChiTietGoc != null) {
+            // Chỉ nạp những dịch vụ đã có trong chi tiết của bảng giá này
+            for (BangGiaDichVu_ChiTiet ct : dsChiTietGoc) {
+                DichVu dv = ct.getMaDichVu();
+                // Tìm thông tin đầy đủ từ allDV (vì dsChiTietGoc có thể chỉ có mã)
+                DichVu fullDv = allDV.stream()
+                        .filter(d -> d.getMaDV().equals(dv.getMaDV()))
+                        .findFirst().orElse(dv);
+
+                String rawGia = String.valueOf(ct.getGiaDichVu() != null ? ct.getGiaDichVu().longValue() : 0L);
+                String formatted;
+                try {
+                    long num = Long.parseLong(rawGia.replaceAll("[^\\d]", ""));
+                    formatted = String.format("%,d", num);
+                } catch (NumberFormatException e) {
+                    formatted = rawGia;
+                }
+
+                tableData.add(new Object[] {
+                        fullDv.getMaDV(), fullDv.getTenDV(), fullDv.getLoaiDV(),
+                        formatted
+                });
             }
-            tableData.add(new Object[] {
-                    dv.getMaDV(), dv.getTenDV(), dv.getLoaiDV(),
-                    String.format("%,.0f", dv.getGia()),
-                    formatted
-            });
         }
+        // Nếu không phải Edit (Thêm mới), tableData sẽ để trống để User tự thêm.
     }
 
     private boolean validateAndSubmit() {
@@ -511,25 +558,17 @@ public class ThemSuaBangGiaDialog {
             return false;
         }
 
-        // Parse chi tiết giá (Chỉ thêm các dịch vụ có giá thay đổi so với giá gốc)
+        // Parse chi tiết giá từ cột giá áp dụng (index [3])
         List<BangGiaDichVu_ChiTiet> dsGia = new ArrayList<>();
         for (Object[] row : tableData) {
-            String rawGia = row[4] != null ? row[4].toString().trim() : "";
+            String rawGia = row[3] != null ? row[3].toString().trim() : "";
             if (!rawGia.isEmpty()) {
                 try {
-                    // Loại bỏ tất cả ký tự không phải số để parse an toàn
                     String digitsGia = rawGia.replaceAll("[^\\d]", "");
                     if (digitsGia.isEmpty())
                         continue;
                     double gia = Double.parseDouble(digitsGia);
-
-                    // Lấy giá gốc để so sánh
-                    String rawGiaGoc = row[3] != null ? row[3].toString().trim() : "0";
-                    String digitsGiaGoc = rawGiaGoc.replaceAll("[^\\d]", "");
-                    double giaGoc = digitsGiaGoc.isEmpty() ? 0 : Double.parseDouble(digitsGiaGoc);
-
-                    // Chỉ thêm vào danh sách nếu giá áp dụng khác giá gốc
-                    if (gia != giaGoc) {
+                    if (gia > 0) {
                         BangGiaDichVu_ChiTiet ct = new BangGiaDichVu_ChiTiet();
                         ct.setMaDichVu(new DichVu(row[0].toString()));
                         ct.setGiaDichVu(gia);
@@ -566,27 +605,6 @@ public class ThemSuaBangGiaDialog {
         bg.setNgayApDung(Date.valueOf(dpNgayAD.getValue()));
         bg.setNgayHetHieuLuc(Date.valueOf(dpNgayHH.getValue()));
 
-        // === KIỂM TRA XUNG ĐỘT NGHIÊM NGẶT ===
-        // Quét toàn bộ bảng giá có trangThai != -1 (chưa xóa mềm)
-        String excludeMa = isEdit ? bg.getMaBangGia() : null;
-        List<BangGiaDichVu> conflicts = bgDAO.findStrictConflicts(
-                bg.getNgayApDung(), bg.getNgayHetHieuLuc(), excludeMa);
-        if (!conflicts.isEmpty()) {
-            // Chặn cứng: Thông báo lỗi đích danh, không cho tiếp tục
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            StringBuilder sb = new StringBuilder();
-            sb.append("Khoảng thời gian bạn chọn bị trùng với:\n\n");
-            for (BangGiaDichVu bgConflict : conflicts) {
-                sb.append("• Bảng giá [").append(bgConflict.getTenBangGia()).append("]\n");
-                sb.append("   Từ ngày ").append(sdf.format(bgConflict.getNgayApDung()));
-                sb.append(" đến ngày ").append(sdf.format(bgConflict.getNgayHetHieuLuc()));
-                sb.append("\n\n");
-            }
-            sb.append("Vui lòng chỉnh sửa ngày áp dụng/hết hạn sao cho không chồng lấn.");
-            showError("Xung đột thời gian", sb.toString());
-            return false;
-        }
-
         // Lưu/Cập nhật
         boolean ok;
         if (isEdit) {
@@ -606,6 +624,10 @@ public class ThemSuaBangGiaDialog {
                 return false;
             }
         }
+
+        // Đồng bộ giá active vào bảng DV
+        bgDAO.syncActivePricesToDB();
+
         if (onSuccess != null)
             onSuccess.run();
         return true;
@@ -680,7 +702,7 @@ public class ThemSuaBangGiaDialog {
         search.setStyle("-fx-background-radius: 15; -fx-padding: 8 15;");
 
         DichVuDAO dvDAO = new DichVuDAO();
-        List<DichVu> all = dvDAO.getAll();
+        List<DichVu> all = dvDAO.getAllActive();
         // Lọc bỏ những gì đã có trong bảng
         List<String> existingIds = new ArrayList<>();
         for (Object[] row : tableData) {
@@ -713,11 +735,22 @@ public class ThemSuaBangGiaDialog {
         pickerTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         pickerTable.setPrefHeight(400);
 
-        TableColumn<DichVuSelection, Boolean> cCheck = new TableColumn<>("Chọn");
+        TableColumn<DichVuSelection, Boolean> cCheck = new TableColumn<>();
+        CheckBox cbAll = new CheckBox("Chọn");
+        cbAll.setStyle("-fx-font-weight: bold;");
+        cbAll.setOnAction(ev -> {
+            boolean sel = cbAll.isSelected();
+            for (DichVuSelection item : pickerData) {
+                item.selected.set(sel);
+            }
+        });
+        cCheck.setGraphic(cbAll);
         cCheck.setCellValueFactory(p -> p.getValue().selected);
         cCheck.setCellFactory(tc -> new javafx.scene.control.cell.CheckBoxTableCell<>());
         cCheck.setEditable(true);
-        cCheck.setMaxWidth(60);
+        cCheck.setMaxWidth(80);
+        cCheck.setMinWidth(80);
+        cCheck.setStyle("-fx-alignment: CENTER;");
 
         TableColumn<DichVuSelection, String> cId = new TableColumn<>("Mã");
         cId.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getMaDV()));
@@ -729,10 +762,22 @@ public class ThemSuaBangGiaDialog {
         pickerTable.getColumns().addAll(cCheck, cId, cName, cType);
         pickerTable.setEditable(true);
 
+        // Cho phép click vào dòng để tích chọn checkbox
+        pickerTable.setRowFactory(tv -> {
+            TableRow<DichVuSelection> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty() && event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    DichVuSelection item = row.getItem();
+                    item.selected.set(!item.selected.get());
+                }
+            });
+            return row;
+        });
+
         root.getChildren().addAll(new Label("Danh sách dịch vụ chưa áp dụng:"), search, pickerTable);
         picker.getDialogPane().setContent(root);
 
-        ButtonType btnNap = new ButtonType("Nạp dịch vụ", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnNap = new ButtonType("Thêm vào bảng giá", ButtonBar.ButtonData.OK_DONE);
         ButtonType btnHuy = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
         picker.getDialogPane().getButtonTypes().addAll(btnNap, btnHuy);
 
@@ -750,12 +795,12 @@ public class ThemSuaBangGiaDialog {
 
         picker.showAndWait().ifPresent(selected -> {
             for (DichVu dv : selected) {
+                // Object[]: [0]=maDV, [1]=tenDV, [2]=loaiDV, [3]=giaApDung
                 tableData.add(new Object[] {
                         dv.getMaDV(),
                         dv.getTenDV(),
                         dv.getLoaiDV(),
-                        String.format("%,.0f", dv.getGia()),
-                        String.format("%,.0f", dv.getGia()) // Mặc định bảng giá mới = giá gốc
+                        dv.getGia() != null ? String.format("%,.0f", dv.getGia()) : "0"
                 });
             }
         });

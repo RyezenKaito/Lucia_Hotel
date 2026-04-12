@@ -254,6 +254,7 @@ public class DatPhongDAO {
                     ps.setString(1, entry.getKey().getMaDV());
                     ps.setString(2, maCTHD);
                     ps.setInt(3, entry.getValue());
+                    if (entry.getKey().getGia() == null) continue; // Skip services without price
                     ps.setDouble(4, entry.getKey().getGia());
                     ps.addBatch();
                 }

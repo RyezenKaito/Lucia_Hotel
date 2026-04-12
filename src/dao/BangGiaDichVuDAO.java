@@ -76,7 +76,11 @@ public class BangGiaDichVuDAO {
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, ct.getMaBangGia().getMaBangGia());
             ps.setString(2, ct.getMaDichVu().getMaDV());
-            ps.setDouble(3, ct.getGiaDichVu());
+            if (ct.getGiaDichVu() != null) {
+                ps.setDouble(3, ct.getGiaDichVu());
+            } else {
+                ps.setNull(3, java.sql.Types.DECIMAL);
+            }
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -130,7 +134,8 @@ public class BangGiaDichVuDAO {
         BangGiaDichVu_ChiTiet ct = new BangGiaDichVu_ChiTiet();
         ct.setMaBangGia(new BangGiaDichVu(rs.getString("maBangGia")));
         ct.setMaDichVu(new DichVu(rs.getString("maDV")));
-        ct.setGiaDichVu(rs.getDouble("giaDV"));
+        Object giaObj = rs.getObject("giaDV");
+        ct.setGiaDichVu(giaObj != null ? rs.getDouble("giaDV") : null);
         return ct;
     }
 
@@ -157,7 +162,11 @@ public class BangGiaDichVuDAO {
                 for (BangGiaDichVu_ChiTiet ct : dsChiTiet) {
                     ps2.setString(1, thongTin.getMaBangGia());
                     ps2.setString(2, ct.getMaDichVu().getMaDV());
-                    ps2.setDouble(3, ct.getGiaDichVu());
+                    if (ct.getGiaDichVu() != null) {
+                        ps2.setDouble(3, ct.getGiaDichVu());
+                    } else {
+                        ps2.setNull(3, java.sql.Types.DECIMAL);
+                    }
                     ps2.addBatch();
                 }
                 ps2.executeBatch();
@@ -200,7 +209,11 @@ public class BangGiaDichVuDAO {
                 for (BangGiaDichVu_ChiTiet ct : dsChiTiet) {
                     ps3.setString(1, bg.getMaBangGia());
                     ps3.setString(2, ct.getMaDichVu().getMaDV());
-                    ps3.setDouble(3, ct.getGiaDichVu());
+                    if (ct.getGiaDichVu() != null) {
+                        ps3.setDouble(3, ct.getGiaDichVu());
+                    } else {
+                        ps3.setNull(3, java.sql.Types.DECIMAL);
+                    }
                     ps3.addBatch();
                 }
                 ps3.executeBatch();
@@ -453,31 +466,49 @@ public class BangGiaDichVuDAO {
                 ps1.executeUpdate();
             }
 
-            // 2. Nếu "Ngưng áp dụng" -> Chốt ngày kết thúc là hôm nay
-            if (tenTrangThai.equals("Ngưng áp dụng")) {
-                String sqlStop = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = GETDATE() WHERE maBangGia = ? AND ngayHetHieuLuc > GETDATE()";
-                try (PreparedStatement ps2 = conn.prepareStatement(sqlStop)) {
-                    ps2.setString(1, maBG);
-                    ps2.executeUpdate();
-                }
-            }
+            // 2. Không cần chốt ngày kết thúc tự động nữa (Theo yêu cầu: giữ nguyên ngày đã set)
 
-            // 3. Nếu "Đang áp dụng" mà ngày đã hết hạn -> Tự động gia hạn thêm 30 ngày để
-            // logic hiển thị không bị bóp nghẹt
-            if (isActivating) {
-                String sqlExtend = "UPDATE BangGiaDV_Header SET ngayHetHieuLuc = DATEADD(day, 30, GETDATE()) " +
-                        "WHERE maBangGia = ? AND ngayHetHieuLuc < GETDATE()";
-                try (PreparedStatement ps3 = conn.prepareStatement(sqlExtend)) {
-                    ps3.setString(1, maBG);
-                    ps3.executeUpdate();
-                }
-            }
 
             conn.commit();
+            syncActivePricesToDB();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * Đồng bộ giá từ bảng giá đang active vào cột gia trong bảng DV.
+     * Gọi sau khi thêm/sửa/kích hoạt bảng giá.
+     */
+    public void syncActivePricesToDB() {
+        java.util.Map<String, Double> activePrices = getActivePriceMap();
+
+        String resetSql = "UPDATE DV SET gia = NULL";
+        String updateSql = "UPDATE DV SET gia = ? WHERE maDV = ?";
+
+        try (Connection conn = ConnectDatabase.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement psReset = conn.prepareStatement(resetSql)) {
+                psReset.executeUpdate();
+            }
+
+            if (!activePrices.isEmpty()) {
+                try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
+                    for (java.util.Map.Entry<String, Double> entry : activePrices.entrySet()) {
+                        psUpdate.setDouble(1, entry.getValue());
+                        psUpdate.setString(2, entry.getKey());
+                        psUpdate.addBatch();
+                    }
+                    psUpdate.executeBatch();
+                }
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

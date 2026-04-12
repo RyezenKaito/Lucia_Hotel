@@ -25,7 +25,7 @@ public class DichVuSuDungDAO {
                 model.entities.DichVu d = new model.entities.DichVu();
                 d.setMaDV(rs.getString("maDV"));
                 d.setTenDV(rs.getString("tenDV"));
-                d.setGia(rs.getDouble("giaDV"));
+                d.setGia(rs.getObject("giaDV") != null ? rs.getDouble("giaDV") : null);
 
                 DichVuSuDung dvsd = new DichVuSuDung();
                 dvsd.setDichVu(d);

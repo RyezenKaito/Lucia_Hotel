@@ -2,12 +2,14 @@ package gui;
 
 import dao.DichVuDAO;
 import model.entities.DichVu;
+import model.utils.BadgeUtils;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
@@ -43,7 +45,6 @@ public class QuanLyDichVuView extends BorderPane {
     private final DichVuDAO dao = new DichVuDAO();
     private ObservableList<DichVu> masterData = FXCollections.observableArrayList();
     private FilteredList<DichVu> filteredData;
-    private java.util.Map<String, Double> activePriceMap = new java.util.HashMap<>();
 
     /* ── UI Controls ────────────────────────────────────────────────── */
     private TableView<DichVu> table;
@@ -181,15 +182,14 @@ public class QuanLyDichVuView extends BorderPane {
                 + C_BLUE + ";");
         colGia.setCellValueFactory(p -> {
             DichVu dv = p.getValue();
-            Double activePrice = activePriceMap.get(dv.getMaDV());
-            if (activePrice != null) {
-                return new SimpleStringProperty(String.format("%,.0f đ", activePrice));
-            } else {
+            if (dv.getGia() != null) {
                 return new SimpleStringProperty(String.format("%,.0f đ", dv.getGia()));
+            } else {
+                return new SimpleStringProperty("Chưa thiết lập");
             }
         });
 
-        // Add Tooltip to show original price if active price is different
+        // Add Tooltip and Colors
         colGia.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -197,22 +197,21 @@ public class QuanLyDichVuView extends BorderPane {
                 if (empty || item == null) {
                     setText(null);
                     setTooltip(null);
+                    setStyle("");
                 } else {
                     setText(item);
                     DichVu dv = getTableRow().getItem();
                     if (dv != null) {
-                        Double activePrice = activePriceMap.get(dv.getMaDV());
-                        if (activePrice != null) {
-                            setTooltip(new Tooltip("Giá gốc: " + String.format("%,.0f đ", dv.getGia())));
-                            if (activePrice < dv.getGia())
-                                setStyle("-fx-text-fill: " + C_RED
-                                        + "; -fx-alignment: CENTER_RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
-                            else if (activePrice > dv.getGia())
-                                setStyle("-fx-text-fill: " + C_GREEN
-                                        + "; -fx-alignment: CENTER_RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
+                        if (dv.getGia() == null) {
+                            // Chưa thiết lập giá
+                            setStyle("-fx-text-fill: " + C_RED + "; -fx-font-style: italic;"
+                                    + " -fx-alignment: CENTER_RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
+                            setTooltip(new Tooltip("Dịch vụ chưa được thiết lập giá"));
                         } else {
-                            setStyle("-fx-text-fill: " + C_TEXT_GRAY
+                            // Hiện giá (màu xanh lá cây)
+                            setStyle("-fx-text-fill: " + C_GREEN
                                     + "; -fx-alignment: CENTER_RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
+                            setTooltip(new Tooltip("Giá đang áp dụng hiện tại"));
                         }
                     }
                 }
@@ -225,12 +224,53 @@ public class QuanLyDichVuView extends BorderPane {
         colDonVi.setStyle("-fx-alignment: CENTER;");
         colDonVi.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getDonVi()));
 
+        // 7. Cột Trạng thái
+        TableColumn<DichVu, String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai.setPrefWidth(150);
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTrangThaiLabel()));
+        colTrangThai.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    String bg = item.equals("Đang phục vụ") ? "#d1fae5" : "#fee2e2";
+                    String text = item.equals("Đang phục vụ") ? "#065f46" : "#991b1b";
+
+                    // Sử dụng Utility đồng nhất
+                    HBox badge = BadgeUtils.createStatusBadge(item, bg, text, true);
+
+                    // Context Menu cho việc đổi trạng thái nhanh
+                    ContextMenu menu = new ContextMenu();
+                    MenuItem miActive = new MenuItem("✅  Đang phục vụ");
+                    miActive.setOnAction(
+                            e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.DANG_PHUC_VU));
+                    MenuItem miSuspended = new MenuItem("🚫  Tạm ngưng phục vụ");
+                    miSuspended
+                            .setOnAction(e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.TAM_NGUNG));
+                    menu.getItems().addAll(miActive, miSuspended);
+
+                    badge.setOnMouseClicked(e -> {
+                        if (e.getButton() == MouseButton.PRIMARY) {
+                            menu.show(badge, Side.BOTTOM, 0, 0);
+                        }
+                    });
+
+                    setGraphic(badge);
+                }
+            }
+        });
+
         table.getColumns().add(colSTT);
         table.getColumns().add(colMa);
         table.getColumns().add(colTen);
         table.getColumns().add(colLoai);
         table.getColumns().add(colGia);
         table.getColumns().add(colDonVi);
+        table.getColumns().add(colTrangThai);
 
         // Chặn kéo cột, sắp xếp
         table.getColumns().forEach(c -> {
@@ -280,8 +320,6 @@ public class QuanLyDichVuView extends BorderPane {
 
     /* ══════════════════ LOGIC ══════════════════ */
     public void loadData() {
-        dao.BangGiaDichVuDAO bgDao = new dao.BangGiaDichVuDAO();
-        activePriceMap = bgDao.getActivePriceMap();
         List<DichVu> list = dao.getAll();
         masterData.setAll(list);
 
@@ -310,6 +348,20 @@ public class QuanLyDichVuView extends BorderPane {
 
             return matchesText && matchesCategory;
         });
+    }
+
+    private void handleToggleStatus(DichVu dv, int targetStatus) {
+        if (dv == null || dv.getTrangThai() == targetStatus)
+            return;
+
+        dv.setTrangThai(targetStatus);
+        if (dao.update(dv)) {
+            showNotify(Alert.AlertType.INFORMATION, "Thành công",
+                    "Đã đổi trạng thái dịch vụ [" + dv.getTenDV() + "] sang: " + dv.getTrangThaiLabel());
+            loadData(); // Load lại bảng
+        } else {
+            showNotify(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật trạng thái!");
+        }
     }
 
     private void openDialog(DichVu dv) {

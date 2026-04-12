@@ -2,6 +2,7 @@ package gui;
 
 import dao.BangGiaDichVuDAO;
 import model.entities.BangGiaDichVu;
+import model.utils.BadgeUtils;
 import model.entities.BangGiaDichVu_ChiTiet;
 
 import javafx.beans.property.SimpleStringProperty;
@@ -214,22 +215,6 @@ public class BangGiaDichVuView extends BorderPane {
                     setGraphic(null);
                 } else {
                     // HBox Badge chứa Text + Arrow - Thu nhỏ khung cực bộ
-                    HBox badge = new HBox(4);
-                    badge.setAlignment(Pos.CENTER);
-                    badge.setPadding(new Insets(2, 8, 2, 8));
-                    badge.setMaxWidth(Region.USE_PREF_SIZE);
-                    badge.setMaxHeight(Region.USE_PREF_SIZE);
-                    badge.setCursor(Cursor.HAND);
-
-                    Label lblText = new Label(item);
-                    lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-
-                    Label lblArrow = new Label("▾");
-                    lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-
-                    badge.getChildren().addAll(lblText, lblArrow);
-
-                    // Style dựa trên trạng thái
                     String bgColor, textColor;
                     if (item.equals("Đang áp dụng")) {
                         bgColor = "#d1fae5";
@@ -242,10 +227,8 @@ public class BangGiaDichVuView extends BorderPane {
                         textColor = "#b91c1c"; // Rose
                     }
 
-                    badge.setStyle("-fx-background-color: " + bgColor + "; " +
-                            "-fx-background-radius: 12;");
-                    lblText.setStyle("-fx-text-fill: " + textColor + ";");
-                    lblArrow.setStyle("-fx-text-fill: " + textColor + ";");
+                    // Sử dụng Utility đồng nhất
+                    HBox badge = BadgeUtils.createStatusBadge(item, bgColor, textColor, true);
 
                     // Menu chọn trạng thái nhanh
                     ContextMenu statusMenu = new ContextMenu();
@@ -343,12 +326,9 @@ public class BangGiaDichVuView extends BorderPane {
                 // 2. Nếu trangThai = 0 (Hoạt động), thì mới xét đến yếu tố thời gian
                 if (now.after(bg.getNgayHetHieuLuc())) {
                     trangThaiText = "Ngưng áp dụng"; // Đã hết hạn
-                }
-                // Note: Bỏ trạng thái "Chờ áp dụng"
-                // else if (now.before(bg.getNgayApDung())) {
-                // trangThaiText = "Chờ áp dụng"; // Chưa đến ngày
-                // }
-                else {
+                } else if (now.before(bg.getNgayApDung())) {
+                    trangThaiText = "Chờ áp dụng"; // Chưa đến ngày
+                } else {
                     trangThaiText = "Đang áp dụng";
                 }
             }

@@ -35,7 +35,7 @@ public class NhanVien {
     }
 
     public NhanVien(String maNV, String hoTen, String diaChi, trinhDo trinhDo,
-                    LocalDate ngayVaoLamDate, ChucVu role) {
+            LocalDate ngayVaoLamDate, ChucVu role) {
         this.setMaNV(maNV);
         this.setHoTen(hoTen);
         this.setDiaChi(diaChi);
@@ -46,11 +46,11 @@ public class NhanVien {
     }
 
     public NhanVien(String maNV) {
-		super();
-		this.maNV = maNV;
-	}
+        super();
+        this.maNV = maNV;
+    }
 
-	// --- GETTERS & SETTERS ---
+    // --- GETTERS & SETTERS ---
 
     public void setMaNV(String maNV) {
         if (maNV == null || !(maNV.equals("ADMIN") || maNV.matches("LUCIA\\d+")))
@@ -58,9 +58,13 @@ public class NhanVien {
         this.maNV = maNV;
     }
 
-    public String getMaNV() { return maNV; }
+    public String getMaNV() {
+        return maNV;
+    }
 
-    public String getMaQL() { return maQL; }
+    public String getMaQL() {
+        return maQL;
+    }
 
     public void setMaQL(String maQL) {
         // Cho phép maQL null (vì Quản lý cấp cao nhất không có người quản lý)
@@ -69,7 +73,9 @@ public class NhanVien {
         this.maQL = maQL;
     }
 
-    public String getMatKhau() { return matKhau; }
+    public String getMatKhau() {
+        return matKhau;
+    }
 
     public void setMatKhau(String matKhau) {
         if (matKhau == null || matKhau.isBlank())
@@ -77,7 +83,9 @@ public class NhanVien {
         this.matKhau = matKhau;
     }
 
-    public LocalDate getNgaySinh() { return ngaySinh; }
+    public LocalDate getNgaySinh() {
+        return ngaySinh;
+    }
 
     public void setNgaySinh(LocalDate ngaySinh) {
         if (ngaySinh != null && ChronoUnit.YEARS.between(ngaySinh, LocalDate.now()) < 18)
@@ -85,7 +93,9 @@ public class NhanVien {
         this.ngaySinh = ngaySinh;
     }
 
-    public String getSoDT() { return soDT; }
+    public String getSoDT() {
+        return soDT;
+    }
 
     public void setSoDT(String soDT) {
         if (soDT != null && !soDT.isBlank() && !soDT.matches("0\\d{9}"))
@@ -93,7 +103,9 @@ public class NhanVien {
         this.soDT = soDT;
     }
 
-    public String getCccd() { return cccd; }
+    public String getCccd() {
+        return cccd;
+    }
 
     /**
      * CCCD hợp lệ: 9 chữ số (CMND cũ) hoặc 12 chữ số (CCCD mới).
@@ -104,7 +116,9 @@ public class NhanVien {
         this.cccd = cccd;
     }
 
-    public String getHoTen() { return hoTen; }
+    public String getHoTen() {
+        return hoTen;
+    }
 
     public void setHoTen(String hoTen) {
         if (hoTen == null || hoTen.isBlank())
@@ -112,31 +126,45 @@ public class NhanVien {
         this.hoTen = hoTen;
     }
 
-    public String getDiaChi() { return diaChi; }
+    public String getDiaChi() {
+        return diaChi;
+    }
 
-    public void setDiaChi(String diaChi) { this.diaChi = diaChi; }
+    public void setDiaChi(String diaChi) {
+        this.diaChi = diaChi;
+    }
 
-    public trinhDo getTrinhDo() { return trinhDo; }
+    public trinhDo getTrinhDo() {
+        return trinhDo;
+    }
 
     public void setTrinhDo(trinhDo trinhDo) {
         this.trinhDo = trinhDo;
     }
 
-    public TrangThaiNV getTrangThai() { return trangThai; }
+    public TrangThaiNV getTrangThai() {
+        return trangThai;
+    }
 
     public void setTrangThai(TrangThaiNV trangThai) {
-        if (trangThai == null) throw new IllegalArgumentException("Trạng thái không được để trống");
+        if (trangThai == null)
+            throw new IllegalArgumentException("Trạng thái không được để trống");
         this.trangThai = trangThai;
     }
 
-    public ChucVu getRole() { return role; }
+    public ChucVu getRole() {
+        return role;
+    }
 
     public void setRole(ChucVu role) {
-        if (role == null) throw new IllegalArgumentException("Chức vụ không được để trống");
+        if (role == null)
+            throw new IllegalArgumentException("Chức vụ không được để trống");
         this.role = role;
     }
 
-    public LocalDate getNgayVaoLamDate() { return ngayVaoLamDate; }
+    public LocalDate getNgayVaoLamDate() {
+        return ngayVaoLamDate;
+    }
 
     public void setNgayVaoLamDate(LocalDate ngayVaoLamDate) {
         if (ngayVaoLamDate != null && ngayVaoLamDate.isAfter(LocalDate.now())) {

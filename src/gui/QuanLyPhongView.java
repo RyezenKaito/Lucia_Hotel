@@ -3,6 +3,7 @@ package gui;
 import dao.PhongDAO;
 import model.entities.Phong;
 import model.enums.TrangThaiPhong;
+import model.utils.BadgeUtils;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -175,13 +176,7 @@ public class QuanLyPhongView extends BorderPane {
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(p -> {
             TrangThaiPhong tt = p.getValue().getTrangThai();
-            String val = "Không xác định";
-            if (tt == TrangThaiPhong.CONTRONG)
-                val = "Còn trống";
-            else if (tt == TrangThaiPhong.DACOKHACH)
-                val = "Đã có khách";
-            else if (tt == TrangThaiPhong.BAN)
-                val = "Đang bảo trì";
+            String val = (tt != null) ? tt.getLabel() : "Không xác định";
             return new SimpleStringProperty(val);
         });
         colTrangThai.setCellFactory(column -> new TableCell<>() {
@@ -192,31 +187,11 @@ public class QuanLyPhongView extends BorderPane {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    boolean isOccupied = item.equals("Đã có khách");
-
-                    // HBox Badge chứa Text + Arrow (nếu không phải Đã có khách)
-                    HBox badge = new HBox(4);
-                    badge.setAlignment(Pos.CENTER);
-                    badge.setPadding(new Insets(2, 8, 2, 8));
-                    badge.setMaxWidth(Region.USE_PREF_SIZE);
-                    badge.setMaxHeight(Region.USE_PREF_SIZE);
-
-                    Label lblText = new Label(item);
-                    lblText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-
-                    badge.getChildren().add(lblText);
-
-                    // Chỉ hiện mũi tên dropdown khi KHÔNG phải "Đã có khách"
-                    if (!isOccupied) {
-                        badge.setCursor(Cursor.HAND);
-                        Label lblArrow = new Label("▾");
-                        lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-                        badge.getChildren().add(lblArrow);
-                    }
+                    boolean isOccupied = TrangThaiPhong.DACOKHACH.getLabel().equals(item);
 
                     // Style dựa trên trạng thái
                     String bg, text;
-                    if (item.equals("Còn trống")) {
+                    if (TrangThaiPhong.CONTRONG.getLabel().equals(item)) {
                         bg = "#d1fae5";
                         text = "#065f46"; // Emerald
                     } else if (isOccupied) {
@@ -227,16 +202,15 @@ public class QuanLyPhongView extends BorderPane {
                         text = "#991b1b"; // Rose
                     }
 
-                    badge.setStyle("-fx-background-color: " + bg + "; -fx-background-radius: 12;");
-                    lblText.setStyle("-fx-text-fill: " + text + ";");
+                    // Sử dụng Utility để tạo Badge đồng nhất
+                    HBox badge = BadgeUtils.createStatusBadge(item, bg, text, !isOccupied);
 
                     // Menu chọn trạng thái: CHỈ cho phép Còn trống / Đang bảo trì
-                    // Phòng "Đã có khách" do nghiệp vụ Đặt phòng/Nhận phòng/Trả phòng tự quản lý
                     if (!isOccupied) {
                         ContextMenu statusMenu = new ContextMenu();
-                        MenuItem m1 = new MenuItem("✅  Còn trống");
+                        MenuItem m1 = new MenuItem("✅  " + TrangThaiPhong.CONTRONG.getLabel());
                         m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
-                        MenuItem m3 = new MenuItem("🔧  Đang bảo trì");
+                        MenuItem m3 = new MenuItem("🔧  " + TrangThaiPhong.BAN.getLabel());
                         m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
                         statusMenu.getItems().addAll(m1, m3);
 

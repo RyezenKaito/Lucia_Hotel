@@ -261,10 +261,13 @@ public class MainFrameView {
         serviceSubMenu.setVisible(false);
         serviceSubMenu.setManaged(false);
 
-        serviceSubMenu.getChildren().addAll(
-                subNavBtn("  ├  Sử dụng dịch vụ", "service"),
-                subNavBtn("  ├  Danh mục dịch vụ", "serviceManager"),
-                subNavBtn("  └  Bảng giá dịch vụ", "servicePrice"));
+        serviceSubMenu.getChildren().add(subNavBtn("  ├  Sử dụng dịch vụ", "service"));
+        if (isAdmin) {
+            serviceSubMenu.getChildren().add(subNavBtn("  ├  Danh mục dịch vụ", "serviceManager"));
+            serviceSubMenu.getChildren().add(subNavBtn("  └  Bảng giá dịch vụ", "servicePrice"));
+        } else {
+            serviceSubMenu.getChildren().add(subNavBtn("  └  Danh mục dịch vụ", "serviceManager"));
+        }
 
         header.setOnAction(e -> {
             serviceExpanded = !serviceExpanded;
