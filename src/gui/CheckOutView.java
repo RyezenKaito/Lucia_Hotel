@@ -8,6 +8,7 @@ import model.entities.DatPhong;
 import model.entities.DichVuSuDung;
 import model.entities.HoaDon;
 import model.entities.NhanVien;
+import model.enums.PhuongThucThanhToan;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -68,6 +69,7 @@ public class CheckOutView extends BorderPane {
     private double currentLateFee = 0;
     private double currentTongTien = 0;
     private long currentSoDem = 0;
+    private ComboBox<String> cmbPhuongThuc;
 
     /* ── Nhân viên đang đăng nhập ──────────────────────────────────── */
     private NhanVien staff;
@@ -281,14 +283,17 @@ public class CheckOutView extends BorderPane {
         grid.add(createValue(currentDatPhong.getKhachHang().getTenKH()), 1, 1);
         grid.add(createLabel("Số điện thoại:"), 2, 1);
         grid.add(createValue(currentDatPhong.getKhachHang().getSoDT() != null
-                ? currentDatPhong.getKhachHang().getSoDT() : "—"), 3, 1);
+                ? currentDatPhong.getKhachHang().getSoDT()
+                : "—"), 3, 1);
 
         grid.add(createLabel("Ngày nhận phòng:"), 0, 2);
         grid.add(createValue(currentDatPhong.getNgayCheckIn() != null
-                ? currentDatPhong.getNgayCheckIn().format(fmt) : "—"), 1, 2);
+                ? currentDatPhong.getNgayCheckIn().format(fmt)
+                : "—"), 1, 2);
         grid.add(createLabel("Ngày trả dự kiến:"), 2, 2);
         grid.add(createValue(currentDatPhong.getNgayCheckOut() != null
-                ? currentDatPhong.getNgayCheckOut().format(fmt) : "—"), 3, 2);
+                ? currentDatPhong.getNgayCheckOut().format(fmt)
+                : "—"), 3, 2);
 
         grid.add(createLabel("Tiền cọc:"), 0, 3);
         Label lblCoc = createValue(String.format("%,.0f đ", currentTienCoc));
@@ -331,11 +336,11 @@ public class CheckOutView extends BorderPane {
         if (currentDatPhong.getNgayCheckOut() != null && now.isAfter(currentDatPhong.getNgayCheckOut())) {
             int hour = now.getHour();
             if (hour >= 18)
-                currentLateFee = currentGiaPhong;       // 100% giá 1 đêm
+                currentLateFee = currentGiaPhong; // 100% giá 1 đêm
             else if (hour >= 15)
-                currentLateFee = currentGiaPhong * 0.5;  // 50%
+                currentLateFee = currentGiaPhong * 0.5; // 50%
             else if (hour >= 12)
-                currentLateFee = currentGiaPhong * 0.3;  // 30%
+                currentLateFee = currentGiaPhong * 0.3; // 30%
         }
 
         // Tổng = tiền phòng + dịch vụ + phụ phí - cọc
@@ -372,6 +377,20 @@ public class CheckOutView extends BorderPane {
         valTotal.setTextFill(Color.web(C_BLUE));
         totalRow.getChildren().addAll(lblTotal, valTotal);
 
+        cmbPhuongThuc = new ComboBox<>();
+        for (PhuongThucThanhToan pt : PhuongThucThanhToan.values()) {
+            cmbPhuongThuc.getItems().add(pt.getDisplayName());
+        }
+        cmbPhuongThuc.getSelectionModel().selectFirst();
+        cmbPhuongThuc.setMaxWidth(Double.MAX_VALUE);
+        cmbPhuongThuc.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 40;");
+
+        VBox ptBox = new VBox(4);
+        Label lblPt = new Label("Phương thức thanh toán:");
+        lblPt.setFont(Font.font("Segoe UI", 12));
+        lblPt.setTextFill(Color.web(C_TEXT_GRAY));
+        ptBox.getChildren().addAll(lblPt, cmbPhuongThuc);
+
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
@@ -382,7 +401,7 @@ public class CheckOutView extends BorderPane {
         styleButton(btnPay, C_NAVY, "white", "#1e3a8aEE");
         btnPay.setOnAction(e -> handleCheckOut());
 
-        billingSection.getChildren().addAll(lblT, new Separator(), rows, sep, totalRow, spacer, btnPay);
+        billingSection.getChildren().addAll(lblT, new Separator(), rows, sep, totalRow, ptBox, spacer, btnPay);
     }
 
     // ── Thanh toán + Trả phòng (Business Logic) ──
@@ -431,16 +450,33 @@ public class CheckOutView extends BorderPane {
      */
     private boolean performCheckOut() {
         try {
+            String selectedPt = cmbPhuongThuc.getValue();
+            String dbPt = PhuongThucThanhToan.TIEN_MAT.name();
+            for (PhuongThucThanhToan pt : PhuongThucThanhToan.values()) {
+                if (pt.getDisplayName().equals(selectedPt)) {
+                    dbPt = pt.name();
+                    break;
+                }
+            }
+
+            double finalTienPhong = currentTienPhong + currentLateFee;
+
             // ── Bước 1: Xử lý HoaDon ──
             if (currentMaHD != null) {
                 HoaDon hd = hoaDonDAO.getById(currentMaHD);
                 if (hd != null) {
-                    hd.setTienPhong(currentTienPhong);
+                    hd.setTienPhong(finalTienPhong);
                     hd.setTienDV(currentTienDV);
                     hd.setTienCoc(currentTienCoc);
                     hd.setThueVAT(0); // Không tính VAT theo yêu cầu
                     hd.setTongTien(currentTongTien);
                     hd.setNgayTaoHD(LocalDateTime.now());
+
+                    hd.setLoaiHD("HOA_DON_PHONG");
+                    hd.setTrangThaiThanhToan("DA_THANH_TOAN");
+                    hd.setPhuongThucThanhToan(dbPt);
+                    hd.setNgayThanhToan(LocalDateTime.now());
+
                     if (!hoaDonDAO.updateTongTien(hd)) {
                         System.err.println("Lỗi cập nhật hóa đơn: " + currentMaHD);
                         return false;
@@ -452,11 +488,17 @@ public class CheckOutView extends BorderPane {
                 hd.setDatPhong(currentDatPhong);
                 hd.setNhanVien(staff != null ? staff : new NhanVien("ADMIN"));
                 hd.setNgayTaoHD(LocalDateTime.now());
-                hd.setTienPhong(currentTienPhong);
+                hd.setTienPhong(finalTienPhong);
                 hd.setTienDV(currentTienDV);
                 hd.setTienCoc(currentTienCoc);
                 hd.setThueVAT(0);
                 hd.setTongTien(currentTongTien);
+
+                hd.setLoaiHD("HOA_DON_PHONG");
+                hd.setTrangThaiThanhToan("DA_THANH_TOAN");
+                hd.setPhuongThucThanhToan(dbPt);
+                hd.setNgayThanhToan(LocalDateTime.now());
+
                 if (!hoaDonDAO.insert(hd)) {
                     System.err.println("Lỗi tạo hóa đơn mới");
                     return false;

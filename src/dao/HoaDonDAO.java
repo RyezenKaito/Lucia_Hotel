@@ -7,6 +7,7 @@ import java.util.List;
 import connectDatabase.ConnectDatabase;
 import model.entities.DatPhong;
 import model.entities.HoaDon;
+import model.entities.NhanVien;
 
 public class HoaDonDAO {
 
@@ -16,8 +17,8 @@ public class HoaDonDAO {
     public List<HoaDon> getAll() {
         List<HoaDon> dsHoaDon = new ArrayList<>();
         String sql = "SELECT * FROM HoaDon";
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-                Statement stmt = con.createStatement();
+        Connection con = ConnectDatabase.getInstance().getConnection();
+        try (Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 dsHoaDon.add(mapRow(rs));
@@ -25,6 +26,15 @@ public class HoaDonDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // Fetch NhanVien details after ResultSet is closed to avoid MARS exception
+        NhanVienDAO nvDao = new NhanVienDAO();
+        for (HoaDon hd : dsHoaDon) {
+            if (hd.getNhanVien() != null && hd.getNhanVien().getMaNV() != null) {
+                hd.setNhanVien(nvDao.getById(hd.getNhanVien().getMaNV()));
+            }
+        }
+
         return dsHoaDon;
     }
 
@@ -33,23 +43,29 @@ public class HoaDonDAO {
      */
     public HoaDon getById(String maHD) {
         String sql = "SELECT * FROM HoaDon WHERE maHD = ?";
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+        Connection con = ConnectDatabase.getInstance().getConnection();
+        HoaDon hd = null;
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maHD);
             ResultSet rs = ps.executeQuery();
             if (rs.next())
-                return mapRow(rs);
+                hd = mapRow(rs);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+
+        if (hd != null && hd.getNhanVien() != null) {
+            hd.setNhanVien(new NhanVienDAO().getById(hd.getNhanVien().getMaNV()));
+        }
+
+        return hd;
     }
 
     /**
      * Thêm mới hóa đơn
      */
     public boolean insert(HoaDon hd) {
-        String sql = "INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan, ghiChuThanhToan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -63,6 +79,11 @@ public class HoaDonDAO {
             ps.setDouble(7, hd.getTienCoc());
             ps.setDouble(8, hd.getThueVAT());
             ps.setDouble(9, hd.getTongTien());
+            ps.setString(10, hd.getLoaiHD() != null ? hd.getLoaiHD() : "HOA_DON_PHONG");
+            ps.setString(11, hd.getTrangThaiThanhToan() != null ? hd.getTrangThaiThanhToan() : "CHUA_THANH_TOAN");
+            ps.setString(12, hd.getPhuongThucThanhToan());
+            ps.setTimestamp(13, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
+            ps.setString(14, hd.getGhiChuThanhToan());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -76,12 +97,22 @@ public class HoaDonDAO {
         hd.setMaHD(rs.getString("maHD"));
         hd.setNgayTaoHD(rs.getTimestamp("ngayTaoHD") != null ? rs.getTimestamp("ngayTaoHD").toLocalDateTime() : null);
         hd.setDatPhong(new DatPhong(rs.getString("maDat")));
-        hd.setNhanVien(new NhanVienDAO().getById(rs.getString("maNV")));
+
+        NhanVien placeholderNV = new NhanVien();
+        placeholderNV.setMaNV(rs.getString("maNV"));
+        hd.setNhanVien(placeholderNV);
+
         hd.setTienPhong(rs.getDouble("tienPhong"));
         hd.setTienDV(rs.getDouble("tienDV"));
         hd.setTienCoc(rs.getDouble("tienCoc"));
         hd.setThueVAT(rs.getDouble("thueVAT"));
         hd.setTongTien(rs.getDouble("tongTien"));
+        hd.setLoaiHD(rs.getString("loaiHD"));
+        hd.setTrangThaiThanhToan(rs.getString("trangThaiThanhToan"));
+        hd.setPhuongThucThanhToan(rs.getString("phuongThucThanhToan"));
+        hd.setNgayThanhToan(
+                rs.getTimestamp("ngayThanhToan") != null ? rs.getTimestamp("ngayThanhToan").toLocalDateTime() : null);
+        hd.setGhiChuThanhToan(rs.getString("ghiChuThanhToan"));
         return hd;
     }
 
@@ -109,7 +140,7 @@ public class HoaDonDAO {
      * Cập nhật tổng tiền hóa đơn khi checkout (cho trường hợp HoaDon đã tồn tại)
      */
     public boolean updateTongTien(HoaDon hd) {
-        String sql = "UPDATE HoaDon SET tienPhong=?, tienDV=?, tienCoc=?, thueVAT=?, tongTien=?, ngayTaoHD=? WHERE maHD=?";
+        String sql = "UPDATE HoaDon SET tienPhong=?, tienDV=?, tienCoc=?, thueVAT=?, tongTien=?, ngayTaoHD=?, loaiHD=?, trangThaiThanhToan=?, phuongThucThanhToan=?, ngayThanhToan=?, ghiChuThanhToan=? WHERE maHD=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDouble(1, hd.getTienPhong());
@@ -120,7 +151,12 @@ public class HoaDonDAO {
             ps.setTimestamp(6, hd.getNgayTaoHD() != null
                     ? Timestamp.valueOf(hd.getNgayTaoHD())
                     : Timestamp.valueOf(java.time.LocalDateTime.now()));
-            ps.setString(7, hd.getMaHD());
+            ps.setString(7, hd.getLoaiHD() != null ? hd.getLoaiHD() : "HOA_DON_PHONG");
+            ps.setString(8, hd.getTrangThaiThanhToan() != null ? hd.getTrangThaiThanhToan() : "CHUA_THANH_TOAN");
+            ps.setString(9, hd.getPhuongThucThanhToan());
+            ps.setTimestamp(10, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
+            ps.setString(11, hd.getGhiChuThanhToan());
+            ps.setString(12, hd.getMaHD());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();

@@ -59,6 +59,14 @@ public class DichVu {
         return loaiDV;
     }
 
+    /**
+     * Trả về tên hiển thị (Tiếng Việt) của loại dịch vụ
+     */
+    public String getTenLoaiDV() {
+        if (loaiDV == null) return "Chưa phân loại";
+        return model.enums.LoaiDichVu.fromDbKey(loaiDV).getDisplayName();
+    }
+
     public void setLoaiDV(String loaiDV) {
         this.loaiDV = loaiDV;
     }

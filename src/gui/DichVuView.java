@@ -47,7 +47,7 @@ public class DichVuView extends BorderPane {
 
     /* ── State ───────────────────────────────────────────────────────── */
     private String selectedMaPhong = "";
-    private String currentCategory = "Thực phẩm";
+    private model.enums.LoaiDichVu currentCategoryEnum = model.enums.LoaiDichVu.THUC_PHAM;
     private final Map<DichVu, Integer> cart = new HashMap<>();
 
     /* ── UI Controls ─────────────────────────────────────────────────── */
@@ -66,7 +66,7 @@ public class DichVuView extends BorderPane {
         setCenter(buildBody());
 
         refreshRooms();
-        refreshServices("Thực phẩm");
+        refreshServices(currentCategoryEnum);
     }
 
     /* ══════════════════ HEADER TITLE ══════════════════ */
@@ -138,8 +138,7 @@ public class DichVuView extends BorderPane {
 
         // Tab bar
         tabBar = new HBox(8);
-        String[] cats = { "Thực phẩm", "Giải trí", "Sức khỏe", "Tiện ích" };
-        for (String c : cats)
+        for (model.enums.LoaiDichVu c : model.enums.LoaiDichVu.values())
             tabBar.getChildren().add(buildTabButton(c));
 
         servicePane = new FlowPane(12, 12);
@@ -156,9 +155,9 @@ public class DichVuView extends BorderPane {
         return pane;
     }
 
-    private Button buildTabButton(String cat) {
-        boolean isActive = cat.equals(currentCategory);
-        Button btn = new Button(cat);
+    private Button buildTabButton(model.enums.LoaiDichVu cat) {
+        boolean isActive = cat == currentCategoryEnum;
+        Button btn = new Button(cat.getDisplayName());
         btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         btn.setCursor(Cursor.HAND);
         btn.setPrefHeight(36);
@@ -170,7 +169,7 @@ public class DichVuView extends BorderPane {
                     "-fx-border-color: " + C_BORDER + "; -fx-background-radius: 8; -fx-border-radius: 8;");
         }
         btn.setOnAction(e -> {
-            currentCategory = cat;
+            currentCategoryEnum = cat;
             refreshTabBar();
             refreshServices(cat);
         });
@@ -179,7 +178,7 @@ public class DichVuView extends BorderPane {
 
     private void refreshTabBar() {
         tabBar.getChildren().clear();
-        for (String c : new String[] { "Thực phẩm", "Giải trí", "Sức khỏe", "Tiện ích" }) {
+        for (model.enums.LoaiDichVu c : model.enums.LoaiDichVu.values()) {
             tabBar.getChildren().add(buildTabButton(c));
         }
     }
@@ -235,7 +234,7 @@ public class DichVuView extends BorderPane {
         btnClear.setOnAction(e -> {
             cart.clear();
             updateBillUI();
-            refreshServices(currentCategory);
+            refreshServices(currentCategoryEnum);
         });
 
         Button btnConfirm = new Button("✔ XÁC NHẬN");
@@ -323,7 +322,7 @@ public class DichVuView extends BorderPane {
                 else
                     cart.put(dv, q - 1);
                 updateBillUI();
-                refreshServices(currentCategory);
+                refreshServices(currentCategoryEnum);
             }
         });
 
@@ -338,7 +337,7 @@ public class DichVuView extends BorderPane {
         btnPlus.setOnAction(e -> {
             cart.put(dv, cart.getOrDefault(dv, 0) + 1);
             updateBillUI();
-            refreshServices(currentCategory);
+            refreshServices(currentCategoryEnum);
         });
 
         qtyBox.getChildren().addAll(btnMinus, lblQty, btnPlus);
@@ -364,10 +363,10 @@ public class DichVuView extends BorderPane {
         }
     }
 
-    private void refreshServices(String cat) {
+    private void refreshServices(model.enums.LoaiDichVu cat) {
         servicePane.getChildren().clear();
         DichVuDAO dichVuDAO = new DichVuDAO();
-        List<DichVu> list = dichVuDAO.getByType(cat);
+        List<DichVu> list = dichVuDAO.getByType(cat.getDbKey());
 
         // Lấy bản đồ giá đang áp dụng (Trạng thái = 0 và trong thời gian hiệu lực)
         Map<String, Double> activePrices = bangGiaDAO.getActivePriceMap();
@@ -455,7 +454,7 @@ public class DichVuView extends BorderPane {
             btnRemove.setOnAction(e -> {
                 cart.remove(dv);
                 updateBillUI();
-                refreshServices(currentCategory);
+                refreshServices(currentCategoryEnum);
             });
 
             row.getChildren().addAll(lblQty, lblName, dots, lblSub, btnRemove);

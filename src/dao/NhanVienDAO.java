@@ -131,8 +131,8 @@ public class NhanVienDAO {
     // ── READ BY ID ────────────────────────────────────────────────────────────
     public NhanVien getById(String maNV) {
         String sql = "SELECT * FROM NV WHERE maNV = ?";
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+        Connection con = ConnectDatabase.getInstance().getConnection();
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maNV);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next())

@@ -420,7 +420,7 @@ public class ThemSuaBangGiaDialog {
                 formatted = rawGia;
             }
             tableData.add(new Object[] {
-                    dv.getMaDV(), dv.getTenDV(), dv.getLoaiDV(),
+                    dv.getMaDV(), dv.getTenDV(), dv.getTenLoaiDV(),
                     String.format("%,.0f", dv.getGia()),
                     formatted
             });

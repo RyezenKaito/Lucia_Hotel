@@ -12,6 +12,13 @@ public class HoaDon {
     private double tienCoc;
     private double thueVAT;
     private double tongTien;
+    
+    // New fields
+    private String loaiHD;
+    private String trangThaiThanhToan;
+    private String phuongThucThanhToan;
+    private LocalDateTime ngayThanhToan;
+    private String ghiChuThanhToan;
 
     public HoaDon() {
     }
@@ -46,6 +53,24 @@ public class HoaDon {
 
     public double getTongTien() { return tongTien; }
     public void setTongTien(double tongTien) { this.tongTien = tongTien; }
+
+    public String getLoaiHD() { return loaiHD; }
+    public void setLoaiHD(String loaiHD) { this.loaiHD = loaiHD; }
+    public String getTenLoaiHD() { return model.enums.LoaiHoaDon.fromName(loaiHD).getDisplayName(); }
+
+    public String getTrangThaiThanhToan() { return trangThaiThanhToan; }
+    public void setTrangThaiThanhToan(String trangThaiThanhToan) { this.trangThaiThanhToan = trangThaiThanhToan; }
+    public String getTenTrangThaiThanhToan() { return model.enums.TrangThaiThanhToan.fromName(trangThaiThanhToan).getDisplayName(); }
+
+    public String getPhuongThucThanhToan() { return phuongThucThanhToan; }
+    public void setPhuongThucThanhToan(String phuongThucThanhToan) { this.phuongThucThanhToan = phuongThucThanhToan; }
+    public String getTenPhuongThucThanhToan() { return phuongThucThanhToan != null ? model.enums.PhuongThucThanhToan.fromName(phuongThucThanhToan).getDisplayName() : "—"; }
+
+    public LocalDateTime getNgayThanhToan() { return ngayThanhToan; }
+    public void setNgayThanhToan(LocalDateTime ngayThanhToan) { this.ngayThanhToan = ngayThanhToan; }
+
+    public String getGhiChuThanhToan() { return ghiChuThanhToan; }
+    public void setGhiChuThanhToan(String ghiChuThanhToan) { this.ghiChuThanhToan = ghiChuThanhToan; }
 
     @Override
     public String toString() { return maHD; }

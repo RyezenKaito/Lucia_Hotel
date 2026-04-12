@@ -150,8 +150,15 @@ public class ThemSuaDichVuDialog extends Stage {
         errTen = errLabel();
 
         // 3. Loại dịch vụ
-        cbLoai = new ComboBox<>(FXCollections.observableArrayList("Thực phẩm", "Giải trí", "Sức khỏe", "Tiện ích"));
-        cbLoai.setValue(isEdit ? dichVu.getLoaiDV() : "Thực phẩm");
+        cbLoai = new ComboBox<>(FXCollections.observableArrayList());
+        for (model.enums.LoaiDichVu l : model.enums.LoaiDichVu.values()) {
+            cbLoai.getItems().add(l.getDisplayName());
+        }
+        if (isEdit) {
+            cbLoai.setValue(model.enums.LoaiDichVu.fromDbKey(dichVu.getLoaiDV()).getDisplayName());
+        } else {
+            cbLoai.setValue(model.enums.LoaiDichVu.THUC_PHAM.getDisplayName());
+        }
         cbLoai.setMaxWidth(Double.MAX_VALUE);
         cbLoai.setStyle(fieldStyle());
 
@@ -268,14 +275,15 @@ public class ThemSuaDichVuDialog extends Stage {
         String ma = txtMaDV.getText().trim();
         String ten = ValidationUtils.toTitleCase(txtTenDV.getText().trim());
         double gia = Double.parseDouble(txtGia.getText().trim());
-        String loai = cbLoai.getValue();
+        String loaiDisplayName = cbLoai.getValue();
+        String loaiKey = model.enums.LoaiDichVu.fromDisplayName(loaiDisplayName).getDbKey();
         String donVi = txtDonVi.getText().trim();
 
         DichVuDAO dao = new DichVuDAO();
         if (isEdit) {
             dichVu.setTenDV(ten);
             dichVu.setGia(gia);
-            dichVu.setLoaiDV(loai);
+            dichVu.setLoaiDV(loaiKey);
             dichVu.setDonVi(donVi);
             if (dao.update(dichVu)) {
                 showInfo("Cập nhật dịch vụ thành công!");
@@ -292,7 +300,7 @@ public class ThemSuaDichVuDialog extends Stage {
                 return;
             }
             // 2. Thêm mới
-            DichVu newDv = new DichVu(ma, ten, gia, loai, "", donVi, 0);
+            DichVu newDv = new DichVu(ma, ten, gia, loaiKey, "", donVi, 0);
             if (dao.insert(newDv)) {
                 showInfo("Thêm dịch vụ mới thành công!");
                 if (onSuccess != null)

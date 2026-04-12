@@ -16,6 +16,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.FontPosture;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -73,21 +74,21 @@ public class HoaDonView extends BorderPane {
         HBox statsRow = new HBox(20);
         lblTongDoanhThu = new Label("0 đ");
         lblSoHoaDon = new Label("0");
-        
+
         statsRow.getChildren().addAll(
-            createStatCard("💰", "TỔNG DOANH THU", lblTongDoanhThu, C_GREEN),
-            createStatCard("📄", "TỔNG SỐ HÓA ĐƠN", lblSoHoaDon, C_NAVY)
-        );
+                createStatCard("💰", "TỔNG DOANH THU", lblTongDoanhThu, C_GREEN),
+                createStatCard("📄", "TỔNG SỐ HÓA ĐƠN", lblSoHoaDon, C_NAVY));
 
         // Thanh tìm kiếm & Lọc
         HBox filterRow = new HBox(12);
         filterRow.setAlignment(Pos.CENTER_LEFT);
-        
+
         txtSearch = new TextField();
         txtSearch.setPromptText("🔍  Tìm kiếm theo mã hóa đơn, tên khách hoặc mã đặt phòng...");
         txtSearch.setPrefHeight(44);
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
-        txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER + "; -fx-padding: 0 16;");
+        txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER
+                + "; -fx-padding: 0 16;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter(n));
 
         header.getChildren().addAll(titleBox, statsRow, filterRow);
@@ -102,14 +103,16 @@ public class HoaDonView extends BorderPane {
         table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
-        
+
         TableColumn<HoaDon, String> colMa = new TableColumn<>("Mã hóa đơn");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getMaHD()));
         colMa.setMinWidth(120);
         colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
 
         TableColumn<HoaDon, String> colNgay = new TableColumn<>("Ngày lập");
-        colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayTaoHD() != null ? p.getValue().getNgayTaoHD().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "—"));
+        colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayTaoHD() != null
+                ? p.getValue().getNgayTaoHD().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                : "—"));
         colNgay.setMinWidth(140);
         colNgay.setStyle("-fx-alignment: CENTER;");
 
@@ -119,31 +122,87 @@ public class HoaDonView extends BorderPane {
         colDat.setStyle("-fx-alignment: CENTER;");
 
         TableColumn<HoaDon, String> colNV = new TableColumn<>("Nhân viên lập");
-        colNV.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNhanVien() != null ? p.getValue().getNhanVien().getHoTen() : "—"));
+        colNV.setCellValueFactory(p -> new SimpleStringProperty(
+                p.getValue().getNhanVien() != null ? p.getValue().getNhanVien().getHoTen() : "—"));
 
-        TableColumn<HoaDon, String> colPhong = new TableColumn<>("Tiền phòng");
-        colPhong.setCellValueFactory(p -> new SimpleStringProperty(String.format("%,.0f", p.getValue().getTienPhong())));
-        colPhong.setStyle("-fx-alignment: CENTER-RIGHT;");
-
-        TableColumn<HoaDon, String> colDV = new TableColumn<>("Tiền dịch vụ");
-        colDV.setCellValueFactory(p -> new SimpleStringProperty(String.format("%,.0f", p.getValue().getTienDV())));
-        colDV.setStyle("-fx-alignment: CENTER-RIGHT;");
-
-        TableColumn<HoaDon, String> colTong = new TableColumn<>("Tổng tiền");
-        colTong.setCellValueFactory(p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongTien())));
+        TableColumn<HoaDon, String> colTong = new TableColumn<>("Tổng thanh toán");
+        colTong.setCellValueFactory(
+                p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongTien())));
         colTong.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: " + C_BLUE + ";");
+
+        TableColumn<HoaDon, String> colTrangThai = new TableColumn<>("Trạng thái TT");
+        colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenTrangThaiThanhToan()));
+        colTrangThai.setStyle("-fx-alignment: CENTER;");
+
+        TableColumn<HoaDon, String> colPT = new TableColumn<>("PT Thanh toán");
+        colPT.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenPhuongThucThanhToan()));
+        colPT.setStyle("-fx-alignment: CENTER;");
 
         table.getColumns().add(colMa);
         table.getColumns().add(colNgay);
         table.getColumns().add(colDat);
         table.getColumns().add(colNV);
-        table.getColumns().add(colPhong);
-        table.getColumns().add(colDV);
         table.getColumns().add(colTong);
+        table.getColumns().add(colTrangThai);
+        table.getColumns().add(colPT);
         VBox.setVgrow(table, Priority.ALWAYS);
 
-        card.getChildren().add(table);
+        table.setRowFactory(tv -> {
+            TableRow<HoaDon> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!row.isEmpty())) {
+                    showHoaDonDetail(row.getItem());
+                }
+            });
+            return row;
+        });
+
+        // Add hint
+        Label lblHint = new Label(
+                "💡 Mẹo: Nháy đúp chuột vào một hóa đơn bất kỳ để xem chi tiết tiền phòng, dịch vụ...");
+        lblHint.setTextFill(Color.web(C_TEXT_GRAY));
+        lblHint.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 13));
+        lblHint.setPadding(new Insets(10, 0, 0, 0));
+
+        card.getChildren().addAll(table, lblHint);
         return card;
+    }
+
+    private void showHoaDonDetail(HoaDon hd) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Chi tiết hóa đơn");
+        alert.setHeaderText("Chi tiết hóa đơn: " + hd.getMaHD());
+
+        GridPane grid = new GridPane();
+        grid.setHgap(20);
+        grid.setVgap(12);
+        grid.setPadding(new Insets(20));
+
+        grid.add(new Label("Tiền phòng:"), 0, 0);
+        Label vPhong = new Label(String.format("%,.0f đ", hd.getTienPhong()));
+        vPhong.setStyle("-fx-font-weight: bold;");
+        grid.add(vPhong, 1, 0);
+
+        grid.add(new Label("Tiền dịch vụ:"), 0, 1);
+        Label vDV = new Label(String.format("%,.0f đ", hd.getTienDV()));
+        vDV.setStyle("-fx-font-weight: bold;");
+        grid.add(vDV, 1, 1);
+
+        grid.add(new Label("Tiền cọc (trừ):"), 0, 2);
+        Label vCoc = new Label(String.format("- %,.0f đ", hd.getTienCoc()));
+        vCoc.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
+        grid.add(vCoc, 1, 2);
+
+        Separator sep = new Separator();
+        grid.add(sep, 0, 3, 2, 1);
+
+        grid.add(new Label("Tổng thanh toán:"), 0, 4);
+        Label vTong = new Label(String.format("%,.0f đ", hd.getTongTien()));
+        vTong.setStyle("-fx-font-weight: bold; -fx-text-fill: blue; -fx-font-size: 16px;");
+        grid.add(vTong, 1, 4);
+
+        alert.getDialogPane().setContent(grid);
+        alert.showAndWait();
     }
 
     private void loadData() {
@@ -160,10 +219,14 @@ public class HoaDonView extends BorderPane {
     private void applyFilter(String kw) {
         String filter = kw == null ? "" : kw.toLowerCase().trim();
         filteredData.setPredicate(hd -> {
-            if (filter.isEmpty()) return true;
-            if (hd.getMaHD().toLowerCase().contains(filter)) return true;
-            if (hd.getDatPhong().getMaDat().toLowerCase().contains(filter)) return true;
-            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen().toLowerCase().contains(filter)) return true;
+            if (filter.isEmpty())
+                return true;
+            if (hd.getMaHD().toLowerCase().contains(filter))
+                return true;
+            if (hd.getDatPhong().getMaDat().toLowerCase().contains(filter))
+                return true;
+            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen().toLowerCase().contains(filter))
+                return true;
             return false;
         });
     }
@@ -172,7 +235,8 @@ public class HoaDonView extends BorderPane {
         VBox card = new VBox(8);
         card.setPadding(new Insets(20));
         card.setMinWidth(240);
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER + "; -fx-background-radius: 10; -fx-border-radius: 10;");
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                + "; -fx-background-radius: 10; -fx-border-radius: 10;");
         card.setEffect(new DropShadow(8, 0, 2, Color.web("#00000008")));
 
         HBox topRow = new HBox(12);
@@ -180,19 +244,20 @@ public class HoaDonView extends BorderPane {
 
         StackPane badge = new StackPane();
         Rectangle badgeBg = new Rectangle(40, 40);
-        badgeBg.setArcWidth(8); badgeBg.setArcHeight(8);
+        badgeBg.setArcWidth(8);
+        badgeBg.setArcHeight(8);
         Color accent = Color.web(accentHex);
         badgeBg.setFill(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 0.1));
         badge.getChildren().addAll(badgeBg, new Label(icon));
-        
+
         VBox text = new VBox(2);
         Label lblT = new Label(title);
         lblT.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
         lblT.setTextFill(Color.web(C_TEXT_GRAY));
-        
+
         valueLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
         valueLbl.setTextFill(accent);
-        
+
         text.getChildren().addAll(lblT, valueLbl);
         topRow.getChildren().addAll(badge, text);
         card.getChildren().add(topRow);

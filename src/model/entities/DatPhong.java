@@ -8,6 +8,7 @@ public class DatPhong {
     private KhachHang khachHang;
     private LocalDateTime ngayCheckIn;
     private LocalDateTime ngayCheckOut;
+    private String trangThai; // CHO_XACNHAN, DA_XACNHAN, DA_CHECKIN, DA_CHECKOUT, DA_HUY
 
     public DatPhong() {
     }
@@ -22,6 +23,7 @@ public class DatPhong {
         this.khachHang = khachHang;
         this.ngayCheckIn = ngayCheckIn;
         this.ngayCheckOut = ngayCheckOut;
+        this.trangThai = "CHO_XACNHAN";
     }
 
     public String getMaDat() {
@@ -62,6 +64,14 @@ public class DatPhong {
 
     public void setNgayCheckOut(LocalDateTime ngayCheckOut) {
         this.ngayCheckOut = ngayCheckOut;
+    }
+
+    public String getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
     }
 
     @Override

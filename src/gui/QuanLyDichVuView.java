@@ -110,7 +110,10 @@ public class QuanLyDichVuView extends BorderPane {
                         "-fx-padding: 0 16 0 16;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
 
-        cbCategory = new ComboBox<>(FXCollections.observableArrayList("Tất cả", "Thực phẩm", "Giải trí", "Sức khỏe", "Tiện ích"));
+        cbCategory = new ComboBox<>(FXCollections.observableArrayList("Tất cả"));
+        for (model.enums.LoaiDichVu l : model.enums.LoaiDichVu.values()) {
+            cbCategory.getItems().add(l.getDisplayName());
+        }
         cbCategory.setValue("Tất cả");
         cbCategory.setPrefHeight(45);
         cbCategory.setPrefWidth(180);
@@ -169,7 +172,7 @@ public class QuanLyDichVuView extends BorderPane {
         TableColumn<DichVu, String> colLoai = new TableColumn<>("Phân loại");
         colLoai.setPrefWidth(150);
         colLoai.setStyle("-fx-alignment: CENTER;");
-        colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getLoaiDV()));
+        colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenLoaiDV()));
 
         // 5. Cột Đơn giá
         TableColumn<DichVu, String> colGia = new TableColumn<>("Giá áp dụng");
@@ -297,8 +300,13 @@ public class QuanLyDichVuView extends BorderPane {
                     || (dv.getMaDV() != null && dv.getMaDV().toLowerCase().contains(kw))
                     || (dv.getTenDV() != null && dv.getTenDV().toLowerCase().contains(kw));
 
-            boolean matchesCategory = category.equals("Tất cả")
-                    || (dv.getLoaiDV() != null && dv.getLoaiDV().equalsIgnoreCase(category));
+            boolean matchesCategory = category.equals("Tất cả");
+            if (!matchesCategory && dv.getLoaiDV() != null) {
+                model.enums.LoaiDichVu enumVal = model.enums.LoaiDichVu.fromDisplayName(category);
+                if (dv.getLoaiDV().equalsIgnoreCase(enumVal.getDbKey())) {
+                    matchesCategory = true;
+                }
+            }
 
             return matchesText && matchesCategory;
         });
