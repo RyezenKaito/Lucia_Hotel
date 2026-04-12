@@ -22,6 +22,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class ThemSuaKhachHangDialog extends Stage {
 
@@ -40,7 +41,7 @@ public class ThemSuaKhachHangDialog extends Stage {
     private final Runnable onSuccess;
     private final boolean isEdit;
 
-    private TextField  txtTen, txtCCCD, txtSDT;
+    private TextField txtTen, txtCCCD, txtSDT;
     private DatePicker dpNgaySinh;
     private Label errTen, errNS, errCCCD, errSDT;
     private Button btnSave;
@@ -77,9 +78,22 @@ public class ThemSuaKhachHangDialog extends Stage {
         // 1. Chuyển ô bằng nút Enter (Bỏ qua dpNgaySinh vì là Popup Node)
         EventUtils.setupEnterNavigation(this::handleSave, txtTen, txtCCCD, txtSDT);
 
-        // 2. Theo dõi form: Tự động khóa nút Cập nhật nếu chưa thay đổi gì (Chỉ áp dụng chế độ Sửa)
+        // 2. Theo dõi form: Tự động khóa nút Cập nhật nếu chưa thay đổi gì (Chỉ áp dụng
+        // chế độ Sửa)
         if (isEdit && btnSave != null) {
-            EventUtils.setupDirtyTracking(btnSave, txtTen, txtCCCD, txtSDT, dpNgaySinh);
+            EventUtils.setupDirtyTracking(btnSave, txtTen, txtCCCD, txtSDT);
+            // DatePicker custom cần listen trực tiếp vào valueProperty
+            LocalDate initialNS = khachHang.getNgaySinh();
+            dpNgaySinh.valueProperty().addListener((obs, oldV, newV) -> {
+                boolean textChanged = !Objects.equals(txtTen.getText().trim(),
+                        khachHang.getTenKH() == null ? "" : khachHang.getTenKH())
+                        || !Objects.equals(txtCCCD.getText().trim(),
+                                khachHang.getSoCCCD() == null ? "" : khachHang.getSoCCCD())
+                        || !Objects.equals(txtSDT.getText().trim(),
+                                khachHang.getSoDT() == null ? "" : khachHang.getSoDT());
+                boolean nsChanged = !Objects.equals(newV, initialNS);
+                btnSave.setDisable(!textChanged && !nsChanged);
+            });
         }
     }
 
@@ -111,7 +125,8 @@ public class ThemSuaKhachHangDialog extends Stage {
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 17));
         lblTitle.setTextFill(Color.WHITE);
 
-        Label lblSub = new Label(isEdit ? "Chỉnh sửa thông tin khách hàng: " + khachHang.getMaKH() : "Điền đầy đủ thông tin bên dưới");
+        Label lblSub = new Label(
+                isEdit ? "Chỉnh sửa thông tin khách hàng: " + khachHang.getMaKH() : "Điền đầy đủ thông tin bên dưới");
         lblSub.setFont(Font.font("Segoe UI", 12));
         lblSub.setTextFill(Color.web("#93c5fd"));
         titleBox.getChildren().addAll(lblTitle, lblSub);
@@ -213,10 +228,9 @@ public class ThemSuaKhachHangDialog extends Stage {
             if (!nv)
                 validateCCCD();
         });
-        dpNgaySinh.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateNS();
-        });
+        // Listen vào valueProperty thay vì focusedProperty
+        // vì popup tự custom không fire focusedProperty của HBox khi đóng
+        dpNgaySinh.valueProperty().addListener((o, ov, nv) -> validateNS());
     }
 
     private boolean validateTen() {
@@ -310,14 +324,12 @@ public class ThemSuaKhachHangDialog extends Stage {
             ok = false;
         if (!validateCCCD())
             ok = false;
-        if (!ok){
+        if (!ok) {
             EventUtils.focusFirstError(
-                new javafx.scene.Node[]{txtTen, dpNgaySinh, txtCCCD, txtSDT},
-                new Label[]{errTen, errNS, errCCCD, errSDT}
-            );
+                    new javafx.scene.Node[] { txtTen, dpNgaySinh, txtCCCD, txtSDT },
+                    new Label[] { errTen, errNS, errCCCD, errSDT });
             return;
         }
-
 
         String ten = ValidationUtils.toTitleCase(txtTen.getText().trim().replaceAll("\\s+", " "));
         String cccd = txtCCCD.getText().trim();
@@ -369,7 +381,8 @@ public class ThemSuaKhachHangDialog extends Stage {
         }
         b.getChildren().add(lblBox);
 
-        if (field instanceof Region r) r.setMaxWidth(Double.MAX_VALUE);
+        if (field instanceof Region r)
+            r.setMaxWidth(Double.MAX_VALUE);
         b.getChildren().add(field);
 
         if (errLbl != null) {
@@ -386,7 +399,7 @@ public class ThemSuaKhachHangDialog extends Stage {
     }
 
     private VBox fieldBlock(String label, Control field, Label errLbl, String hint) {
-        return fieldBlockDate(label, field, errLbl, hint); 
+        return fieldBlockDate(label, field, errLbl, hint);
     }
 
     private String fieldStyle() {
