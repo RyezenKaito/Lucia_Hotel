@@ -44,7 +44,6 @@ public class BangGiaDichVuView extends BorderPane {
     private static final String C_BLUE_HOVER = "#1e40af";
     private static final String C_RED = "#dc2626";
     private static final String C_GREEN = "#16a34a";
-    private static final String C_GOLD = "#d97706";
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy");
 

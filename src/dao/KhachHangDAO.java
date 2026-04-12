@@ -233,4 +233,55 @@ public class KhachHangDAO {
             kh.setNgaySinh(d.toLocalDate());
         return kh;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CẬP NHẬT KH THEO MÃ ĐẶT PHÒNG (dùng chung Connection cho transaction)
+    // ─────────────────────────────────────────────────────────────────────────
+    public boolean updateByMaDat(Connection con, String maDat, String ten,
+                                  String sdt, String cccd, LocalDate ngaySinh) throws java.sql.SQLException {
+        String sql = "UPDATE KH SET tenKH=?, soDT=?, soCCCD=?, ngaySinh=? WHERE maKH=(SELECT maKH FROM DatPhong WHERE maDat=?)";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, ten);
+            ps.setString(2, sdt);
+            ps.setString(3, cccd);
+            if (ngaySinh != null) ps.setDate(4, Date.valueOf(ngaySinh));
+            else ps.setNull(4, Types.DATE);
+            ps.setString(5, maDat);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TÌM HOẶC TẠO MỚI KH (dùng chung Connection cho transaction)
+    // Tìm theo CCCD hoặc SĐT → nếu có thì cập nhật, nếu chưa thì insert mới
+    // ─────────────────────────────────────────────────────────────────────────
+    public String findOrCreate(Connection con, String ten, String sdt, String cccd,
+                                LocalDate ngaySinh, String preGenMaKH) throws java.sql.SQLException {
+        for (String col : new String[]{"soCCCD", "soDT"}) {
+            try (PreparedStatement ps = con.prepareStatement("SELECT maKH FROM KH WHERE " + col + " = ?")) {
+                ps.setString(1, col.equals("soCCCD") ? cccd : sdt);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    String existingMaKH = rs.getString("maKH");
+                    try (PreparedStatement psU = con.prepareStatement(
+                            "UPDATE KH SET tenKH=?, soDT=?, soCCCD=?, ngaySinh=? WHERE maKH=?")) {
+                        psU.setString(1, ten); psU.setString(2, sdt); psU.setString(3, cccd);
+                        if (ngaySinh != null) psU.setDate(4, Date.valueOf(ngaySinh));
+                        else psU.setNull(4, Types.DATE);
+                        psU.setString(5, existingMaKH);
+                        psU.executeUpdate();
+                    }
+                    return existingMaKH;
+                }
+            }
+        }
+        try (PreparedStatement ps = con.prepareStatement(
+                "INSERT INTO KH(maKH, tenKH, soDT, soCCCD, ngaySinh) VALUES(?,?,?,?,?)")) {
+            ps.setString(1, preGenMaKH); ps.setString(2, ten); ps.setString(3, sdt); ps.setString(4, cccd);
+            if (ngaySinh != null) ps.setDate(5, Date.valueOf(ngaySinh));
+            else ps.setNull(5, Types.DATE);
+            ps.executeUpdate();
+        }
+        return preGenMaKH;
+    }
 }

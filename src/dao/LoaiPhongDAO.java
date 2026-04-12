@@ -5,23 +5,40 @@ import java.util.ArrayList;
 import java.util.List;
 import connectDatabase.ConnectDatabase;
 import model.entities.LoaiPhong;
+import model.enums.TenLoaiPhong;
 
-public class LoaiPhongDAO {    
-    
+public class LoaiPhongDAO {
+
+    private TenLoaiPhong findEnumByString(String loaiPhong) {
+        loaiPhong = loaiPhong.toUpperCase();
+        if (loaiPhong.equals("DOUBLE")) {
+            return TenLoaiPhong.DOUBLE;
+        } else if (loaiPhong.equals("FAMILY"))
+            return TenLoaiPhong.FAMILY;
+        else if (loaiPhong.equals("SINGLE"))
+            return TenLoaiPhong.SINGLE;
+        else if (loaiPhong.equals("TRIPLE"))
+            return TenLoaiPhong.TRIPLE;
+        else if (loaiPhong.equals("TWIN"))
+            return TenLoaiPhong.TWIN;
+        else
+            return null;
+    }
+
     /**
      * Lấy toàn bộ tên loại phòng để hiển thị lên ComboBox
      */
     public String[] fetchAllRoomTypeNames() {
         List<String> list = new ArrayList<>();
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT maLoaiPhong FROM LoaiPhong")) {
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT maLoaiPhong FROM LoaiPhong")) {
 
             while (rs.next()) {
-                list.add(rs.getString("maLoaiPhong"));
+                list.add(findEnumByString(rs.getString("maLoaiPhong")).getDisplayName());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Lỗi khi lấy tất cả loại phòng: " + e.getMessage());
         }
         return list.toArray(new String[0]);
     }
@@ -32,10 +49,10 @@ public class LoaiPhongDAO {
     public List<LoaiPhong> getAll() {
         List<LoaiPhong> ds = new ArrayList<>();
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM LoaiPhong")) {
-            
-            while(rs.next()) {
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT * FROM LoaiPhong")) {
+
+            while (rs.next()) {
                 ds.add(mapRow(rs));
             }
         } catch (Exception e) {
@@ -50,10 +67,11 @@ public class LoaiPhongDAO {
     public LoaiPhong findByID(String maLoaiPhong) {
         String sql = "SELECT * FROM LoaiPhong WHERE maLoaiPhong = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement pstmt = con.prepareStatement(sql)) {
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
             pstmt.setString(1, maLoaiPhong);
             ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) return mapRow(rs);
+            if (rs.next())
+                return mapRow(rs);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -66,5 +84,26 @@ public class LoaiPhongDAO {
         lp.setGia(rs.getDouble("gia"));
         lp.setSucChua(rs.getInt("sucChua"));
         return lp;
+    }
+
+    /**
+     * Lấy danh sách mã loại phòng (dùng cho ComboBox đặt phòng)
+     */
+    public List<String> getAllMaLoaiPhong() {
+        List<String> list = new ArrayList<>();
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT maLoaiPhong FROM LoaiPhong")) {
+            while (rs.next()) list.add(rs.getString("maLoaiPhong"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /**
+     * Lấy giá phòng theo mã loại
+     */
+    public double getGiaByMaLoai(String maLoaiPhong) {
+        LoaiPhong lp = findByID(maLoaiPhong);
+        return lp != null ? lp.getGia() : 0;
     }
 }

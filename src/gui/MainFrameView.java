@@ -426,6 +426,7 @@ public class MainFrameView {
                     showFX(new NhanVienView(staff));
                 }
             }
+            case "booking" -> showFX(new DatPhongView());
             // Phase 3 - đã migrate sang JavaFX
             case "checkin" -> showFX(new CheckInView());
             case "checkout" -> showFX(new CheckOutView(staff));

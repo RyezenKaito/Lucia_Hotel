@@ -192,7 +192,10 @@ public class KhachHangView extends BorderPane {
 
         TableColumn<KhachHang, String> colTen = new TableColumn<>("Họ và tên");
         colTen.setMinWidth(180);
-        colTen.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getTenKH())));
+        colTen.setCellValueFactory(p -> {
+            String ten = nvl(p.getValue().getTenKH());
+            return new SimpleStringProperty(toTitleCaseLocal(ten));
+        });
 
         TableColumn<KhachHang, String> colCCCD = new TableColumn<>("Số CCCD");
         colCCCD.setMinWidth(140);
@@ -552,5 +555,16 @@ public class KhachHangView extends BorderPane {
 
     private static String nvl(String s) {
         return s != null ? s : "";
+    }
+
+    private static String toTitleCaseLocal(String s) {
+        if (s == null || s.isBlank()) return s;
+        String[] words = s.trim().toLowerCase().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String w : words) {
+            if (!sb.isEmpty()) sb.append(' ');
+            sb.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
+        }
+        return sb.toString();
     }
 }

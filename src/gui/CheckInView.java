@@ -2,8 +2,10 @@ package gui;
 
 import dao.DatPhongDAO;
 import dao.PhongDAO;
-import model.entities.DatPhong;
-import model.entities.Phong;
+import dao.ChiTietDatPhongDAO;
+import dao.HoaDonDAO;
+import dao.LoaiPhongDAO;
+import model.entities.*;
 import model.enums.TrangThaiPhong;
 
 import javafx.geometry.Insets;
@@ -17,12 +19,15 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * CheckInView – JavaFX
- * Thay thế CheckInPanel (Swing).
+ * Cung cấp giao diện làm thủ tục nhận phòng cho khách đã đặt trước.
  */
 public class CheckInView extends BorderPane {
 
@@ -39,17 +44,21 @@ public class CheckInView extends BorderPane {
     /* ── DAO ────────────────────────────────────────────────────────── */
     private final DatPhongDAO datPhongDAO = new DatPhongDAO();
     private final PhongDAO phongDAO = new PhongDAO();
+    private final ChiTietDatPhongDAO chiTietDatPhongDAO = new ChiTietDatPhongDAO();
+    private final HoaDonDAO hoaDonDAO = new HoaDonDAO();
+    private final LoaiPhongDAO loaiPhongDAO = new LoaiPhongDAO();
 
     /* ── Controls ───────────────────────────────────────────────────── */
     private TextField txtSearch;
     private FlowPane quickSearchFlow;
     private VBox detailSection;
     private FlowPane roomFlow;
+    private ComboBox<String> cbRoomType;
     private Button btnConfirm;
 
     // Data hiện tại
     private DatPhong currentDatPhong;
-    private Phong selectedPhong;
+    private Set<Phong> selectedRooms = new HashSet<>();
 
     public CheckInView() {
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -78,12 +87,13 @@ public class CheckInView extends BorderPane {
         // Thanh tìm kiếm
         HBox searchRow = new HBox(12);
         searchRow.setAlignment(Pos.CENTER_LEFT);
-        
+
         txtSearch = new TextField();
         txtSearch.setPromptText("Nhập mã đặt phòng hoặc số điện thoại...");
         txtSearch.setPrefHeight(48);
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
-        txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER + "; -fx-font-size: 14px; -fx-padding: 0 16;");
+        txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER
+                + "; -fx-font-size: 14px; -fx-padding: 0 16;");
         txtSearch.setOnAction(e -> handleSearch());
 
         Button btnSearch = new Button("🔍  Tìm kiếm");
@@ -100,7 +110,7 @@ public class CheckInView extends BorderPane {
         Label lblQuick = new Label("Gợi ý đơn hôm nay:");
         lblQuick.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
         lblQuick.setTextFill(Color.web(C_TEXT_GRAY));
-        
+
         quickSearchFlow = new FlowPane(10, 10);
         loadQuickSuggestions();
 
@@ -118,16 +128,17 @@ public class CheckInView extends BorderPane {
         VBox leftCol = new VBox(16);
         leftCol.setMinWidth(400);
         leftCol.setPrefWidth(450);
-        
+
         detailSection = new VBox(16);
         detailSection.setPadding(new Insets(24));
-        detailSection.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12;");
+        detailSection.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: " + C_BORDER
+                + "; -fx-border-radius: 12;");
         detailSection.setEffect(new DropShadow(10, 0, 4, Color.web("#00000008")));
-        
+
+        detailSection.setAlignment(Pos.CENTER);
         Label lblNoData = new Label("Chưa có thông tin đơn đặt phòng");
         lblNoData.setTextFill(Color.web(C_TEXT_GRAY));
         detailSection.getChildren().add(lblNoData);
-        detailSection.setAlignment(Pos.CENTER);
 
         leftCol.getChildren().add(detailSection);
 
@@ -137,7 +148,8 @@ public class CheckInView extends BorderPane {
 
         VBox roomContainer = new VBox(16);
         roomContainer.setPadding(new Insets(24));
-        roomContainer.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12;");
+        roomContainer.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: " + C_BORDER
+                + "; -fx-border-radius: 12;");
         roomContainer.setEffect(new DropShadow(10, 0, 4, Color.web("#00000008")));
         VBox.setVgrow(roomContainer, Priority.ALWAYS);
 
@@ -145,12 +157,30 @@ public class CheckInView extends BorderPane {
         lblRoomTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         lblRoomTitle.setTextFill(Color.web(C_TEXT_DARK));
 
+        // Thanh công cụ chọn phòng
+        HBox roomToolbar = new HBox(12);
+        roomToolbar.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblFilter = new Label("Lọc theo loại:");
+        lblFilter.setFont(Font.font("Segoe UI", 13));
+        lblFilter.setTextFill(Color.web(C_TEXT_GRAY));
+
+        cbRoomType = new ComboBox<>();
+        cbRoomType.getItems().add("Tất cả");
+        cbRoomType.getItems().addAll(loaiPhongDAO.fetchAllRoomTypeNames());
+        cbRoomType.setValue("Tất cả");
+        cbRoomType.setPrefHeight(36);
+        cbRoomType.setStyle("-fx-background-radius: 8; -fx-border-radius: 8;");
+        cbRoomType.setOnAction(e -> applyFilter());
+
+        roomToolbar.getChildren().addAll(lblFilter, cbRoomType);
+
         ScrollPane scroll = new ScrollPane();
         scroll.setFitToWidth(true);
         scroll.setStyle("-fx-background: white; -fx-background-color: white; -fx-border-color: transparent;");
-        
-        roomFlow = new FlowPane(16, 16);
-        roomFlow.setPadding(new Insets(4));
+
+        roomFlow = new FlowPane(20, 20);
+        roomFlow.setPadding(new Insets(10));
         scroll.setContent(roomFlow);
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
@@ -163,7 +193,8 @@ public class CheckInView extends BorderPane {
         btnCancel.setPrefHeight(44);
         btnCancel.setMinWidth(100);
         btnCancel.setCursor(Cursor.HAND);
-        btnCancel.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; -fx-background-radius: 8; -fx-font-weight: bold;");
+        btnCancel.setStyle(
+                "-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; -fx-background-radius: 8; -fx-font-weight: bold;");
         btnCancel.setOnAction(e -> resetView());
 
         btnConfirm = new Button("XÁC NHẬN NHẬN PHÒNG");
@@ -176,7 +207,7 @@ public class CheckInView extends BorderPane {
 
         actionRow.getChildren().addAll(btnCancel, btnConfirm);
 
-        roomContainer.getChildren().addAll(lblRoomTitle, scroll, actionRow);
+        roomContainer.getChildren().addAll(lblRoomTitle, roomToolbar, scroll, actionRow);
         rightCol.getChildren().add(roomContainer);
 
         main.getChildren().addAll(leftCol, rightCol);
@@ -195,7 +226,8 @@ public class CheckInView extends BorderPane {
             for (String s : suggestions) {
                 Button b = new Button(s);
                 b.setCursor(Cursor.HAND);
-                b.setStyle("-fx-background-color: white; -fx-border-color: " + C_BLUE + "; -fx-text-fill: " + C_BLUE + "; -fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 4 12;");
+                b.setStyle("-fx-background-color: white; -fx-border-color: " + C_BLUE + "; -fx-text-fill: " + C_BLUE
+                        + "; -fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 4 12;");
                 b.setOnAction(e -> {
                     txtSearch.setText(s);
                     handleSearch();
@@ -207,7 +239,8 @@ public class CheckInView extends BorderPane {
 
     private void handleSearch() {
         String key = txtSearch.getText().trim();
-        if (key.isEmpty()) return;
+        if (key.isEmpty())
+            return;
 
         DatPhong dp = datPhongDAO.findDatPhongDetail(key);
         if (dp != null) {
@@ -234,12 +267,11 @@ public class CheckInView extends BorderPane {
 
         VBox infoBox = new VBox(12);
         infoBox.getChildren().addAll(
-            lblHeader,
-            createDetailItem("🏠 Mã đơn", dp.getMaDat()),
-            createDetailItem("👤 Khách hàng", dp.getKhachHang().getTenKH()),
-            createDetailItem("📞 Số điện thoại", dp.getKhachHang().getSoDT()),
-            createDetailItem("🆔 Số CCCD", dp.getKhachHang().getSoCCCD())
-        );
+                lblHeader,
+                createDetailItem("🏠 Mã đơn", dp.getMaDat()),
+                createDetailItem("👤 Khách hàng", dp.getKhachHang().getTenKH()),
+                createDetailItem("📞 Số điện thoại", dp.getKhachHang().getSoDT()),
+                createDetailItem("🆔 Số CCCD", dp.getKhachHang().getSoCCCD()));
 
         Separator sep = new Separator();
         sep.setPadding(new Insets(8, 0, 8, 0));
@@ -247,9 +279,9 @@ public class CheckInView extends BorderPane {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         VBox scheduleBox = new VBox(12);
         scheduleBox.getChildren().addAll(
-            createDetailItem("📅 Ngày nhận", dp.getNgayCheckIn() != null ? dp.getNgayCheckIn().format(dtf) : "—"),
-            createDetailItem("📅 Ngày trả dự kiến", dp.getNgayCheckOut() != null ? dp.getNgayCheckOut().format(dtf) : "—")
-        );
+                createDetailItem("📅 Ngày nhận", dp.getNgayCheckIn() != null ? dp.getNgayCheckIn().format(dtf) : "—"),
+                createDetailItem("📅 Ngày trả dự kiến",
+                        dp.getNgayCheckOut() != null ? dp.getNgayCheckOut().format(dtf) : "—"));
 
         detailSection.getChildren().addAll(infoBox, sep, scheduleBox);
     }
@@ -261,23 +293,39 @@ public class CheckInView extends BorderPane {
         lbl.setMinWidth(120);
         lbl.setTextFill(Color.web(C_TEXT_GRAY));
         lbl.setFont(Font.font("Segoe UI", 14));
-        
+
         Label val = new Label(value);
         val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         val.setTextFill(Color.web(C_TEXT_DARK));
-        
+
         hb.getChildren().addAll(lbl, val);
         return hb;
     }
 
+    private void applyFilter() {
+        loadAvailableRooms();
+    }
+
     private void loadAvailableRooms() {
         roomFlow.getChildren().clear();
+        String filterType = cbRoomType.getValue();
+        if (filterType == null) filterType = "Tất cả";
+
+        String finalFilterType = filterType;
         List<Phong> rooms = phongDAO.getAll().stream()
                 .filter(p -> p.getTinhTrang() == TrangThaiPhong.CONTRONG)
+                .filter(p -> "Tất cả".equals(finalFilterType)
+                        || p.getLoaiPhong().toString().equalsIgnoreCase(finalFilterType))
                 .collect(Collectors.toList());
 
         if (rooms.isEmpty()) {
-            roomFlow.getChildren().add(new Label("Hiện tại không còn phòng trống nào!"));
+            VBox empty = new VBox(12);
+            empty.setAlignment(Pos.CENTER);
+            empty.setPadding(new Insets(40));
+            Label lbl = new Label("Không tìm thấy phòng phù hợp!");
+            lbl.setTextFill(Color.web(C_TEXT_GRAY));
+            empty.getChildren().add(lbl);
+            roomFlow.getChildren().add(empty);
         } else {
             for (Phong p : rooms) {
                 roomFlow.getChildren().add(createRoomCard(p));
@@ -286,69 +334,156 @@ public class CheckInView extends BorderPane {
     }
 
     private VBox createRoomCard(Phong p) {
-        VBox card = new VBox(8);
+        VBox card = new VBox(6);
         card.setAlignment(Pos.CENTER);
-        card.setPrefSize(140, 100);
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8; -fx-background-radius: 8;");
+        card.setPrefSize(160, 120);
+        card.setPadding(new Insets(12));
+        
+        // Trạng thái ban đầu dựa trên selection
+        if (selectedRooms.contains(p)) {
+            card.setStyle("-fx-background-color: #f0f9ff; -fx-border-color: " + C_BLUE
+                    + "; -fx-border-radius: 12; -fx-background-radius: 12; -fx-border-width: 2;");
+        } else {
+            card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                    + "; -fx-border-radius: 12; -fx-background-radius: 12;");
+        }
+        
         card.setCursor(Cursor.HAND);
+        card.setEffect(new DropShadow(5, 0, 2, Color.web("#00000005")));
 
         Label lblId = new Label(p.getMaPhong());
-        lblId.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
+        lblId.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         lblId.setTextFill(Color.web(C_NAVY));
 
         Label lblType = new Label(p.getLoaiPhong().getMaLoaiPhong());
-        lblType.setFont(Font.font("Segoe UI", 12));
-        lblType.setTextFill(Color.web(C_TEXT_GRAY));
+        lblType.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        lblType.setTextFill(Color.web(C_BLUE));
+        lblType.setStyle("-fx-background-color: #eff6ff; -fx-padding: 2 8; -fx-background-radius: 4;");
 
-        card.getChildren().addAll(lblId, lblType);
+        Label lblPrice = new Label(String.format("%,.0f VNĐ", p.getLoaiPhong().getGia()));
+        lblPrice.setFont(Font.font("Segoe UI", 12));
+        lblPrice.setTextFill(Color.web(C_TEXT_GRAY));
+
+        card.getChildren().addAll(lblId, lblType, lblPrice);
 
         card.setOnMouseClicked(e -> {
-            // Unselect previous
-            roomFlow.getChildren().forEach(n -> n.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8; -fx-background-radius: 8;"));
-            
-            // Select current
-            selectedPhong = p;
-            card.setStyle("-fx-background-color: #f0f9ff; -fx-border-color: " + C_BLUE + "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-width: 2;");
-            btnConfirm.setDisable(false);
+            if (selectedRooms.contains(p)) {
+                selectedRooms.remove(p);
+                card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                        + "; -fx-border-radius: 12; -fx-background-radius: 12;");
+            } else {
+                selectedRooms.add(p);
+                card.setStyle("-fx-background-color: #f0f9ff; -fx-border-color: " + C_BLUE
+                        + "; -fx-border-radius: 12; -fx-background-radius: 12; -fx-border-width: 2;");
+            }
+            btnConfirm.setDisable(selectedRooms.isEmpty());
         });
 
-        // Hover effect
         card.setOnMouseEntered(e -> {
-            if (selectedPhong != p) card.setStyle("-fx-background-color: #f9fafb; -fx-border-color: #d1d5db; -fx-border-radius: 8; -fx-background-radius: 8;");
+            if (!selectedRooms.contains(p)) {
+                card.setStyle(
+                        "-fx-background-color: #f9fafb; -fx-border-color: " + C_BLUE + "; -fx-border-radius: 12; -fx-background-radius: 12;");
+                card.setScaleX(1.02);
+                card.setScaleY(1.02);
+            }
         });
         card.setOnMouseExited(e -> {
-            if (selectedPhong != p) card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8; -fx-background-radius: 8;");
+            if (!selectedRooms.contains(p)) {
+                card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                        + "; -fx-border-radius: 12; -fx-background-radius: 12;");
+                card.setScaleX(1.0);
+                card.setScaleY(1.0);
+            }
         });
 
         return card;
     }
 
     private void handleConfirm() {
-        if (currentDatPhong == null || selectedPhong == null) return;
+        if (currentDatPhong == null || selectedRooms.isEmpty())
+            return;
 
+        int count = selectedRooms.size();
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận Check-in");
-        confirm.setHeaderText("Xác nhận cho khách " + currentDatPhong.getKhachHang().getTenKH() + " nhận phòng " + selectedPhong.getMaPhong() + "?");
-        confirm.setContentText("Hệ thống sẽ cập nhật trạng thái phòng thành 'Đang sử dụng'.");
+        confirm.setTitle("Xác nhận Check-in Nhóm");
+        confirm.setHeaderText("Xác nhận cho khách " + currentDatPhong.getKhachHang().getTenKH() + " nhận " + count + " phòng?");
+        confirm.setContentText("Hệ thống sẽ cập nhật trạng thái các phòng, tạo chi tiết đặt phòng và khởi tạo hóa đơn (nếu chưa có).");
 
         confirm.showAndWait().ifPresent(type -> {
             if (type == ButtonType.OK) {
-                // Logic cập nhật DB
-                selectedPhong.setTinhTrang(TrangThaiPhong.DACOKHACH);
-                if (phongDAO.update(selectedPhong)) {
-                    // Trong thực tế cần thêm logic tạo Hóa đơn / Chi tiết nhận phòng thực tế ở đây
-                    Alert success = new Alert(Alert.AlertType.INFORMATION);
-                    success.setTitle("Thành công");
-                    success.setHeaderText("Check-in hoàn tất!");
-                    success.setContentText("Phòng " + selectedPhong.getMaPhong() + " đã được bàn giao.");
-                    success.showAndWait();
-                    resetView();
-                    loadQuickSuggestions();
-                } else {
+                try {
+                    // Check if HoaDon already exists for this reservation
+                    HoaDon hd = hoaDonDAO.getByMaDat(currentDatPhong.getMaDat());
+                    if (hd == null) {
+                        hd = new HoaDon();
+                        hd.setMaHD(hoaDonDAO.generateMaHD());
+                        hd.setDatPhong(currentDatPhong);
+                        hd.setNhanVien(new NhanVien("LUCIA001")); // Mặc định nhân viên hệ thống
+                        hd.setNgayTaoHD(java.time.LocalDateTime.now());
+                        hd.setTienPhong(0.0);
+                        hd.setTienDV(0.0);
+                        hd.setTienCoc(0.0);
+                        hd.setThueVAT(0.1);
+                        hd.setTongTien(0.0);
+                        hoaDonDAO.insert(hd);
+                    }
+
+                    // 1. Lấy tổng tiền cọc cũ của mã đơn này (Lấy thông qua DAO của bạn)
+                    double tongTienCocCu = chiTietDatPhongDAO.getTongCocByMaDat(currentDatPhong.getMaDat());
+                    double tienCocMoiPhong = tongTienCocCu / count; // Chia đều tiền cọc ra các phòng
+                    
+                    // 2. XÓA tất cả ChiTietDatPhong dự kiến cũ đi để tránh bị x2 đơn trên giao diện
+                    chiTietDatPhongDAO.deleteByMaDat(currentDatPhong.getMaDat());
+
+                    int successCount = 0;
+                    List<String> roomIds = new ArrayList<>();
+
+                    for (Phong p : selectedRooms) {
+                        // 1. Cập nhật trạng thái phòng
+                        p.setTinhTrang(TrangThaiPhong.DACOKHACH);
+                        boolean pUpdate = phongDAO.update(p);
+
+                        // 2. Tạo ChiTietDatPhong
+                        ChiTietDatPhong ctdp = new ChiTietDatPhong();
+                        ctdp.setMaCTDP(chiTietDatPhongDAO.generateMaCTDP());
+                        ctdp.setPhong(p);
+                        ctdp.setDatPhong(currentDatPhong);
+                        ctdp.setGiaCoc(tienCocMoiPhong);
+                        ctdp.setSoNguoi(p.getLoaiPhong().getSucChua());
+                        ctdp.setGhiChu("Check-in nhóm tại quầy");
+                        boolean cUpdate = chiTietDatPhongDAO.insert(ctdp);
+
+                        if (pUpdate && cUpdate) {
+                            successCount++;
+                            roomIds.add(p.getMaPhong());
+                        }
+                    }
+
+                    if (successCount == count) {
+                        Alert success = new Alert(Alert.AlertType.INFORMATION);
+                        success.setTitle("Thành công");
+                        success.setHeaderText("Check-in hoàn tất!");
+                        success.setContentText("Các phòng [" + String.join(", ", roomIds) + "] đã được bàn giao cho khách "
+                                + currentDatPhong.getKhachHang().getTenKH());
+                        success.showAndWait();
+                        resetView();
+                        loadQuickSuggestions();
+                    } else if (successCount > 0) {
+                        Alert partial = new Alert(Alert.AlertType.WARNING);
+                        partial.setTitle("Hoàn tất một phần");
+                        partial.setHeaderText("Có lỗi xảy ra trong quá trình xử lý");
+                        partial.setContentText("Đã check-in thành công " + successCount + "/" + count + " phòng: [" + String.join(", ", roomIds) + "]");
+                        partial.showAndWait();
+                        resetView();
+                    } else {
+                        throw new Exception("Không thể thực hiện check-in cho bất kỳ phòng nào.");
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                     Alert error = new Alert(Alert.AlertType.ERROR);
-                    error.setTitle("Lỗi");
-                    error.setHeaderText("Không thể cập nhật trạng thái");
-                    error.setContentText("Đã có lỗi xảy ra khi lưu vào cơ sở dữ liệu.");
+                    error.setTitle("Lỗi hệ thống");
+                    error.setHeaderText("Không thể hoàn tất Check-in");
+                    error.setContentText("Chi tiết lỗi: " + ex.getMessage());
                     error.showAndWait();
                 }
             }
@@ -358,16 +493,17 @@ public class CheckInView extends BorderPane {
     private void resetView() {
         txtSearch.clear();
         currentDatPhong = null;
-        selectedPhong = null;
+        selectedRooms.clear();
         btnConfirm.setDisable(true);
-        
+
         detailSection.getChildren().clear();
         detailSection.setAlignment(Pos.CENTER);
         Label lblNoData = new Label("Chưa có thông tin đơn đặt phòng");
         lblNoData.setTextFill(Color.web(C_TEXT_GRAY));
         detailSection.getChildren().add(lblNoData);
-        
+
         roomFlow.getChildren().clear();
+        loadAvailableRooms();
     }
 
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {

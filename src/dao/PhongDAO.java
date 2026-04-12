@@ -39,33 +39,39 @@ public class PhongDAO {
 
     public List<Phong> getAll() {
         List<Phong> ds = new ArrayList<>();
-        String sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.tinhTrang, p.soPhong, p.soTang, " +
-                "       l.gia, l.sucChua " +
-                "FROM Phong p JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong";
+        String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
+                "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                LoaiPhong lp = new LoaiPhong();
-                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
-                lp.setGia(rs.getDouble("gia"));
-                lp.setSucChua(rs.getInt("sucChua"));
-
-                Phong p = new Phong();
-                p.setMaPhong(rs.getString("maPhong"));
-                p.setTenPhong(rs.getString("tenPhong"));
-                p.setLoaiPhong(lp);
-                p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
-                p.setSoPhong(rs.getInt("soPhong"));
-                p.setSoTang(rs.getInt("soTang"));
-                ds.add(p);
+                ds.add(mapRow(rs));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return ds;
+    }
+
+    /**
+     * Helper để ánh xạ từ ResultSet sang đối tượng Phong
+     */
+    private Phong mapRow(ResultSet rs) throws SQLException {
+        LoaiPhong lp = new LoaiPhong();
+        lp.setMaLoaiPhong(rs.getString("loaiPhong"));
+        lp.setGia(rs.getDouble("gia"));
+        lp.setSucChua(rs.getInt("sucChua"));
+
+        Phong p = new Phong();
+        p.setMaPhong(rs.getString("maPhong"));
+        p.setTenPhong(rs.getString("tenPhong"));
+        p.setLoaiPhong(lp);
+        p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
+        p.setSoPhong(rs.getInt("soPhong"));
+        p.setSoTang(rs.getInt("soTang"));
+        return p;
     }
 
     public boolean insert(Phong p) {
@@ -158,7 +164,6 @@ public class PhongDAO {
 
     /**
      * Cập nhật trạng thái phòng (dùng cho nghiệp vụ Check-in / Check-out)
-     * Trạng thái tự động: CONTRONG, DANGSUDUNG, BAN
      */
     public boolean updateTrangThai(String maPhong, String trangThai) {
         String sql = "UPDATE Phong SET tinhTrang = ? WHERE maPhong = ?";
@@ -171,5 +176,21 @@ public class PhongDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * Lấy danh sách phòng trống theo mã loại phòng
+     * Trả về List chuỗi "maPhong - tenPhong" dùng cho ComboBox
+     */
+    public List<String> getPhongTrongByLoai(String maLoaiPhong) {
+        List<String> ds = new ArrayList<>();
+        String sql = "SELECT maPhong, tenPhong FROM Phong WHERE loaiPhong = ? AND tinhTrang = N'CONTRONG'";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maLoaiPhong);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) ds.add(rs.getString("maPhong") + " - " + rs.getString("tenPhong"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return ds;
     }
 }

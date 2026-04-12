@@ -222,6 +222,7 @@ public class BangGiaDichVuDAO {
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, maBG);
+
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next())
                     return mapBangGia(rs);
@@ -255,7 +256,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu> findConflicts(java.sql.Date ngayAD, java.sql.Date ngayHH, String excludeMaBG) {
         List<BangGiaDichVu> list = new ArrayList<>();
-        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 1 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
+        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
         if (excludeMaBG != null && !excludeMaBG.isEmpty()) {
             sql += " AND maBangGia <> ?";
         }
@@ -281,20 +282,18 @@ public class BangGiaDichVuDAO {
      * Sinh mã bảng giá tiếp theo (BG001, BG002, ...)
      */
     public String generateNextMaBangGia() {
-        String sql = "SELECT maBangGia FROM BangGiaDV_Header WHERE maBangGia LIKE 'BG%'";
-        int max = 0;
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-                Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                String last = rs.getString(1);
-                if (last != null && last.length() > 2) {
-                    try {
-                        int num = Integer.parseInt(last.substring(2));
-                        if (num > max)
-                            max = num;
-                    } catch (Exception ignored) {
-                    }
+        String sql = "SELECT TOP 1 maBangGia FROM BangGiaDV_Header WHERE maBangGia LIKE 'BG%' ORDER BY maBangGia DESC";
+        try (Connection conn = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                String last = rs.getString("maBangGia");
+                String numPart = last.replace("BG", "");
+                try {
+                    int num = Integer.parseInt(numPart) + 1;
+                    return String.format("BG%04d", num);
+                } catch (NumberFormatException e) {
+                    // fallback
                 }
             }
         } catch (Exception e) {
@@ -307,14 +306,35 @@ public class BangGiaDichVuDAO {
      * Soft delete: set trangThai = 0 thay vì xóa vật lý
      */
     public boolean softDeleteBangGia(String maBG) {
-        return updateTrangThai(maBG, 0);
+        // Sửa: Dùng trạng thái 1 (Ngưng áp dụng) cho soft delete vì DB là kiểu BIT
+        return updateTrangThai(maBG, 1);
+    }
+
+    /**
+     * Kiểm tra mã bảng giá đã tồn tại chưa
+     */
+    public boolean exists(String maBG) {
+        // Sử dụng UPPER và TRIM để đối soát tuyệt đối chính xác trong mọi trường hợp
+        // collation/padding
+        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE UPPER(LTRIM(RTRIM(maBangGia))) = UPPER(?)";
+        try (Connection conn = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maBG.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next())
+                    return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /**
      * Kiểm tra xung đột thời gian khi thêm mới bảng giá
      */
     public boolean checkOverlap(java.sql.Date ngayAD, java.sql.Date ngayHH) {
-        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE ngayApDung <= ? AND ngayHetHieuLuc >= ?";
+        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDate(1, ngayHH);
@@ -333,7 +353,7 @@ public class BangGiaDichVuDAO {
      * Kiểm tra xung đột thời gian khi cập nhật bảng giá (loại trừ chính nó)
      */
     public boolean checkOverlapUpdate(String maBG, java.sql.Date ngayAD, java.sql.Date ngayHH) {
-        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE ngayApDung <= ? AND ngayHetHieuLuc >= ? AND maBangGia <> ?";
+        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ? AND maBangGia <> ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDate(1, ngayHH);
@@ -359,7 +379,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu> findStrictConflicts(java.sql.Date ngayAD, java.sql.Date ngayHH, String excludeMaBG) {
         List<BangGiaDichVu> list = new ArrayList<>();
-        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai <> -1 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
+        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
         if (excludeMaBG != null && !excludeMaBG.isEmpty()) {
             sql += " AND maBangGia <> ?";
         }
