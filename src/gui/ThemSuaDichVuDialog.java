@@ -74,7 +74,11 @@ public class ThemSuaDichVuDialog extends Stage {
     }
 
     private void initEvents() {
-        EventUtils.setupEnterNavigation(this::handleSave, txtTenDV, txtDonVi);
+        EventUtils.setupEnterToSave(() -> {
+            if (btnSave != null && !btnSave.isDisabled()) {
+                handleSave();
+            }
+        }, txtTenDV, txtDonVi, cbLoai, cbTrangThai);
         if (isEdit && btnSave != null) {
             EventUtils.setupDirtyTracking(btnSave, txtTenDV, txtDonVi, cbLoai, cbTrangThai);
         }

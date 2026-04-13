@@ -205,4 +205,54 @@ public final class ValidationUtils {
 
         return false;
     }
+
+    /*
+     * ══════════════════════════════════════════════════════════════════
+     * 5. HÀM KIỂM TRA TRÙNG LẶP SĐT / CCCD TRONG DB
+     * ══════════════════════════════════════════════════════════════════
+     */
+
+    public static boolean isDuplicateSDT(String sdt, String excludeId) {
+        if (sdt == null || sdt.isBlank()) return false;
+        String sql = "SELECT maNV as id FROM NV WHERE soDT = ? UNION ALL " +
+                     "SELECT maKH as id FROM KH WHERE soDT = ?";
+        try (java.sql.Connection con = connectDatabase.ConnectDatabase.getInstance().getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, sdt);
+            ps.setString(2, sdt);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String existingId = rs.getString("id");
+                    if (existingId != null && !existingId.trim().equals(excludeId)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean isDuplicateCCCD(String cccd, String excludeId) {
+        if (cccd == null || cccd.isBlank()) return false;
+        String sql = "SELECT maNV as id FROM NV WHERE soCCCD = ? UNION ALL " +
+                     "SELECT maKH as id FROM KH WHERE soCCCD = ?";
+        try (java.sql.Connection con = connectDatabase.ConnectDatabase.getInstance().getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, cccd);
+            ps.setString(2, cccd);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String existingId = rs.getString("id");
+                    if (existingId != null && !existingId.trim().equals(excludeId)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

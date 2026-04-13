@@ -529,6 +529,46 @@ public class NhanVienView extends BorderPane {
                 showAlert("Không thể cập nhật", "Hệ thống phải có ít nhất 1 Quản lý đang làm việc!");
                 return;
             }
+
+            java.util.List<NhanVien> subordinates = dao.getAll().stream()
+                    .filter(n -> nv.getMaNV().equals(n.getMaQL()) && n.getTrangThai() != model.enums.TrangThaiNV.DA_NGHI)
+                    .toList();
+
+            if (!subordinates.isEmpty()) {
+                java.util.List<NhanVien> otherManagers = dao.getAll().stream()
+                        .filter(n -> n.getRole() == ChucVu.QUAN_LY
+                                && n.getTrangThai() == model.enums.TrangThaiNV.CON_LAM
+                                && !n.getMaNV().equals(nv.getMaNV()))
+                        .toList();
+
+                if (otherManagers.isEmpty()) {
+                    showAlert("Không thể cập nhật", "Nhân sự này đang quản lý " + subordinates.size()
+                            + " cá nhân khác!\nKhông tìm thấy quản lý cấp trên khả dụng nào để bàn giao.");
+                    return;
+                }
+
+                ChoiceDialog<NhanVien> dialog = new ChoiceDialog<>(otherManagers.get(0), otherManagers);
+                Window owner = getScene().getWindow();
+                dialog.initOwner(owner);
+                dialog.setTitle("Bàn giao quyền quản lý");
+                dialog.setHeaderText("Quản lý [" + nv.getHoTen() + "] đang trực tiếp quản lý " + subordinates.size()
+                        + " nhân viên.\nVui lòng chọn Quản lý thay thế để bàn giao:");
+                dialog.setContentText("Quản lý mới:");
+
+                Region dim = model.utils.DimOverlay.show(owner);
+                java.util.Optional<NhanVien> result = dialog.showAndWait();
+                model.utils.DimOverlay.hide(owner, dim);
+
+                if (result.isPresent()) {
+                    NhanVien newManager = result.get();
+                    for (NhanVien sub : subordinates) {
+                        sub.setMaQL(newManager.getMaNV());
+                        dao.update(sub);
+                    }
+                } else {
+                    return; // Người dùng nhấn Hủy, dừng luôn việc cập nhật trạng thái
+                }
+            }
         }
 
         nv.setTrangThai(status);

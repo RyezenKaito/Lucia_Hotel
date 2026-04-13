@@ -117,7 +117,11 @@ public class ThemSuaDatPhongDialog extends Stage {
     private void initEvents() {
         try {
             if (txtHoTen != null && txtSoDT != null) {
-                EventUtils.setupEnterNavigation(this::handleSave, txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu);
+                EventUtils.setupEnterToSave(() -> {
+                    if (btnSave != null && !btnSave.isDisabled()) {
+                        handleSave();
+                    }
+                }, txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu, dpNgaySinh, dpCheckIn, dpCheckOut, cbLoaiPhong, cbPhong);
             }
         } catch (Exception e) {
             System.err.println("Bỏ qua lỗi EventUtils: " + e.getMessage());

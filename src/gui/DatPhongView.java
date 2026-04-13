@@ -12,6 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Window;
+import javafx.scene.input.MouseButton;
 
 import java.sql.*;
 import java.time.format.DateTimeFormatter;
@@ -180,6 +181,12 @@ public class DatPhongView extends BorderPane {
 
             ctx.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
             row.setContextMenu(ctx);
+
+            row.setOnMouseClicked(e -> {
+                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2 && !row.isEmpty()) {
+                    openEditDialog(row.getItem());
+                }
+            });
 
             return row;
         });

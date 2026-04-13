@@ -23,29 +23,22 @@ public final class EventUtils {
      */
 
     /**
-     * Gắn sự kiện Enter cho danh sách control theo thứ tự tab.
-     * Khi nhấn Enter ở field bất kỳ → focus chuyển sang field tiếp theo.
-     * Khi nhấn Enter ở field cuối cùng → gọi {@code onSubmit}.
+     * Gắn sự kiện Enter cho danh sách control.
+     * Khi nhấn Enter ở field bất kỳ → gọi {@code onSubmit}.
+     * JavaFX sẽ tự động sử dụng Tab để nhảy giữa các field.
      */
-    public static void setupEnterNavigation(Runnable onSubmit, Control... fields) {
-        for (int i = 0; i < fields.length; i++) {
-            final int next = i + 1;
-            Control current = fields[i];
-
-            current.setOnKeyPressed(e -> {
-                if (e.getCode() == KeyCode.ENTER) {
-                    e.consume();
-                    if (next < fields.length) {
-                        // Focus field tiếp theo
-                        Control nextField = fields[next];
-                        Platform.runLater(nextField::requestFocus);
-                    } else {
-                        // Field cuối → submit
-                        if (onSubmit != null)
+    public static void setupEnterToSave(Runnable onSubmit, Node... fields) {
+        for (Node current : fields) {
+            if (current != null) {
+                current.setOnKeyPressed(e -> {
+                    if (e.getCode() == KeyCode.ENTER) {
+                        e.consume();
+                        if (onSubmit != null) {
                             onSubmit.run();
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }
 

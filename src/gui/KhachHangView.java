@@ -251,6 +251,9 @@ public class KhachHangView extends BorderPane {
             if (e.getButton() == MouseButton.SECONDARY
                     && table.getSelectionModel().getSelectedItem() != null) {
                 ctxMenu.show(table, e.getScreenX(), e.getScreenY());
+            } else if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                KhachHang kh = table.getSelectionModel().getSelectedItem();
+                if (kh != null) openDialog(kh);
             } else {
                 ctxMenu.hide();
             }

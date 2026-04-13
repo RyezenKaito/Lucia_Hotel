@@ -75,8 +75,12 @@ public class ThemSuaKhachHangDialog extends Stage {
     }
 
     private void initEvents() {
-        // 1. Chuyển ô bằng nút Enter (Bỏ qua dpNgaySinh vì là Popup Node)
-        EventUtils.setupEnterNavigation(this::handleSave, txtTen, txtCCCD, txtSDT);
+        // 1. Nhấn Enter để Thêm mới / Cập nhật luôn (Tab chuyển ô tự động của JavaFX)
+        EventUtils.setupEnterToSave(() -> {
+            if (btnSave != null && !btnSave.isDisabled()) {
+                handleSave();
+            }
+        }, txtTen, txtCCCD, txtSDT, dpNgaySinh);
 
         // 2. Theo dõi form: Tự động khóa nút Cập nhật nếu chưa thay đổi gì (Chỉ áp dụng
         // chế độ Sửa)
@@ -279,6 +283,11 @@ public class ThemSuaKhachHangDialog extends Stage {
             showErrorField(txtSDT, errSDT, "⚠ Sai đầu số nhà mạng Việt Nam (03x, 05x, 07x, 08x, 09x).");
             return false;
         }
+        String currentId = khachHang != null ? khachHang.getMaKH() : "";
+        if (ValidationUtils.isDuplicateSDT(sdt, currentId)) {
+            showErrorField(txtSDT, errSDT, "⚠ SĐT này đã tồn tại trong hệ thống.");
+            return false;
+        }
         clearErrorField(txtSDT, errSDT);
         return true;
     }
@@ -309,6 +318,11 @@ public class ThemSuaKhachHangDialog extends Stage {
                 showErrorField(txtCCCD, errCCCD, "⚠ 2 số năm sinh trên CCCD bị sai (số 5,6).");
                 return false;
             }
+        }
+        String currentId = khachHang != null ? khachHang.getMaKH() : "";
+        if (ValidationUtils.isDuplicateCCCD(cccd, currentId)) {
+            showErrorField(txtCCCD, errCCCD, "⚠ CCCD này đã tồn tại trong hệ thống.");
+            return false;
         }
         clearErrorField(txtCCCD, errCCCD);
         return true;

@@ -283,6 +283,16 @@ public class QuanLyPhongView extends BorderPane {
             table.setOnMouseClicked(e -> {
                 if (e.getButton() == MouseButton.SECONDARY && table.getSelectionModel().getSelectedItem() != null) {
                     ctxMenu.show(table, e.getScreenX(), e.getScreenY());
+                } else if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
+                    Phong p = table.getSelectionModel().getSelectedItem();
+                    if (p != null) {
+                        if (p.getTrangThai() == TrangThaiPhong.DACOKHACH) {
+                            showAlert(Alert.AlertType.WARNING, "Không thể chỉnh sửa",
+                                    "Phòng đang có khách. Vui lòng thực hiện trả phòng trước.");
+                        } else {
+                            openDialog(p);
+                        }
+                    }
                 } else {
                     ctxMenu.hide();
                 }

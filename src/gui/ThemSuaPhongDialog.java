@@ -6,6 +6,7 @@ import model.entities.LoaiPhong;
 import model.entities.Phong;
 import model.enums.TrangThaiPhong;
 import model.utils.DimOverlay;
+import model.utils.EventUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -68,6 +69,12 @@ public class ThemSuaPhongDialog extends Stage {
         scene.setFill(Color.TRANSPARENT);
         setScene(scene);
         centerOnScreen();
+        
+        EventUtils.setupEnterToSave(() -> {
+            if (btnSave != null && !btnSave.isDisabled()) {
+                handleSave();
+            }
+        }, txtSoTangEdit != null ? txtSoTangEdit : cbSoTang, cbLoaiPhong, cbTrangThai);
     }
 
     public void showDialog() {
