@@ -59,10 +59,10 @@ public class ThemSuaDatPhongDialog extends Stage {
     private String originalRoomType = null;
 
     /* ── Form fields ──────────────────────────────────────────────── */
-    private TextField txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu;
+    private TextField txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtTienCoc, txtGhiChu, txtSoLuongPhong;
     private ComboBox<String> cbLoaiPhong, cbPhong;
     private DatePicker dpCheckIn, dpCheckOut, dpNgaySinh;
-    private Label errTen, errSDT, errCCCD, errNgayIn, errNgayOut, errSoNguoi, errPhong, errNS;
+    private Label errTen, errSDT, errCCCD, errNgayIn, errNgayOut, errSoNguoi, errPhong, errNS, errSoLuongPhong;
     
     // Giao diện tiền bạc mới
     private Label lblTongTienPhong;
@@ -188,32 +188,48 @@ public class ThemSuaDatPhongDialog extends Stage {
         form.setPadding(new Insets(22, 32, 10, 32));
         form.setStyle("-fx-background-color: white;");
 
+        int curYear = LocalDate.now().getYear();
+
+        txtCCCD = makeField("", "Nhập CCCD (12 số)");
+        try { ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12); } catch (Exception ignored) {}
+        errCCCD = errLabel();
+        
+        txtCCCD.focusedProperty().addListener((obs, o, n) -> {
+            if (!n && txtCCCD.getText().length() == 12) {
+                model.entities.KhachHang khExist = khachHangDAO.findByCCCD(txtCCCD.getText());
+                if (khExist != null) {
+                    if (txtHoTen != null) txtHoTen.setText(khExist.getTenKH());
+                    if (txtSoDT != null) txtSoDT.setText(khExist.getSoDT());
+                    if (dpNgaySinh != null && khExist.getNgaySinh() != null) dpNgaySinh.setValue(khExist.getNgaySinh());
+                }
+            }
+        });
+
         txtHoTen = makeField("", "Nhập họ và tên khách hàng");
         errTen = errLabel();
-        form.getChildren().add(fieldBlock("Họ và tên *", txtHoTen, errTen, null));
 
-        int curYear = LocalDate.now().getYear();
+        HBox rowCCCD_Ten = new HBox(16);
+        VBox colCCCD = fieldBlock("Số CCCD (Nhập trước) *", txtCCCD, errCCCD, null);
+        VBox colTen = fieldBlock("Họ và tên *", txtHoTen, errTen, null);
+        HBox.setHgrow(colCCCD, Priority.ALWAYS); HBox.setHgrow(colTen, Priority.ALWAYS);
+        rowCCCD_Ten.getChildren().addAll(colCCCD, colTen);
+        form.getChildren().add(rowCCCD_Ten);
 
         dpNgaySinh = new DatePicker(curYear - 100, curYear + 25);
         dpNgaySinh.setPromptText("Chọn ngày sinh khách hàng");
         dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
         errNS = errLabel();
-        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
 
         txtSoDT = makeField("", "Nhập số điện thoại");
         try { ValidationUtils.applyNumericOnlyFilter(txtSoDT, 10); } catch (Exception ignored) {}
         errSDT = errLabel();
 
-        txtCCCD = makeField("", "Nhập CCCD (12 số)");
-        try { ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12); } catch (Exception ignored) {}
-        errCCCD = errLabel();
-
-        HBox rowSDT = new HBox(16);
+        HBox rowNS_SDT = new HBox(16);
+        VBox colNS = fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)");
         VBox colSDT = fieldBlock("Số điện thoại *", txtSoDT, errSDT, null);
-        VBox colCCCD = fieldBlock("Số CCCD *", txtCCCD, errCCCD, null);
-        HBox.setHgrow(colSDT, Priority.ALWAYS); HBox.setHgrow(colCCCD, Priority.ALWAYS);
-        rowSDT.getChildren().addAll(colSDT, colCCCD);
-        form.getChildren().add(rowSDT);
+        HBox.setHgrow(colNS, Priority.ALWAYS); HBox.setHgrow(colSDT, Priority.ALWAYS);
+        rowNS_SDT.getChildren().addAll(colNS, colSDT);
+        form.getChildren().add(rowNS_SDT);
 
         dpCheckIn = new DatePicker(curYear, curYear + 2);
         dpCheckIn.setPromptText("Chọn ngày nhận phòng");
@@ -246,38 +262,46 @@ public class ThemSuaDatPhongDialog extends Stage {
         rowDate.getChildren().addAll(colIn, colOut);
         form.getChildren().add(rowDate);
 
+        // ──────────────────────────────────────────
+        // Nhập Số Người, Số Lượng Phòng & Loại Phòng
+        // ──────────────────────────────────────────
+        txtSoNguoi = makeField("1", "Nhập số người");
+        try { ValidationUtils.applyNumericOnlyFilter(txtSoNguoi, 2); } catch(Exception ignored){}
+        errSoNguoi = errLabel();
+
+        txtSoLuongPhong = makeField("1", "Nhập số phòng cần đặt");
+        try { ValidationUtils.applyNumericOnlyFilter(txtSoLuongPhong, 2); } catch(Exception ignored){}
+        errSoLuongPhong = errLabel();
+        
+        txtSoLuongPhong.textProperty().addListener((obs, o, n) -> updateTongTien());
+
         cbLoaiPhong = new ComboBox<>(); styleCombo(cbLoaiPhong);
         cbLoaiPhong.setPromptText("Chọn loại phòng");
         loadLoaiPhong();
         cbLoaiPhong.setOnAction(e -> { reloadPhongTrong(); updateTongTien(); });
+        
+        txtSoNguoi.textProperty().addListener((obs, o, n) -> suggestRoomCount());
+        cbLoaiPhong.valueProperty().addListener((obs, o, n) -> suggestRoomCount());
 
-        cbPhong = new ComboBox<>(); styleCombo(cbPhong);
-        cbPhong.setPromptText("Chọn phòng trống");
-        errPhong = errLabel();
-
-        HBox rowRoom = new HBox(16);
-        VBox colType = fieldBlock("Loại phòng *", cbLoaiPhong, null, null);
-        VBox colRoom = fieldBlock("Phòng trống *", cbPhong, errPhong, null);
-        HBox.setHgrow(colType, Priority.ALWAYS); HBox.setHgrow(colRoom, Priority.ALWAYS);
-        rowRoom.getChildren().addAll(colType, colRoom);
-        form.getChildren().add(rowRoom);
-
-        txtSoNguoi = makeField("1", "Số người");
-        try { ValidationUtils.applyNumericOnlyFilter(txtSoNguoi, 2); } catch(Exception ignored){}
-        errSoNguoi = errLabel();
+        HBox rowSoNguoi = new HBox(16);
+        VBox colNguoi = fieldBlock("Số người *", txtSoNguoi, errSoNguoi, null);
+        VBox colLoai = fieldBlock("Loại phòng *", cbLoaiPhong, null, null);
+        VBox colSL = fieldBlock("Số lượng phòng *", txtSoLuongPhong, errSoLuongPhong, null);
+        HBox.setHgrow(colNguoi, Priority.ALWAYS); HBox.setHgrow(colLoai, Priority.ALWAYS); HBox.setHgrow(colSL, Priority.ALWAYS);
+        rowSoNguoi.getChildren().addAll(colNguoi, colLoai, colSL);
+        form.getChildren().add(rowSoNguoi);
 
         txtTienCoc = makeField("0", "Tiền đặt cọc");
         txtTienCoc.textProperty().addListener((obs, o, n) -> updateTongTien());
 
-        HBox rowExtra = new HBox(16);
-        VBox colNguoi = fieldBlock("Số người *", txtSoNguoi, errSoNguoi, null);
-        VBox colCoc = fieldBlock("Tiền đặt cọc (VND)", txtTienCoc, null, null);
-        HBox.setHgrow(colNguoi, Priority.ALWAYS); HBox.setHgrow(colCoc, Priority.ALWAYS);
-        rowExtra.getChildren().addAll(colNguoi, colCoc);
-        form.getChildren().add(rowExtra);
-
         txtGhiChu = makeField("", "Ghi chú (không bắt buộc)");
-        form.getChildren().add(fieldBlock("Ghi chú", txtGhiChu, null, null));
+
+        HBox rowCoc_GhiChu = new HBox(16);
+        VBox colCoc = fieldBlock("Tiền đặt cọc (VND)", txtTienCoc, null, null);
+        VBox colGC = fieldBlock("Ghi chú", txtGhiChu, null, null);
+        HBox.setHgrow(colCoc, Priority.ALWAYS); HBox.setHgrow(colGC, Priority.ALWAYS);
+        rowCoc_GhiChu.getChildren().addAll(colCoc, colGC);
+        form.getChildren().add(rowCoc_GhiChu);
 
         // ─────────────────────────────────────────────────────────────────
         // TÍNH TIỀN UX MỚI RÕ RÀNG HƠN
@@ -302,7 +326,7 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         HBox rowThanhToan = new HBox(8);
         rowThanhToan.setAlignment(Pos.CENTER_LEFT);
-        Label lbl2 = new Label("Cần thanh toán:"); 
+        Label lbl2 = new Label("Cần thanh toán (Đã trừ cọc):"); 
         lbl2.setFont(Font.font("Segoe UI", 14)); lbl2.setTextFill(Color.web(C_TEXT_GRAY));
         rowThanhToan.getChildren().addAll(lbl2, lblCanThanhToan);
 
@@ -404,7 +428,15 @@ public class ThemSuaDatPhongDialog extends Stage {
         String soNguoiStr = txtSoNguoi.getText().trim();
         if (soNguoiStr.isEmpty() || Integer.parseInt(soNguoiStr) < 1) { errSoNguoi.setText("⚠ Tối thiểu 1 người"); ok = false; } else errSoNguoi.setText("");
         
-        if (cbPhong.getValue() == null || cbPhong.getValue().isEmpty()) { errPhong.setText("⚠ Vui lòng chọn phòng"); ok = false; } else errPhong.setText("");
+        String slStr = txtSoLuongPhong.getText().trim();
+        int soLuong = 1;
+        try { soLuong = Integer.parseInt(slStr); } catch (Exception ignored) {}
+        if (soLuong < 1) { errSoLuongPhong.setText("⚠ Tối thiểu 1 phòng"); ok = false; }
+
+        List<String> emptyRooms = phongDAO.getPhongTrongByLoai(cbLoaiPhong.getValue());
+        if (editRow == null && emptyRooms.size() < soLuong) {
+            errSoLuongPhong.setText("⚠ Chỉ còn " + emptyRooms.size() + " phòng"); ok = false;
+        }
 
         if (!ok) return;
 
@@ -416,13 +448,13 @@ public class ThemSuaDatPhongDialog extends Stage {
         final LocalDate checkIn = dpCheckIn.getValue();
         final LocalDate checkOut = dpCheckOut.getValue();
         final int soNguoi = Integer.parseInt(txtSoNguoi.getText().trim());
+        final int fSoLuong = soLuong;
         final double tienCoc = parseTienCoc();
         final String ghiChu = txtGhiChu.getText().trim();
-        final String maPhong = cbPhong.getValue().split(" ")[0]; // Lấy phần đầu (mã phòng)
 
         final String preGenMaKH   = editRow == null ? khachHangDAO.getNextMaKH() : null;
         final String preGenMaDat  = editRow == null ? datPhongDAO.generateMaDat() : null;
-        final String preGenMaCTDP = editRow == null ? ctdpDAO.generateMaCTDP() : null;
+        final String baseMaCTDP   = editRow == null ? ctdpDAO.generateMaCTDP() : null;
 
         // 2. Cập nhật UI sang trạng thái Đang lưu
         String oldBtnText = btnSave.getText();
@@ -440,11 +472,27 @@ public class ThemSuaDatPhongDialog extends Stage {
                     if (editRow != null) {
                         khachHangDAO.updateByMaDat(con, editMaDat, hoTen, soDT, cccd, ngaySinh);
                         datPhongDAO.updateNgayCheckInOut(con, editMaDat, checkIn, checkOut);
-                        ctdpDAO.updateByMaDat(con, editMaDat, maPhong, tienCoc, soNguoi, ghiChu);
+                        // Chỉ cập nhật thông tin chung, KHÔNG đổi danh sách phòng đã gán
+                        ctdpDAO.updateInfoByMaDat(con, editMaDat, tienCoc, soNguoi, ghiChu);
                     } else {
                         String maKH = khachHangDAO.findOrCreate(con, hoTen, soDT, cccd, ngaySinh, preGenMaKH);
                         datPhongDAO.insertWithConnection(con, preGenMaDat, maKH, checkIn, checkOut);
-                        ctdpDAO.insertWithConnection(con, preGenMaCTDP, maPhong, preGenMaDat, tienCoc, soNguoi, ghiChu);
+                        
+                        double cdpCoc = tienCoc / fSoLuong;
+                        int cdpNguoi = soNguoi / fSoLuong;
+                        int leftoverNguoi = soNguoi % fSoLuong;
+                        
+                        // Parse baseMaCTDP (VD: CTDP015)
+                        int baseNum = 0;
+                        if (baseMaCTDP != null && baseMaCTDP.length() > 4) {
+                            try { baseNum = Integer.parseInt(baseMaCTDP.substring(4)); } catch (Exception ignored) {}
+                        }
+                        
+                        for (int i = 0; i < fSoLuong; i++) {
+                            String maPhong = emptyRooms.get(i).split(" ")[0]; // Lấy phần đầu
+                            String actualMaCTDP = String.format("CTDP%04d", baseNum + i);
+                            ctdpDAO.insertWithConnection(con, actualMaCTDP, maPhong, preGenMaDat, cdpCoc, cdpNguoi + (i == 0 ? leftoverNguoi : 0), ghiChu);
+                        }
                     }
                     con.commit();
                     success = true;
@@ -485,29 +533,60 @@ public class ThemSuaDatPhongDialog extends Stage {
 
     /*
      * ════════════════════════════════════════════════════════════════
-     * LOGIC COMBOBOX PHÒNG (GIỮ LẠI PHÒNG CŨ KHI SỬA)
+     * LOGIC GỢI Ý PHÒNG VÀ KIỂM TRA PHÒNG TRỐNG
      * ════════════════════════════════════════════════════════════════
      */
-    private void reloadPhongTrong() {
-        if (cbPhong == null || cbLoaiPhong == null) return;
-        cbPhong.getItems().clear();
-        String loai = cbLoaiPhong.getValue();
-        LocalDate dIn = dpCheckIn.getValue(), dOut = dpCheckOut.getValue();
-        if (loai == null || dIn == null || dOut == null) return;
-
-        // Bỏ vào ArrayList có thể thêm bớt phần tử
-        List<String> emptyRooms = new ArrayList<>(phongDAO.getPhongTrongByLoai(loai));
-
-        // Nếu Đang Sửa + Đang chọn đúng loại phòng cũ của đơn này -> Phải nạp phòng cũ vào
-        if (editRow != null && originalRoom != null && loai.equals(originalRoomType)) {
-            boolean isRoomExist = emptyRooms.stream().anyMatch(r -> r.startsWith(originalRoom));
-            if (!isRoomExist) {
-                emptyRooms.add(0, originalRoom + " (Phòng đang giữ)");
+    private void suggestRoomCount() {
+        if (txtSoNguoi == null || cbLoaiPhong == null || txtSoLuongPhong == null) return;
+        try {
+            int soNguoi = Integer.parseInt(txtSoNguoi.getText().trim());
+            String loai = cbLoaiPhong.getValue();
+            if (loai == null || soNguoi <= 0) return;
+            
+            int capacity = 2; // Default
+            for (model.entities.LoaiPhong lp : loaiPhongDAO.getAll()) {
+                if (lp.getMaLoaiPhong().equals(loai)) {
+                    capacity = lp.getSucChua(); break;
+                }
             }
-        }
+            int soPhong = (int) Math.ceil((double) soNguoi / capacity);
+            if (soPhong < 1) soPhong = 1;
+            
+            // Cập nhật UI
+            if (txtSoLuongPhong.isFocused()) return; // Không ghi đè nếu người dùng đang tự gõ
+            txtSoLuongPhong.setText(String.valueOf(soPhong));
+            
+            // Cập nhật lại tiền cọc tự động dựa trên số phòng (Mặc định bằng 1 đêm)
+            double giaPhong = loaiPhongDAO.getGiaByMaLoai(loai);
+            txtTienCoc.setText(DF.format(giaPhong * soPhong)); 
+            
+        } catch (Exception ignored) {}
+    }
 
-        cbPhong.getItems().addAll(emptyRooms);
-        if (!cbPhong.getItems().isEmpty()) cbPhong.getSelectionModel().selectFirst();
+    private void reloadPhongTrong() {
+        if (txtSoLuongPhong == null || cbLoaiPhong == null) return;
+        String loai = cbLoaiPhong.getValue();
+        if (loai == null) return;
+
+        List<String> emptyRooms = new java.util.ArrayList<>(phongDAO.getPhongTrongByLoai(loai));
+        try {
+            int needed = Integer.parseInt(txtSoLuongPhong.getText().trim());
+            // Nếu đang sửa đơn, và đang chọn đúng loại phòng cũ, ta cộng thêm những phòng hiện hữu của đơn đó
+            if (editRow != null && loai.equals(originalRoomType) && originalRoom != null) {
+                int existingCount = originalRoom.split(",").length;
+                if (needed <= existingCount + emptyRooms.size()) {
+                    errSoLuongPhong.setText("");
+                } else {
+                    errSoLuongPhong.setText("⚠ Chỉ còn " + emptyRooms.size() + " phòng trống kiểu này");
+                }
+            } else {
+                if (emptyRooms.size() < needed) {
+                    errSoLuongPhong.setText("⚠ Chỉ còn " + emptyRooms.size() + " phòng trống kiểu này");
+                } else {
+                    errSoLuongPhong.setText("");
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void populateEditData() {
@@ -522,7 +601,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         if (data[4] != null) dpCheckIn.setValue((LocalDate) data[4]);
         if (data[5] != null) dpCheckOut.setValue((LocalDate) data[5]);
         
-        // Lưu vết phòng gốc để không bị mất trong ComboBox
+        // Lưu vết phòng gốc (có thể nhiều phòng, VD: "P101, P102")
         this.originalRoom = (String) data[6];
         this.originalRoomType = (String) data[10];
 
@@ -531,15 +610,9 @@ public class ThemSuaDatPhongDialog extends Stage {
         txtGhiChu.setText(data[9] != null ? (String) data[9] : "");
 
         if (originalRoomType != null) cbLoaiPhong.setValue(originalRoomType);
+        if (originalRoom != null) txtSoLuongPhong.setText(String.valueOf(originalRoom.split(",\\s*").length));
         
-        // Cần gọi lại vì hàm setValue loaiPhong không trigger event tự động
         reloadPhongTrong();
-
-        if (originalRoom != null) {
-            for (String item : cbPhong.getItems()) {
-                if (item.startsWith(originalRoom)) { cbPhong.setValue(item); break; }
-            }
-        }
         updateTongTien();
 
         Platform.runLater(() -> {
@@ -547,7 +620,7 @@ public class ThemSuaDatPhongDialog extends Stage {
                 EventUtils.setupDirtyTracking(btnSave, 
                     txtHoTen, txtSoDT, txtCCCD, dpNgaySinh, 
                     dpCheckIn, dpCheckOut, txtSoNguoi, txtTienCoc, txtGhiChu, 
-                    cbLoaiPhong, cbPhong
+                    cbLoaiPhong, txtSoLuongPhong
                 );
             }
         });
@@ -561,7 +634,7 @@ public class ThemSuaDatPhongDialog extends Stage {
     }
 
     private void updateTongTien() {
-        if (lblTongTienPhong == null || cbLoaiPhong == null || txtTienCoc == null) return;
+        if (lblTongTienPhong == null || cbLoaiPhong == null || txtTienCoc == null || txtSoLuongPhong == null) return;
         try {
             LocalDate dIn = dpCheckIn.getValue(), dOut = dpCheckOut.getValue();
             if (dIn == null || dOut == null) { 
@@ -578,7 +651,8 @@ public class ThemSuaDatPhongDialog extends Stage {
                 giaPhong = loaiPhongDAO.getGiaByMaLoai(loai);
             }
             
-            double tongPhong = giaPhong * days;
+            int soLuong = Integer.parseInt(txtSoLuongPhong.getText().trim());
+            double tongPhong = giaPhong * soLuong * days;
             double canThanhToan = tongPhong - parseTienCoc();
 
             lblTongTienPhong.setText(DF.format(tongPhong) + " đ");

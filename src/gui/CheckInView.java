@@ -246,7 +246,19 @@ public class CheckInView extends BorderPane {
         if (dp != null) {
             currentDatPhong = dp;
             updateDetailUI(dp);
+            
+            // TỰ TARGET VÀO CÁC PHÒNG ĐÃ ĐƯỢC PHÂN TRỘI BỞI ĐƠN NÀY
+            selectedRooms.clear();
+            List<String> assignedRooms = chiTietDatPhongDAO.getMaPhongByMaDat(dp.getMaDat());
+            for (Phong p : phongDAO.getAll()) {
+                if (assignedRooms.contains(p.getMaPhong())) {
+                    selectedRooms.add(p);
+                }
+            }
+            cbRoomType.setValue("Tất cả"); // Hiển thị tất cả phòng để thấy rõ các phòng đang được highlight
             loadAvailableRooms();
+            btnConfirm.setDisable(selectedRooms.isEmpty());
+            
         } else {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Thông báo");

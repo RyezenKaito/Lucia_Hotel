@@ -123,6 +123,31 @@ public class ChiTietDatPhongDAO {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // CẬP NHẬT THÔNG TIN CHUNG (KHÔNG ĐỔI MÃ PHÒNG) CHO MULTI-ROOM
+    // ─────────────────────────────────────────────────────────────────────────
+    public boolean updateInfoByMaDat(Connection con, String maDat,
+                                  double giaCoc, int soNguoi, String ghiChu) throws SQLException {
+        int roomCount = 1;
+        try (PreparedStatement psCount = con.prepareStatement("SELECT COUNT(*) FROM ChiTietDatPhong WHERE maDat=?")) {
+            psCount.setString(1, maDat);
+            ResultSet rsCount = psCount.executeQuery();
+            if (rsCount.next()) roomCount = Math.max(1, rsCount.getInt(1));
+        }
+
+        double cdpCoc = giaCoc / roomCount;
+        int cdpNguoi = soNguoi / roomCount;
+
+        String sql = "UPDATE ChiTietDatPhong SET giaCoc=?, soNguoi=?, ghiChu=? WHERE maDat=?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setDouble(1, cdpCoc);
+            ps.setInt(2, cdpNguoi);
+            ps.setString(3, ghiChu);
+            ps.setString(4, maDat);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // [THÊM MỚI] LẤY TỔNG TIỀN CỌC CỦA MỘT ĐƠN ĐẶT PHÒNG
     // ─────────────────────────────────────────────────────────────────────────
     public double getTongCocByMaDat(String maDat) {
@@ -138,6 +163,23 @@ public class ChiTietDatPhongDAO {
             e.printStackTrace();
         }
         return 0.0;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // [THÊM MỚI] LẤY KIỂU PHÒNG THEO MÃ ĐẶT 
+    // ─────────────────────────────────────────────────────────────────────────
+    public java.util.List<String> getMaPhongByMaDat(String maDat) {
+        java.util.List<String> list = new java.util.ArrayList<>();
+        String sql = "SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, maDat);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) list.add(rs.getString(1));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

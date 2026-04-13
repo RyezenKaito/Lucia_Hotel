@@ -100,6 +100,24 @@ public class KhachHangDAO {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // TÌM THEO CCCD
+    // ─────────────────────────────────────────────────────────────────────────
+    public KhachHang findByCCCD(String cccd) {
+        String sql = "SELECT * FROM KH WHERE soCCCD = ?";
+        try {
+            Connection con = ConnectDatabase.getInstance().getConnection();
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, cccd);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next())
+                return mapRow(rs);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // TÌM THEO MÃ (LIKE)
     // ─────────────────────────────────────────────────────────────────────────
     public KhachHang findKhachHangByID(String keyword) {

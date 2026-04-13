@@ -292,10 +292,12 @@ public class DatPhongView extends BorderPane {
 
         String sql = """
                 SELECT dp.maDat, kh.tenKH, kh.soDT,
-                       ctdp.maPhong, dp.ngayCheckIn, dp.ngayCheckOut,
-                       ctdp.soNguoi, ctdp.giaCoc,
+                       STRING_AGG(ctdp.maPhong, ', ') as maPhong, 
+                       dp.ngayCheckIn, dp.ngayCheckOut,
+                       SUM(ctdp.soNguoi) as soNguoi, 
+                       SUM(ctdp.giaCoc) as giaCoc,
                        CASE
-                           WHEN p.tinhTrang = N'DANGSUDUNG' THEN 'DANG_O'
+                           WHEN MAX(p.tinhTrang) = N'DANGSUDUNG' THEN 'DANG_O'
                            WHEN dp.ngayCheckOut < GETDATE() THEN 'DA_TRA'
                            ELSE 'DA_DAT'
                        END AS trangThai
@@ -303,6 +305,7 @@ public class DatPhongView extends BorderPane {
                 JOIN KH kh ON dp.maKH = kh.maKH
                 LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
                 LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
+                GROUP BY dp.maDat, kh.tenKH, kh.soDT, dp.ngayCheckIn, dp.ngayCheckOut, dp.ngayDat
                 ORDER BY dp.ngayDat DESC
                 """;
 
