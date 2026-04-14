@@ -112,8 +112,8 @@ public class DatPhongView extends BorderPane {
                 buildStatCard("Tổng", lblTotal, "#1f2937"),
                 buildStatCard("Chờ xác nhận", lblChoXacNhan, "#d97706"),
                 buildStatCard("Đã xác nhận", lblDaDat, C_ACTIVE),
-                buildStatCard("Đã check-in", lblDangO, "#16a34a"),
-                buildStatCard("Đã trả", lblDaTra, C_TEXT_MUTED));
+                buildStatCard("Đã nhận phòng", lblDangO, "#16a34a"),
+                buildStatCard("Đã trả phòng", lblDaTra, C_TEXT_MUTED));
 
         row2.getChildren().addAll(txtSearch, spacer2, stats);
         header.getChildren().addAll(row1, row2);
@@ -166,14 +166,14 @@ public class DatPhongView extends BorderPane {
             });
 
             ContextMenu ctx = new ContextMenu();
-            MenuItem miEdit = new MenuItem("✏ Sửa đơn đặt phòng");
-            miEdit.setOnAction(e -> {
+            MenuItem miDetail = new MenuItem("Xem chi tiết");
+            miDetail.setStyle("-fx-font-size: 13px;");
+            miDetail.setOnAction(e -> {
                 Object[] r = row.getItem();
-                if (r != null)
-                    openEditDialog(r);
+                if (r != null) openDetailDialog((String) r[0]);
             });
 
-            MenuItem miDelete = new MenuItem("🗑 Xóa đơn đặt phòng");
+            MenuItem miDelete = new MenuItem("Xóa đơn đặt phòng");
             miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miDelete.setOnAction(e -> {
                 Object[] r = row.getItem();
@@ -181,12 +181,12 @@ public class DatPhongView extends BorderPane {
                     confirmDelete(r);
             });
 
-            ctx.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
+            ctx.getItems().addAll(miDetail, new SeparatorMenuItem(), miDelete);
             row.setContextMenu(ctx);
 
             row.setOnMouseClicked(e -> {
-                if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2 && !row.isEmpty()) {
-                    openEditDialog(row.getItem());
+                if (e.getClickCount() == 2 && !row.isEmpty()) {
+                    openDetailDialog((String) row.getItem()[0]);
                 }
             });
 
@@ -375,14 +375,16 @@ public class DatPhongView extends BorderPane {
     // Gọi form Thêm
     private void openAddDialog() {
         Window owner = getScene().getWindow();
-        new ThemSuaDatPhongDialog(owner, null, this::loadData).showDialog();
+        new ThemSuaDatPhongDialog(owner, this::loadData).showDialog();
     }
 
-    // Gọi form Cập nhật
-    private void openEditDialog(Object[] row) {
+    private void openDetailDialog(String maDat) {
+        if (maDat == null) return;
         Window owner = getScene().getWindow();
-        new ThemSuaDatPhongDialog(owner, row, this::loadData).showDialog();
+        new ThemSuaDatPhongDialog(owner, maDat, this::loadData).showDialog();
     }
+
+
 
     private void confirmDelete(Object[] row) {
         String maDat = (String) row[0];

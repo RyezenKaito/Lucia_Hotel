@@ -156,17 +156,9 @@ public class HoaDonView extends BorderPane {
         colTienCoc.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTienCoc.setMinWidth(120);
 
-        TableColumn<HoaDon, String> colNgayThanhToan = new TableColumn<>("Ngày thanh toán");
-        colNgayThanhToan.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayThanhToan() != null
-                ? p.getValue().getNgayThanhToan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
-                : "—"));
-        colNgayThanhToan.setStyle("-fx-alignment: CENTER;");
-        colNgayThanhToan.setMinWidth(140);
-
         table.getColumns().add(colMa);
         table.getColumns().add(colKhach);
         table.getColumns().add(colNgay);
-        table.getColumns().add(colNgayThanhToan);
         table.getColumns().add(colTienPhong);
         table.getColumns().add(colTienCoc);
         table.getColumns().add(colTong);

@@ -25,18 +25,13 @@ public class ConnectDatabase {
 		return instance;
 	}
 
-	public Connection getConnection() {
+	public synchronized Connection getConnection() {
 		try {
-			if (con == null || con.isClosed()) {
-				con = DriverManager.getConnection(URL, USER, PASSWORD);
-				System.out.println("Kết nối database thành công.");
-			}
+			return DriverManager.getConnection(URL, USER, PASSWORD);
 		} catch (SQLException e) {
-			// TODO: handle exception
 			System.err.println("Lỗi kết nối Database: " + e.getMessage());
 		}
-
-		return con;
+		return null;
 	}
 
 	public void disconnect() {

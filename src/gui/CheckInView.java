@@ -2,9 +2,12 @@ package gui;
 
 import dao.DatPhongDAO;
 import dao.ChiTietDatPhongDAO;
+import dao.ChiTietHoaDonDAO;
 import dao.HoaDonDAO;
 import dao.PhongDAO;
 import model.entities.*;
+import connectDatabase.ConnectDatabase;
+import java.sql.*;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -41,6 +44,7 @@ public class CheckInView extends BorderPane {
     /* -- DAO -- */
     private final DatPhongDAO datPhongDAO = new DatPhongDAO();
     private final ChiTietDatPhongDAO ctdpDAO = new ChiTietDatPhongDAO();
+    private final ChiTietHoaDonDAO cthdDAO = new ChiTietHoaDonDAO();
     private final HoaDonDAO hoaDonDAO = new HoaDonDAO();
     private final PhongDAO phongDAO = new PhongDAO();
 
@@ -75,10 +79,10 @@ public class CheckInView extends BorderPane {
         header.setPadding(new Insets(0, 0, 24, 0));
 
         VBox titleBox = new VBox(4);
-        Label lblTitle = new Label("Thu tuc nhan phong");
+        Label lblTitle = new Label("Thủ tục nhận phòng");
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
         lblTitle.setTextFill(Color.web(C_TEXT_DARK));
-        Label lblSub = new Label("Tim don dat phong theo ma dat, so dien thoai hoac CCCD");
+        Label lblSub = new Label("Tìm đơn đặt phòng theo mã đặt, số điện thoại hoặc CCCD");
         lblSub.setFont(Font.font("Segoe UI", 14));
         lblSub.setTextFill(Color.web(C_TEXT_GRAY));
         titleBox.getChildren().addAll(lblTitle, lblSub);
@@ -87,7 +91,7 @@ public class CheckInView extends BorderPane {
         searchRow.setAlignment(Pos.CENTER_LEFT);
 
         txtSearch = new TextField();
-        txtSearch.setPromptText("Nhap ma dat phong, so dien thoai hoac so CCCD...");
+        txtSearch.setPromptText("Nhập mã đặt phòng, số điện thoại hoặc CCCD");
         txtSearch.setPrefHeight(48);
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
         txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER
@@ -104,7 +108,7 @@ public class CheckInView extends BorderPane {
         searchRow.getChildren().addAll(txtSearch, btnSearch);
 
         VBox quickBox = new VBox(8);
-        Label lblQuick = new Label("Goi y don hom nay (cho nhan phong):");
+        Label lblQuick = new Label("Gợi ý đơn trong hôm nay (chờ nhận phòng):");
         lblQuick.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
         lblQuick.setTextFill(Color.web(C_TEXT_GRAY));
         quickSearchFlow = new FlowPane(10, 10);
@@ -131,7 +135,7 @@ public class CheckInView extends BorderPane {
                 + C_BORDER + "; -fx-border-radius: 12;");
         detailSection.setEffect(new DropShadow(10, 0, 4, Color.web("#00000008")));
         detailSection.setAlignment(Pos.CENTER);
-        Label lblNoData = new Label("Chua co thong tin don dat phong");
+        Label lblNoData = new Label("Chưa có thông tin đơn đặt phòng");
         lblNoData.setTextFill(Color.web(C_TEXT_GRAY));
         detailSection.getChildren().add(lblNoData);
         leftCol.getChildren().add(detailSection);
@@ -147,11 +151,11 @@ public class CheckInView extends BorderPane {
         roomContainer.setEffect(new DropShadow(10, 0, 4, Color.web("#00000008")));
         VBox.setVgrow(roomContainer, Priority.ALWAYS);
 
-        Label lblRoomTitle = new Label("Phong trong don dat");
+        Label lblRoomTitle = new Label("Phòng trong đơn đặt");
         lblRoomTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         lblRoomTitle.setTextFill(Color.web(C_TEXT_DARK));
 
-        Label lblRoomHint = new Label("Cac phong duoi day se duoc ban giao cho khach khi xac nhan.");
+        Label lblRoomHint = new Label("Các phòng dưới này sẽ được bàn giao cho khách khi xác nhận");
         lblRoomHint.setFont(Font.font("Segoe UI", 13));
         lblRoomHint.setTextFill(Color.web(C_TEXT_GRAY));
         lblRoomHint.setWrapText(true);
@@ -168,7 +172,7 @@ public class CheckInView extends BorderPane {
         actionRow.setAlignment(Pos.CENTER_RIGHT);
         actionRow.setPadding(new Insets(12, 0, 0, 0));
 
-        Button btnCancel = new Button("Huy bo");
+        Button btnCancel = new Button("Hủy bỏ");
         btnCancel.setPrefHeight(44);
         btnCancel.setMinWidth(100);
         btnCancel.setCursor(Cursor.HAND);
@@ -176,7 +180,7 @@ public class CheckInView extends BorderPane {
                 "-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563; -fx-background-radius: 8; -fx-font-weight: bold;");
         btnCancel.setOnAction(e -> resetView());
 
-        btnConfirm = new Button("XAC NHAN NHAN PHONG");
+        btnConfirm = new Button("Xác nhận phòng");
         btnConfirm.setPrefHeight(44);
         btnConfirm.setMinWidth(220);
         btnConfirm.setCursor(Cursor.HAND);
@@ -197,7 +201,7 @@ public class CheckInView extends BorderPane {
         quickSearchFlow.getChildren().clear();
         List<String> suggestions = datPhongDAO.getMaDatPhongCheckInHomNay();
         if (suggestions.isEmpty()) {
-            Label lbl = new Label("Khong co don cho hom nay");
+            Label lbl = new Label("Không có đơn cho hôm nay");
             lbl.setFont(Font.font("Segoe UI", 13));
             lbl.setTextFill(Color.web(C_TEXT_GRAY));
             quickSearchFlow.getChildren().add(lbl);
@@ -275,7 +279,7 @@ public class CheckInView extends BorderPane {
     private void updateRoomListUI() {
         roomListSection.getChildren().clear();
         if (currentMaPhongs == null || currentMaPhongs.isEmpty()) {
-            Label lbl = new Label("Don nay chua co phong nao duoc phan cong.");
+            Label lbl = new Label("Đơn này chưa có phòng nào được phân công");
             lbl.setTextFill(Color.web("#d97706"));
             lbl.setWrapText(true);
             roomListSection.getChildren().add(lbl);
@@ -305,17 +309,15 @@ public class CheckInView extends BorderPane {
      * Xac nhan check-in:
      * 1. Update phong -> DANGSUDUNG (tung phong)
      * 2. Update don -> DA_CHECKIN (trong transaction)
-     * 3. Tao 1 HoaDon cho don (neu chua co) trong transaction
      */
     private void handleConfirm() {
         if (currentDatPhong == null || currentMaPhongs == null || currentMaPhongs.isEmpty())
             return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Phong: " + String.join(", ", currentMaPhongs)
-                        + "\n\nHe thong se:\n - Cap nhat phong -> Dang su dung"
-                        + "\n - Cap nhat don -> Da check-in"
-                        + "\n - Tao hoa don (thanh toan luc tra phong)",
+                "Ban giao phong: " + String.join(", ", currentMaPhongs)
+                        + "\n\nHe thong se:\n - Cap nhat trang thai phong -> Dang su dung"
+                        + "\n - Cap nhat don dat phong -> Da nhan phong",
                 ButtonType.OK, ButtonType.CANCEL);
         confirm.setTitle("Xac nhan Check-in");
         confirm.setHeaderText("Xac nhan cho khach " + currentDatPhong.getKhachHang().getTenKH()
@@ -324,67 +326,54 @@ public class CheckInView extends BorderPane {
         confirm.showAndWait().ifPresent(btn -> {
             if (btn != ButtonType.OK)
                 return;
-            // Prepare data before transaction to avoid connection close issues
-            HoaDon existing = hoaDonDAO.getByMaDat(currentDatPhong.getMaDat());
-            final String finalMaHD = (existing != null) ? existing.getMaHD() : hoaDonDAO.generateMaHD();
-            final double tongCoc = (existing == null) ? ctdpDAO.getTongCocByMaDat(currentDatPhong.getMaDat()) : 0;
 
-            try (java.sql.Connection con = connectDatabase.ConnectDatabase.getInstance().getConnection()) {
+            try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+                if (con == null) return;
                 con.setAutoCommit(false);
                 try {
-                    // 1. Cap nhat tung phong DANGSUDUNG
-                    for (String maPhong : currentMaPhongs)
-                        phongDAO.updateTrangThaiWithCon(con, maPhong, "DANGSUDUNG");
-
-                    // 2. Cap nhat don DA_CHECKIN
-                    datPhongDAO.updateTrangThaiWithCon(con, currentDatPhong.getMaDat(), "DA_CHECKIN");
-
-                    // 3. Tao HoaDon neu chua ton tai
-                    if (existing == null) {
-                        HoaDon hd = new HoaDon();
-                        hd.setMaHD(finalMaHD);
-                        hd.setDatPhong(currentDatPhong);
-                        NhanVien nv = new NhanVien();
-                        nv.setMaNV(staff != null ? staff.getMaNV() : "ADMIN");
-                        hd.setNhanVien(nv);
-                        hd.setTienPhong(0.0);
-                        hd.setTienDV(0.0);
-                        hd.setTienCoc(tongCoc);
-                        hd.setThueVAT(0.0);
-                        hd.setTongTien(0.0);
-                        hd.setLoaiHD("HOA_DON_PHONG");
-                        hd.setTrangThaiThanhToan(tongCoc > 0 ? "DA_THANH_TOAN_COC" : "CHUA_THANH_TOAN");
-                        hoaDonDAO.insertWithConnection(con, hd);
+                    HoaDon hd = hoaDonDAO.getByMaDat(currentDatPhong.getMaDat());
+                    
+                    String baseMaCTHD = cthdDAO.generateMaCTHD();
+                    int lastNum = 0;
+                    if (baseMaCTHD != null && baseMaCTHD.length() > 4) {
+                        try {
+                            lastNum = Integer.parseInt(baseMaCTHD.substring(4));
+                        } catch (Exception ignored) {}
                     }
+
+                    // 1. Cập nhật phòng -> DANGSUDUNG & tạo ChiTietHoaDon
+                    for (String maPhong : currentMaPhongs) {
+                        phongDAO.updateTrangThaiWithCon(con, maPhong, "DANGSUDUNG");
+                        String maCTDP = datPhongDAO.findMaCTDPByMaPhong(currentDatPhong.getMaDat(), maPhong);
+                        if (maCTDP != null && hd != null) {
+                            String maCTHD = String.format("CTHD%03d", lastNum++);
+                            cthdDAO.insertWithConnection(con, maCTHD, hd.getMaHD(), maCTDP, 0, 0);
+                        }
+                    }
+
+                    // 2. Cập nhật Đơn đặt phòng -> DA_CHECKIN
+                    datPhongDAO.updateTrangThaiWithCon(con, currentDatPhong.getMaDat(), "DA_CHECKIN");
 
                     con.commit();
 
                     Alert ok = new Alert(Alert.AlertType.INFORMATION,
-                            "Cac phong [" + String.join(", ", currentMaPhongs) + "] da ban giao.\n"
-                                    + "Hoa don: " + finalMaHD + " (thanh toan khi tra phong).",
+                            "Các phòng [" + String.join(", ", currentMaPhongs) + "] đã bàn giao thành công.",
                             ButtonType.OK);
-                    ok.setTitle("Check-in thanh cong");
-                    ok.setHeaderText("Check-in hoan tat!");
+                    ok.setTitle("Check-in thành công");
+                    ok.setHeaderText("Check-in hoàn tất!");
                     ok.showAndWait();
 
                     resetView();
                     loadQuickSuggestions();
-
                 } catch (Exception ex) {
-                    try {
-                        con.rollback();
-                    } catch (Exception ignored) {
-                    }
+                    con.rollback();
                     throw ex;
                 } finally {
-                    try {
-                        con.setAutoCommit(true);
-                    } catch (Exception ignored) {
-                    }
+                    con.setAutoCommit(true);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                new Alert(Alert.AlertType.ERROR, "Chi tiet: " + ex.getMessage(), ButtonType.OK).showAndWait();
+                new Alert(Alert.AlertType.ERROR, "Lỗi Check-in: " + ex.getMessage(), ButtonType.OK).showAndWait();
             }
         });
     }
@@ -399,15 +388,9 @@ public class CheckInView extends BorderPane {
         if (detailSection != null) {
             detailSection.getChildren().clear();
             detailSection.setAlignment(Pos.CENTER);
-            Label lbl = new Label("Chua co thong tin don dat phong");
+            Label lbl = new Label("Chưa có thông tin đơn đặt phòng");
             lbl.setTextFill(Color.web(C_TEXT_GRAY));
             detailSection.getChildren().add(lbl);
-        }
-        if (roomListSection != null) {
-            roomListSection.getChildren().clear();
-            Label lbl = new Label("Tim don de xem danh sach phong can ban giao.");
-            lbl.setTextFill(Color.web(C_TEXT_GRAY));
-            roomListSection.getChildren().add(lbl);
         }
     }
 

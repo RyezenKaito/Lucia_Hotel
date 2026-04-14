@@ -73,7 +73,7 @@ public class QuanLyPhongView extends BorderPane {
 
         VBox titleBox = new VBox(4);
         HBox.setHgrow(titleBox, Priority.ALWAYS);
-        Label lblTitle = new Label("Danh sách phòng");
+        Label lblTitle = new Label("Quản lý phòng sách phòng");
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
         lblTitle.setTextFill(Color.web(C_TEXT_DARK));
         Label lblSubtitle = new Label("Quản lý và theo dõi trạng thái danh sách phòng");

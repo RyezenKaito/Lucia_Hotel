@@ -77,7 +77,7 @@ public class CheckOutView extends BorderPane {
     private double   currentLateFee    = 0;
     private double   currentTongTien   = 0;
     private long     currentSoDem      = 0;
-    private ComboBox<String> cmbPhuongThuc;
+
 
     /* ── State (search theo đơn) ────────────────────────────────────── */
     private List<Object[]> currentRoomList; // [{maCTDP, maPhong, giaCoc, giaPhong}]
@@ -550,7 +550,7 @@ public class CheckOutView extends BorderPane {
                 if (ok) {
                     Alert s = new Alert(Alert.AlertType.INFORMATION);
                     s.setTitle("Thành công");
-                    s.setHeaderText("✅ Đã thanh toán và trả phòng " + currentMaPhong);
+                    s.setHeaderText("Đã thanh toán và trả phòng " + currentMaPhong);
                     s.setContentText("Phòng: " + currentMaPhong + "\nKhách: " + currentDatPhong.getKhachHang().getTenKH()
                             + "\nTổng: " + String.format("%,.0f đ", currentTongTien));
                     s.showAndWait();
@@ -583,10 +583,15 @@ public class CheckOutView extends BorderPane {
                 hoaDonDAO.insert(hd);
             }
 
-            // 2. Insert ChiTietHoaDon cho phòng này
+            // 2. Update ChiTietHoaDon cho phòng này
             if (currentMaCTDP != null) {
-                String maCTHD = cthdDAO.generateMaCTHD();
-                cthdDAO.insert(maCTHD, hd.getMaHD(), currentMaCTDP, currentSoDem, finalTienPhong);
+                String maCTHD = cthdDAO.getMaCTHDByMaCTDP(currentMaCTDP);
+                if (maCTHD != null) {
+                    cthdDAO.updateLuuTruVaTien(maCTHD, currentSoDem, finalTienPhong);
+                } else {
+                    maCTHD = cthdDAO.generateMaCTHD();
+                    cthdDAO.insert(maCTHD, hd.getMaHD(), currentMaCTDP, currentSoDem, finalTienPhong);
+                }
             }
 
             // 3. Update trạng thái phòng -> CONTRONG
@@ -599,12 +604,12 @@ public class CheckOutView extends BorderPane {
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(currentTienDV);
             hd.setTongTien(newTongTien);
+            hd.setNgayTaoHD(LocalDateTime.now());
             
             // 5. Nếu hết phòng trong đơn -> hoàn tất đơn & hóa đơn
             if (datPhongDAO.isAllRoomsCheckedOut(currentDatPhong.getMaDat())) {
                 datPhongDAO.updateTrangThai(currentDatPhong.getMaDat(), "DA_CHECKOUT");
                 hd.setTrangThaiThanhToan("DA_THANH_TOAN");
-                hd.setNgayThanhToan(LocalDateTime.now());
             }
 
             return hoaDonDAO.updateTongTien(hd);
@@ -679,9 +684,14 @@ public class CheckOutView extends BorderPane {
                 double giaPhong = (double) room[3];
                 double tienPhong = soDem * giaPhong;
 
-                // 2. Link HoaDon ↔ CTDP
-                String maCTHD = cthdDAO.generateMaCTHD();
-                cthdDAO.insert(maCTHD, hd.getMaHD(), maCTDP, soDem, tienPhong);
+                // 2. Update ChiTietHoaDon cho phòng này
+                String maCTHD = cthdDAO.getMaCTHDByMaCTDP(maCTDP);
+                if (maCTHD != null) {
+                    cthdDAO.updateLuuTruVaTien(maCTHD, soDem, tienPhong);
+                } else {
+                    maCTHD = cthdDAO.generateMaCTHD();
+                    cthdDAO.insert(maCTHD, hd.getMaHD(), maCTDP, soDem, tienPhong);
+                }
 
                 // 3. Update trạng thái phòng
                 phongDAO.updateTrangThai(maPhong, "CONTRONG");
@@ -697,12 +707,12 @@ public class CheckOutView extends BorderPane {
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(tienDV);
             hd.setTongTien(newTongTien);
+            hd.setNgayTaoHD(now);
 
             // 5. Kiểm tra nếu hết phòng → update đơn & hóa đơn
             if (datPhongDAO.isAllRoomsCheckedOut(currentDatPhong.getMaDat())) {
                 datPhongDAO.updateTrangThai(currentDatPhong.getMaDat(), "DA_CHECKOUT");
                 hd.setTrangThaiThanhToan("DA_THANH_TOAN");
-                hd.setNgayThanhToan(now);
             }
             return hoaDonDAO.updateTongTien(hd);
         } catch (Exception e) {

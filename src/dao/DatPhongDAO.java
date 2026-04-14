@@ -84,9 +84,11 @@ public class DatPhongDAO {
                 dp.setTrangThai(rs.getString("trangThai"));
 
                 dp.setNgayCheckIn(
-                        rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay() : null);
+                        rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay()
+                                : null);
                 dp.setNgayCheckOut(
-                        rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay() : null);
+                        rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay()
+                                : null);
 
                 return dp;
             }
@@ -108,10 +110,12 @@ public class DatPhongDAO {
             pstmt.setTimestamp(2, dp.getNgayDat() != null ? Timestamp.valueOf(dp.getNgayDat())
                     : Timestamp.valueOf(LocalDateTime.now()));
             pstmt.setString(3, dp.getKhachHang().getMaKH());
-            
+
             // SỬA Ở ĐÂY: Lấy LocalDateTime -> LocalDate -> java.sql.Date
-            pstmt.setDate(4, dp.getNgayCheckIn() != null ? java.sql.Date.valueOf(dp.getNgayCheckIn().toLocalDate()) : null);
-            pstmt.setDate(5, dp.getNgayCheckOut() != null ? java.sql.Date.valueOf(dp.getNgayCheckOut().toLocalDate()) : null);
+            pstmt.setDate(4,
+                    dp.getNgayCheckIn() != null ? java.sql.Date.valueOf(dp.getNgayCheckIn().toLocalDate()) : null);
+            pstmt.setDate(5,
+                    dp.getNgayCheckOut() != null ? java.sql.Date.valueOf(dp.getNgayCheckOut().toLocalDate()) : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
@@ -194,14 +198,17 @@ public class DatPhongDAO {
                 DatPhong dp = new DatPhong();
                 dp.setMaDat(rs.getString("maDat"));
                 dp.setNgayDat(rs.getTimestamp("ngayDat") != null
-                        ? rs.getTimestamp("ngayDat").toLocalDateTime() : null);
+                        ? rs.getTimestamp("ngayDat").toLocalDateTime()
+                        : null);
                 dp.setKhachHang(kh);
-                
+
                 // SỬA Ở ĐÂY: Date -> LocalDate -> LocalDateTime
                 dp.setNgayCheckIn(rs.getDate("ngayCheckIn") != null
-                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay() : null);
+                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay()
+                        : null);
                 dp.setNgayCheckOut(rs.getDate("ngayCheckOut") != null
-                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay() : null);
+                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay()
+                        : null);
 
                 double giaCoc = rs.getDouble("giaCoc");
                 double giaPhong = rs.getDouble("giaPhong");
@@ -249,39 +256,35 @@ public class DatPhongDAO {
                 "    INSERT (maDV, maCTHD, ngaySuDung, soLuong, giaDV, trangThai) " +
                 "    VALUES (source.maDV, source.maCTHD, GETDATE(), source.soLuong, source.giaDV, 0);";
 
-        Connection con = null;
-        try {
-            con = ConnectDatabase.getInstance().getConnection();
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            if (con == null)
+                return false;
             con.setAutoCommit(false);
-
-            try (PreparedStatement ps = con.prepareStatement(sql)) {
-                for (java.util.Map.Entry<model.entities.DichVu, Integer> entry : cart.entrySet()) {
-                    ps.setString(1, entry.getKey().getMaDV());
-                    ps.setString(2, maCTHD);
-                    ps.setInt(3, entry.getValue());
-                    if (entry.getKey().getGia() == null) continue; // Skip services without price
-                    ps.setDouble(4, entry.getKey().getGia());
-                    ps.addBatch();
+            try {
+                try (PreparedStatement ps = con.prepareStatement(sql)) {
+                    for (java.util.Map.Entry<model.entities.DichVu, Integer> entry : cart.entrySet()) {
+                        if (entry.getKey().getGia() == null)
+                            continue;
+                        ps.setString(1, entry.getKey().getMaDV());
+                        ps.setString(2, maCTHD);
+                        ps.setInt(3, entry.getValue());
+                        ps.setDouble(4, entry.getKey().getGia());
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
                 }
-                ps.executeBatch();
+                con.commit();
+                return true;
+            } catch (SQLException e) {
+                con.rollback();
+                e.printStackTrace();
+                return false;
+            } finally {
+                con.setAutoCommit(true);
             }
-
-            con.commit();
-            return true;
         } catch (SQLException e) {
-            if (con != null)
-                try {
-                    con.rollback();
-                } catch (SQLException ex) {
-                }
             e.printStackTrace();
             return false;
-        } finally {
-            if (con != null)
-                try {
-                    con.setAutoCommit(true);
-                } catch (SQLException ex) {
-                }
         }
     }
 
@@ -303,32 +306,37 @@ public class DatPhongDAO {
         String sql = "SELECT maDat FROM DatPhong WHERE maDat LIKE 'DP%'";
         int max = 0;
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 String val = rs.getString(1);
                 if (val != null && val.length() > 2) {
                     try {
                         int num = Integer.parseInt(val.substring(2).trim());
-                        if (num > max) max = num;
-                    } catch (NumberFormatException ignored) {}
+                        if (num > max)
+                            max = num;
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return String.format("DP%03d", max + 1);
     }
 
-    // Các hàm dưới đây nhận trực tiếp LocalDate từ UI Dialog truyền xuống nên không cần sửa
+    // Các hàm dưới đây nhận trực tiếp LocalDate từ UI Dialog truyền xuống nên không
+    // cần sửa
     /** Insert đơn đặt phòng (trangThai mặc định CHO_XACNHAN) */
     public boolean insertWithConnection(Connection con, String maDat, String maKH,
-                                        LocalDate checkIn, LocalDate checkOut) throws SQLException {
+            LocalDate checkIn, LocalDate checkOut) throws SQLException {
         return insertWithConnection(con, maDat, maKH, checkIn, checkOut, "CHO_XACNHAN");
     }
 
     /** Insert đơn đặt phòng với trangThai tuỳ chọn */
     public boolean insertWithConnection(Connection con, String maDat, String maKH,
-                                        LocalDate checkIn, LocalDate checkOut,
-                                        String trangThai) throws SQLException {
+            LocalDate checkIn, LocalDate checkOut,
+            String trangThai) throws SQLException {
         String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES(?,GETDATE(),?,?,?,?)";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDat);
@@ -340,18 +348,19 @@ public class DatPhongDAO {
         }
     }
 
-    /** Update trangThai dùng chung Connection (trong transaction) */
-    public boolean updateTrangThaiWithCon(Connection con, String maDat, String trangThai) throws SQLException {
-        String sql = "UPDATE DatPhong SET trangThai = ? WHERE maDat = ?";
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, trangThai);
-            ps.setString(2, maDat);
-            return ps.executeUpdate() > 0;
-        }
-    }
+    // /** Update trangThai dùng chung Connection (trong transaction) */
+    // public boolean updateTrangThaiWithCon(Connection con, String maDat, String
+    // trangThai) throws SQLException {
+    // String sql = "UPDATE DatPhong SET trangThai = ? WHERE maDat = ?";
+    // try (PreparedStatement ps = con.prepareStatement(sql)) {
+    // ps.setString(1, trangThai);
+    // ps.setString(2, maDat);
+    // return ps.executeUpdate() > 0;
+    // }
+    // }
 
     public boolean updateNgayCheckInOut(Connection con, String maDat,
-                                        LocalDate checkIn, LocalDate checkOut) throws SQLException {
+            LocalDate checkIn, LocalDate checkOut) throws SQLException {
         String sql = "UPDATE DatPhong SET ngayCheckIn=?, ngayCheckOut=? WHERE maDat=?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(checkIn));
@@ -367,32 +376,34 @@ public class DatPhongDAO {
     /**
      * Cập nhật trạng thái đơn đặt phòng
      */
-    public boolean updateTrangThai(String maDat, String trangThai) {
-        String sql = "UPDATE DatPhong SET trangThai = ? WHERE maDat = ?";
-        try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, trangThai);
-            ps.setString(2, maDat);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
+    // public boolean updateTrangThai(String maDat, String trangThai) {
+    // String sql = "UPDATE DatPhong SET trangThai = ? WHERE maDat = ?";
+    // try (Connection con = ConnectDatabase.getInstance().getConnection();
+    // PreparedStatement ps = con.prepareStatement(sql)) {
+    // ps.setString(1, trangThai);
+    // ps.setString(2, maDat);
+    // return ps.executeUpdate() > 0;
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return false;
+    // }
+    // }
 
     /**
      * Kiểm tra xem tất cả phòng trong đơn đã checkout chưa.
-     * (Tất cả phòng trong CTDP có trạng thái CONTRONG → đơn đủ điều kiện DA_CHECKOUT)
+     * (Tất cả phòng trong CTDP có trạng thái CONTRONG → đơn đủ điều kiện
+     * DA_CHECKOUT)
      */
     public boolean isAllRoomsCheckedOut(String maDat) {
         String sql = "SELECT COUNT(*) FROM ChiTietDatPhong ctdp " +
-                     "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                     "WHERE ctdp.maDat = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "WHERE ctdp.maDat = ? AND p.tinhTrang = N'DANGSUDUNG'";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDat);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getInt(1) == 0; // không còn phòng DANGSUDUNG nào
+            if (rs.next())
+                return rs.getInt(1) == 0; // không còn phòng DANGSUDUNG nào
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -401,15 +412,16 @@ public class DatPhongDAO {
 
     /**
      * Lấy thông tin checkout của toàn đơn (tất cả phòng đang DANGSUDUNG trong đơn)
-     * Trả về: [DatPhong, List<Object[]>] trong đó mỗi Object[] = {maCTDP, maPhong, giaCoc, giaPhong}
+     * Trả về: [DatPhong, List<Object[]>] trong đó mỗi Object[] = {maCTDP, maPhong,
+     * giaCoc, giaPhong}
      */
     public Object[] findCheckOutInfoByMaDat(String maDat) {
         String sqlDp = "SELECT dp.*, kh.maKH, kh.tenKH, kh.soDT, kh.soCCCD " +
-                       "FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH " +
-                       "WHERE dp.maDat = ?";
+                "FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH " +
+                "WHERE dp.maDat = ?";
         DatPhong dp = null;
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sqlDp)) {
+                PreparedStatement ps = con.prepareStatement(sqlDp)) {
             ps.setString(1, maDat);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -421,38 +433,41 @@ public class DatPhongDAO {
                 dp.setKhachHang(kh);
                 dp.setTrangThai(rs.getString("trangThai"));
                 dp.setNgayCheckIn(rs.getDate("ngayCheckIn") != null
-                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay() : null);
+                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay()
+                        : null);
                 dp.setNgayCheckOut(rs.getDate("ngayCheckOut") != null
-                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay() : null);
+                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay()
+                        : null);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (dp == null) return null;
+        if (dp == null)
+            return null;
 
         // Lấy tất cả phòng DANGSUDUNG của đơn
         String sqlRooms = "SELECT ctdp.maCTDP, ctdp.maPhong, ctdp.giaCoc, lp.gia AS giaPhong " +
-                          "FROM ChiTietDatPhong ctdp " +
-                          "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                          "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
-                          "WHERE ctdp.maDat = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "FROM ChiTietDatPhong ctdp " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
+                "WHERE ctdp.maDat = ? AND p.tinhTrang = N'DANGSUDUNG'";
         java.util.List<Object[]> roomList = new java.util.ArrayList<>();
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sqlRooms)) {
+                PreparedStatement ps = con.prepareStatement(sqlRooms)) {
             ps.setString(1, maDat);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                roomList.add(new Object[]{
-                    rs.getString("maCTDP"),
-                    rs.getString("maPhong"),
-                    rs.getDouble("giaCoc"),
-                    rs.getDouble("giaPhong")
+                roomList.add(new Object[] {
+                        rs.getString("maCTDP"),
+                        rs.getString("maPhong"),
+                        rs.getDouble("giaCoc"),
+                        rs.getDouble("giaPhong")
                 });
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new Object[]{dp, roomList};
+        return new Object[] { dp, roomList };
     }
 
     /**
@@ -465,42 +480,80 @@ public class DatPhongDAO {
     public Object[] findEditDetail(String maDat) {
         // Lấy nhiều phòng nếu có
         String sqlPhongs = """
-            SELECT kh.tenKH, kh.soDT, kh.soCCCD, kh.ngaySinh,
-                   dp.ngayCheckIn, dp.ngayCheckOut,
-                   STRING_AGG(ctdp.maPhong, ',') AS dsPhong,
-                   SUM(ctdp.soNguoi) AS soNguoi,
-                   SUM(ctdp.giaCoc) AS giaCoc,
-                   MAX(ctdp.ghiChu) AS ghiChu,
-                   MAX(p.loaiPhong) AS loaiPhong,
-                   MAX(dp.trangThai) AS trangThai
-            FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH
-            LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
-            LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
-            WHERE dp.maDat = ?
-            GROUP BY kh.tenKH, kh.soDT, kh.soCCCD, kh.ngaySinh,
-                     dp.ngayCheckIn, dp.ngayCheckOut
-            """;
+                SELECT kh.tenKH, kh.soDT, kh.soCCCD, kh.ngaySinh,
+                       dp.ngayCheckIn, dp.ngayCheckOut,
+                       STRING_AGG(ctdp.maPhong, ',') AS dsPhong,
+                       SUM(ctdp.soNguoi) AS soNguoi,
+                       SUM(ctdp.giaCoc) AS giaCoc,
+                       MAX(ctdp.ghiChu) AS ghiChu,
+                       MAX(p.loaiPhong) AS loaiPhong,
+                       MAX(dp.trangThai) AS trangThai
+                FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH
+                LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
+                LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
+                WHERE dp.maDat = ?
+                GROUP BY kh.tenKH, kh.soDT, kh.soCCCD, kh.ngaySinh,
+                         dp.ngayCheckIn, dp.ngayCheckOut
+                """;
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sqlPhongs)) {
+                PreparedStatement ps = con.prepareStatement(sqlPhongs)) {
             ps.setString(1, maDat);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return new Object[] {
-                    rs.getString("tenKH"),
-                    rs.getString("soDT"),
-                    rs.getString("soCCCD"),
-                    rs.getDate("ngaySinh") != null ? rs.getDate("ngaySinh").toLocalDate() : null,
-                    rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate() : null,
-                    rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate() : null,
-                    rs.getString("dsPhong"),       // data[6]: "P101,P102"
-                    rs.getObject("soNguoi") != null ? rs.getInt("soNguoi") : 1,  // data[7]
-                    rs.getObject("giaCoc") != null ? rs.getDouble("giaCoc") : 0.0, // data[8]
-                    rs.getString("ghiChu"),        // data[9]
-                    rs.getString("loaiPhong"),     // data[10]
-                    rs.getString("trangThai")      // data[11]
+                        rs.getString("tenKH"),
+                        rs.getString("soDT"),
+                        rs.getString("soCCCD"),
+                        rs.getDate("ngaySinh") != null ? rs.getDate("ngaySinh").toLocalDate() : null,
+                        rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate() : null,
+                        rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate() : null,
+                        rs.getString("dsPhong"), // data[6]: "P101,P102"
+                        rs.getObject("soNguoi") != null ? rs.getInt("soNguoi") : 1, // data[7]
+                        rs.getObject("giaCoc") != null ? rs.getDouble("giaCoc") : 0.0, // data[8]
+                        rs.getString("ghiChu"), // data[9]
+                        rs.getString("loaiPhong"), // data[10]
+                        rs.getString("trangThai") // data[11]
                 };
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
+    }
+
+    public String findMaCTDPByMaPhong(String maDat, String maPhong) {
+        String sql = "SELECT maCTDP FROM ChiTietDatPhong WHERE maDat = ? AND maPhong = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDat);
+            ps.setString(2, maPhong);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next())
+                return rs.getString("maCTDP");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean updateTrangThaiWithCon(Connection con, String maDat, String trangThai) {
+        String sql = "UPDATE DatPhong SET trangThai = ? WHERE maDat = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, trangThai);
+            ps.setString(2, maDat);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateTrangThai(String maDat, String trangThai) {
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            return updateTrangThaiWithCon(con, maDat, trangThai);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

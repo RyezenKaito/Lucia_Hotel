@@ -138,6 +138,23 @@ public class ChiTietHoaDonDAO {
     }
 
     /**
+     * Cập nhật thời gian lưu trú và thành tiền khi trả phòng
+     */
+    public boolean updateLuuTruVaTien(String maCTHD, double thoiGianLuuTru, double thanhTien) {
+        String sql = "UPDATE ChiTietHoaDon SET thoiGianLuuTru = ?, thanhTien = ? WHERE maCTHD = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setDouble(1, thoiGianLuuTru);
+            ps.setDouble(2, thanhTien);
+            ps.setString(3, maCTHD);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
      * Lấy danh sách phòng đã trả trong 1 hóa đơn.
      * Dùng cho popup chi tiết HoaDonView.
      * Trả về list Object[] = {maPhong, tenPhong, tenLoaiPhong, thoiGianLuuTru, thanhTien, giaCoc}

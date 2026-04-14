@@ -3,16 +3,16 @@ GO
 
 -- KH
 INSERT INTO KH (maKH, tenKH, soDT, ngaySinh, soCCCD, email) VALUES
-('KH001', N'Nguyễn Minh Tuấn',   '0909030001', '1990-01-01', '030904567890', 'tuan.nguyen@email.com'),
-('KH002', N'Trần Thị Ngọc Anh',  '0919230002', '1992-02-02', '031924567891', 'anh.tran@email.com'),
-('KH003', N'Lê Văn Đạt',         '0909530003', '1995-10-15', '090954567892', 'dat.le@email.com'),
-('KH004', N'Phạm Thu Thủy',      '0919330004', '1993-05-20', '091934567893', 'thuy.pham@email.com'),
-('KH005', N'Hoàng Lương Khang',  '0908830005', '1988-12-05', '030884567894', 'khang.hoang@email.com'),
-('KH006', N'Đặng Thanh Mai',     '0919930006', '1999-08-30', '031994567895', 'mai.dang@email.com'),
-('KH007', N'Vũ Hải Yến',         '0918530007', '1985-03-12', '091854567896', 'yen.vu@email.com'),
-('KH008', N'Bùi Quốc Anh',       '0909130008', '1991-11-25', '090914567897', 'anh.bui@email.com'),
-('KH009', N'Đỗ Hữu Thiện',       '0909430009', '1994-07-07', '030944567898', 'thien.do@email.com'),
-('KH010', N'Ngô Gia Bảo',        '0909730010', '1997-09-09', '030974567899', 'bao.ngo@email.com');
+('KH001', N'Nguyễn Minh Tuấn',   '0909030001', '1990-01-01', '079190456781', 'tuan.nguyen@email.com'),
+('KH002', N'Trần Thị Ngọc Anh',  '0919230002', '1992-02-02', '079192456782', 'anh.tran@email.com'),
+('KH003', N'Lê Văn Đạt',         '0909530003', '1995-10-15', '079095456783', 'dat.le@email.com'),
+('KH004', N'Phạm Thu Thủy',      '0919330004', '1993-05-20', '079193456784', 'thuy.pham@email.com'),
+('KH005', N'Hoàng Lương Khang',  '0908830005', '1988-12-05', '079088456785', 'khang.hoang@email.com'),
+('KH006', N'Đặng Thanh Mai',     '0919930006', '1999-08-30', '079199456786', 'mai.dang@email.com'),
+('KH007', N'Vũ Hải Yến',         '0918530007', '1985-03-12', '079185456787', 'yen.vu@email.com'),
+('KH008', N'Bùi Quốc Anh',       '0909130008', '1991-11-25', '079090456788', 'anh.bui@email.com'),
+('KH009', N'Đỗ Hữu Thiện',       '0909430009', '1994-07-07', '079094456789', 'thien.do@email.com'),
+('KH010', N'Ngô Gia Bảo',        '0909730010', '1997-09-09', '079097456780', 'bao.ngo@email.com');
 
 -- NV
 -- Thứ tự cột: maNV, hoTen, soDT, soCCCD, diaChi, ngaySinh, ngayVaoLam, trinhDo, mk, role, trangThai, maQL
