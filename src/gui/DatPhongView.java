@@ -45,7 +45,7 @@ public class DatPhongView extends BorderPane {
     private ObservableList<Object[]> masterData = FXCollections.observableArrayList();
     private FilteredList<Object[]> filteredData;
 
-    private Label lblTotal, lblDaDat, lblDangO, lblDaTra;
+    private Label lblTotal, lblDaDat, lblChoXacNhan, lblDangO, lblDaTra;
     private TextField txtSearch;
 
     /* ── Constructor ──────────────────────────────────────────────── */
@@ -102,6 +102,7 @@ public class DatPhongView extends BorderPane {
 
         lblTotal = new Label("0");
         lblDaDat = new Label("0");
+        lblChoXacNhan = new Label("0");
         lblDangO = new Label("0");
         lblDaTra = new Label("0");
 
@@ -109,8 +110,9 @@ public class DatPhongView extends BorderPane {
         stats.setAlignment(Pos.CENTER_RIGHT);
         stats.getChildren().addAll(
                 buildStatCard("Tổng", lblTotal, "#1f2937"),
-                buildStatCard("Đã đặt", lblDaDat, C_ACTIVE),
-                buildStatCard("Đang ở", lblDangO, "#16a34a"),
+                buildStatCard("Chờ xác nhận", lblChoXacNhan, "#d97706"),
+                buildStatCard("Đã xác nhận", lblDaDat, C_ACTIVE),
+                buildStatCard("Đã check-in", lblDangO, "#16a34a"),
                 buildStatCard("Đã trả", lblDaTra, C_TEXT_MUTED));
 
         row2.getChildren().addAll(txtSearch, spacer2, stats);
@@ -237,17 +239,25 @@ public class DatPhongView extends BorderPane {
                 badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 String bg, fg;
                 switch (item) {
-                    case "DANG_O" -> {
+                    case "DA_CHECKIN" -> {
                         bg = "#d1fae5";
                         fg = "#065f46";
                     }
-                    case "DA_TRA" -> {
+                    case "DA_CHECKOUT" -> {
                         bg = "#f3f4f6";
                         fg = "#6b7280";
                     }
                     case "DA_HUY" -> {
                         bg = "#fee2e2";
                         fg = "#b91c1c";
+                    }
+                    case "DA_XACNHAN" -> {
+                        bg = "#ecfdf5";
+                        fg = "#10b981";
+                    }
+                    case "CHO_XACNHAN" -> {
+                        bg = "#fef3c7";
+                        fg = "#d97706";
                     }
                     default -> {
                         bg = "#dbeafe";
@@ -288,24 +298,20 @@ public class DatPhongView extends BorderPane {
     /* ── DATA ────────────────────────────────────────────────────── */
     public void loadData() {
         masterData.clear();
-        long cntDaDat = 0, cntDangO = 0, cntDaTra = 0;
+        long cntDaDat = 0, cntDangO = 0, cntDaTra = 0, cntChoXacNhan = 0;
 
         String sql = """
                 SELECT dp.maDat, kh.tenKH, kh.soDT,
-                       STRING_AGG(ctdp.maPhong, ', ') as maPhong, 
+                       STRING_AGG(ctdp.maPhong, ', ') as maPhong,
                        dp.ngayCheckIn, dp.ngayCheckOut,
-                       SUM(ctdp.soNguoi) as soNguoi, 
+                       SUM(ctdp.soNguoi) as soNguoi,
                        SUM(ctdp.giaCoc) as giaCoc,
-                       CASE
-                           WHEN MAX(p.tinhTrang) = N'DANGSUDUNG' THEN 'DANG_O'
-                           WHEN dp.ngayCheckOut < GETDATE() THEN 'DA_TRA'
-                           ELSE 'DA_DAT'
-                       END AS trangThai
+                       dp.trangThai AS trangThai
                 FROM DatPhong dp
                 JOIN KH kh ON dp.maKH = kh.maKH
                 LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
                 LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
-                GROUP BY dp.maDat, kh.tenKH, kh.soDT, dp.ngayCheckIn, dp.ngayCheckOut, dp.ngayDat
+                GROUP BY dp.maDat, kh.tenKH, kh.soDT, dp.ngayCheckIn, dp.ngayCheckOut, dp.ngayDat, dp.trangThai
                 ORDER BY dp.ngayDat DESC
                 """;
 
@@ -328,9 +334,10 @@ public class DatPhongView extends BorderPane {
                 String tt = rs.getString("trangThai");
 
                 switch (tt) {
-                    case "DANG_O" -> cntDangO++;
-                    case "DA_TRA" -> cntDaTra++;
-                    default -> cntDaDat++;
+                    case "DA_CHECKIN" -> cntDangO++;
+                    case "DA_CHECKOUT" -> cntDaTra++;
+                    case "DA_XACNHAN" -> cntDaDat++;
+                    case "CHO_XACNHAN" -> cntChoXacNhan++;
                 }
 
                 masterData.add(new Object[] { maDat, tenKH, soDT, maPhong, checkIn, checkOut, soNguoi, giaCoc, tt });
@@ -342,8 +349,9 @@ public class DatPhongView extends BorderPane {
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
 
-        lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra));
+        lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
         lblDaDat.setText(String.valueOf(cntDaDat));
+        lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
         lblDangO.setText(String.valueOf(cntDangO));
         lblDaTra.setText(String.valueOf(cntDaTra));
     }
@@ -434,13 +442,11 @@ public class DatPhongView extends BorderPane {
     }
 
     private String mapTrangThai(String key) {
-        return switch (key) {
-            case "DA_DAT" -> "Đã đặt";
-            case "DANG_O" -> "Đang ở";
-            case "DA_TRA" -> "Đã trả";
-            case "DA_HUY" -> "Đã hủy";
-            default -> key;
-        };
+        try {
+            return model.enums.TrangThaiDatPhong.valueOf(key).getThongTinTrangThai();
+        } catch (Exception e) {
+            return key;
+        }
     }
 
     private void showInfo(String t, String m) {

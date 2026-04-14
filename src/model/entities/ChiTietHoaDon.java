@@ -4,6 +4,8 @@ public class ChiTietHoaDon {
     private String maCTHD;
     private HoaDon hoaDon;
     private ChiTietDatPhong chiTietDatPhong;
+    private String maHD;
+    private String maCTDP;
     private double thoiGianLuuTru;
     private int soLuongPhong;
     private double thanhTien;
@@ -11,10 +13,12 @@ public class ChiTietHoaDon {
     public ChiTietHoaDon() {
     }
 
-    public ChiTietHoaDon(String maCTHD, HoaDon hoaDon, ChiTietDatPhong chiTietDatPhong, double thoiGianLuuTru, int soLuongPhong, double thanhTien) {
+    public ChiTietHoaDon(String maCTHD, HoaDon hoaDon, ChiTietDatPhong chiTietDatPhong, String maHD, String maCTDP, double thoiGianLuuTru, int soLuongPhong, double thanhTien) {
         this.maCTHD = maCTHD;
         this.hoaDon = hoaDon;
         this.chiTietDatPhong = chiTietDatPhong;
+        this.maHD = maHD;
+        this.maCTDP = maCTDP;
         this.thoiGianLuuTru = thoiGianLuuTru;
         this.soLuongPhong = soLuongPhong;
         this.thanhTien = thanhTien;
@@ -28,6 +32,12 @@ public class ChiTietHoaDon {
 
     public ChiTietDatPhong getChiTietDatPhong() { return chiTietDatPhong; }
     public void setChiTietDatPhong(ChiTietDatPhong chiTietDatPhong) { this.chiTietDatPhong = chiTietDatPhong; }
+
+    public String getMaHD() { return maHD; }
+    public void setMaHD(String maHD) { this.maHD = maHD; }
+
+    public String getMaCTDP() { return maCTDP; }
+    public void setMaCTDP(String maCTDP) { this.maCTDP = maCTDP; }
 
     public double getThoiGianLuuTru() { return thoiGianLuuTru; }
     public void setThoiGianLuuTru(double thoiGianLuuTru) { this.thoiGianLuuTru = thoiGianLuuTru; }

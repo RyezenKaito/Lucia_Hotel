@@ -125,6 +125,8 @@ public final class EventUtils {
                 ((javafx.scene.control.DatePicker) n).valueProperty().addListener((o, oldV, newV) -> check.run());
             } else if (n instanceof CheckBox) {
                 ((CheckBox) n).selectedProperty().addListener((o, oldV, newV) -> check.run());
+            } else if (n instanceof model.utils.DatePicker) {
+                ((model.utils.DatePicker) n).valueProperty().addListener((o, oldV, newV) -> check.run());
             } else {
                 // Hỗ trợ DatePicker custom của bạn thông qua Focus và Click
                 n.focusedProperty().addListener((o, oldV, focused) -> {

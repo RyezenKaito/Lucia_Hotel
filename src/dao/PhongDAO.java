@@ -178,6 +178,18 @@ public class PhongDAO {
         }
     }
 
+    public boolean updateTrangThaiWithCon(Connection con, String maPhong, String trangThai) {
+        String sql = "UPDATE Phong SET tinhTrang = ? WHERE maPhong = ?";
+        try (PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, trangThai);
+            pstmt.setString(2, maPhong);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     /**
      * Lấy danh sách phòng trống theo mã loại phòng
      * Trả về List chuỗi "maPhong - tenPhong" dùng cho ComboBox
@@ -186,11 +198,73 @@ public class PhongDAO {
         List<String> ds = new ArrayList<>();
         String sql = "SELECT maPhong, tenPhong FROM Phong WHERE loaiPhong = ? AND tinhTrang = N'CONTRONG'";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maLoaiPhong);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) ds.add(rs.getString("maPhong") + " - " + rs.getString("tenPhong"));
-        } catch (Exception e) { e.printStackTrace(); }
+            while (rs.next())
+                ds.add(rs.getString("maPhong") + " - " + rs.getString("tenPhong"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Lấy tất cả Phong trống theo NHIỀU loại và khoảng thời gian check-in/out.
+     * Dùng cho ThemSuaDatPhongDialog multi-select loại phòng.
+     * 
+     * @param maLoaiPhongs Danh sách maLoaiPhong (VD: ["SINGLE","DOUBLE"])
+     * @param checkIn      Ngày nhận phòng
+     * @param checkOut     Ngày trả phòng
+     */
+    public List<Phong> getPhongTrongByMultiLoai(List<String> maLoaiPhongs,
+            java.time.LocalDate checkIn,
+            java.time.LocalDate checkOut) {
+        List<Phong> ds = new ArrayList<>();
+        if (maLoaiPhongs == null || maLoaiPhongs.isEmpty())
+            return ds;
+
+        // Tạo placeholder cho IN clause
+        String placeholders = String.join(",", maLoaiPhongs.stream()
+                .map(x -> "?").collect(java.util.stream.Collectors.toList()));
+
+        String sql = "SELECT p.*, l.gia, l.sucChua, l.tenLoaiPhong FROM Phong p " +
+                "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
+                "WHERE p.loaiPhong IN (" + placeholders + ") " +
+                "AND p.tinhTrang = N'CONTRONG' " +
+                "AND p.maPhong NOT IN (" +
+                "  SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
+                "  JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
+                "  WHERE dp.ngayCheckIn < ? AND dp.ngayCheckOut > ? " +
+                "  AND dp.trangThai NOT IN (N'DA_CHECKOUT', N'DA_HUY')" +
+                ") ORDER BY p.loaiPhong, p.maPhong";
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            int idx = 1;
+            for (String loai : maLoaiPhongs)
+                ps.setString(idx++, loai);
+            ps.setDate(idx++, java.sql.Date.valueOf(checkOut));
+            ps.setDate(idx, java.sql.Date.valueOf(checkIn));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                LoaiPhong lp = new LoaiPhong();
+                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
+                lp.setGia(rs.getDouble("gia"));
+                lp.setSucChua(rs.getInt("sucChua"));
+
+                Phong p = new Phong();
+                p.setMaPhong(rs.getString("maPhong"));
+                p.setTenPhong(rs.getString("tenPhong"));
+                p.setLoaiPhong(lp);
+                p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
+                p.setSoPhong(rs.getInt("soPhong"));
+                p.setSoTang(rs.getInt("soTang"));
+                ds.add(p);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return ds;
     }
 }

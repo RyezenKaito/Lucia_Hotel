@@ -9,7 +9,7 @@ import model.entities.Phong;
 public class ChiTietDatPhongDAO {
 
     /**
-     * Tìm chi tiết đặt phòng dựa trên mã đặt và mã phòng
+     * TÃ¬m chi tiáº¿t Ä‘áº·t phÃ²ng dá»±a trÃªn mÃ£ Ä‘áº·t vÃ  mÃ£ phÃ²ng
      */
     public ChiTietDatPhong findChiTietDatPhong(String maDat, String maPhong) {
         String sql = "SELECT * FROM ChiTietDatPhong WHERE maDat = ? AND maPhong = ?";
@@ -30,7 +30,7 @@ public class ChiTietDatPhongDAO {
     }
 
     /**
-     * Thêm mới chi tiết đặt phòng
+     * ThÃªm má»›i chi tiáº¿t Ä‘áº·t phÃ²ng
      */
     public boolean insert(ChiTietDatPhong ctdp) {
         String sql = "INSERT INTO ChiTietDatPhong (maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES (?, ?, ?, ?, ?, ?)";
@@ -66,7 +66,7 @@ public class ChiTietDatPhongDAO {
     }
 
     /**
-     * Tự động phát sinh mã chi tiết đặt phòng
+     * Tá»± Ä‘á»™ng phÃ¡t sinh mÃ£ chi tiáº¿t Ä‘áº·t phÃ²ng
      */
     public String generateMaCTDP() {
         String sql = "SELECT maCTDP FROM ChiTietDatPhong WHERE maCTDP LIKE 'CTDP%'";
@@ -89,9 +89,9 @@ public class ChiTietDatPhongDAO {
         return String.format("CTDP%03d", max + 1);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // INSERT (dùng chung Connection cho transaction)
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // INSERT (dÃ¹ng chung Connection cho transaction)
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public boolean insertWithConnection(Connection con, String maCTDP, String maPhong,
                                         String maDat, double giaCoc, int soNguoi, String ghiChu) throws SQLException {
         String sql = "INSERT INTO ChiTietDatPhong(maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES(?,?,?,?,?,?)";
@@ -106,9 +106,9 @@ public class ChiTietDatPhongDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // CẬP NHẬT CHI TIẾT ĐẶT PHÒNG THEO MÃ ĐẶT (dùng chung Connection)
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Cáº¬P NHáº¬T CHI TIáº¾T Äáº¶T PHÃ’NG THEO MÃƒ Äáº¶T (dÃ¹ng chung Connection)
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public boolean updateByMaDat(Connection con, String maDat, String maPhong,
                                   double giaCoc, int soNguoi, String ghiChu) throws SQLException {
         String sql = "UPDATE ChiTietDatPhong SET maPhong=?, giaCoc=?, soNguoi=?, ghiChu=? WHERE maDat=?";
@@ -122,9 +122,9 @@ public class ChiTietDatPhongDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // CẬP NHẬT THÔNG TIN CHUNG (KHÔNG ĐỔI MÃ PHÒNG) CHO MULTI-ROOM
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Cáº¬P NHáº¬T THÃ”NG TIN CHUNG (KHÃ”NG Äá»”I MÃƒ PHÃ’NG) CHO MULTI-ROOM
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public boolean updateInfoByMaDat(Connection con, String maDat,
                                   double giaCoc, int soNguoi, String ghiChu) throws SQLException {
         int roomCount = 1;
@@ -147,9 +147,9 @@ public class ChiTietDatPhongDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // [THÊM MỚI] LẤY TỔNG TIỀN CỌC CỦA MỘT ĐƠN ĐẶT PHÒNG
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // [THÃŠM Má»šI] Láº¤Y Tá»”NG TIá»€N Cá»ŒC Cá»¦A Má»˜T ÄÆ N Äáº¶T PHÃ’NG
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public double getTongCocByMaDat(String maDat) {
         String sql = "SELECT SUM(giaCoc) FROM ChiTietDatPhong WHERE maDat = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -165,9 +165,9 @@ public class ChiTietDatPhongDAO {
         return 0.0;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // [THÊM MỚI] LẤY KIỂU PHÒNG THEO MÃ ĐẶT 
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // [THÃŠM Má»šI] Láº¤Y KIá»‚U PHÃ’NG THEO MÃƒ Äáº¶T 
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public java.util.List<String> getMaPhongByMaDat(String maDat) {
         java.util.List<String> list = new java.util.ArrayList<>();
         String sql = "SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?";
@@ -182,9 +182,9 @@ public class ChiTietDatPhongDAO {
         return list;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // [THÊM MỚI] XÓA TOÀN BỘ CHI TIẾT ĐẶT PHÒNG DỰA TRÊN MÃ ĐẶT
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // [THÃŠM Má»šI] XÃ“A TOÃ€N Bá»˜ CHI TIáº¾T Äáº¶T PHÃ’NG Dá»°A TRÃŠN MÃƒ Äáº¶T
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public boolean deleteByMaDat(String maDat) {
         String sql = "DELETE FROM ChiTietDatPhong WHERE maDat = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -195,5 +195,33 @@ public class ChiTietDatPhongDAO {
             e.printStackTrace();
         }
         return false;
+    }
+    /**
+     * Lay ds phong trong don kem gia/dem tu LoaiPhong.
+     * Object[]: {maCTDP, maPhong, giaPhong, giaCoc, soNguoi}
+     */
+    public java.util.List<Object[]> getPhongWithPriceByMaDat(String maDat) {
+        java.util.List<Object[]> list = new java.util.ArrayList<>();
+        String sql =
+            "SELECT ctdp.maCTDP, ctdp.maPhong, lp.gia AS giaPhong, ctdp.giaCoc, ctdp.soNguoi " +
+            "FROM ChiTietDatPhong ctdp " +
+            "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+            "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
+            "WHERE ctdp.maDat = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDat);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(new Object[]{
+                    rs.getString("maCTDP"),
+                    rs.getString("maPhong"),
+                    rs.getDouble("giaPhong"),
+                    rs.getDouble("giaCoc"),
+                    rs.getInt("soNguoi")
+                });
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 }

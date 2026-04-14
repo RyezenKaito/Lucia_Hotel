@@ -3,33 +3,33 @@ GO
 
 -- KH
 INSERT INTO KH (maKH, tenKH, soDT, ngaySinh, soCCCD, email) VALUES
-('KH001', N'Nguyễn Minh Tuấn',   '0901230001', '1990-01-01', '001234567890', 'tuan.nguyen@email.com'),
-('KH002', N'Trần Thị Ngọc Anh',  '0901230002', '1992-02-02', '001234567891', 'anh.tran@email.com'),
-('KH003', N'Lê Văn Đạt',         '0901230003', '1995-10-15', '001234567892', 'dat.le@email.com'),
-('KH004', N'Phạm Thu Thủy',      '0901230004', '1993-05-20', '001234567893', 'thuy.pham@email.com'),
-('KH005', N'Hoàng Lương Khang',  '0901230005', '1988-12-05', '001234567894', 'khang.hoang@email.com'),
-('KH006', N'Đặng Thanh Mai',     '0901230006', '1999-08-30', '001234567895', 'mai.dang@email.com'),
-('KH007', N'Vũ Hải Yến',         '0901230007', '1985-03-12', '001234567896', 'yen.vu@email.com'),
-('KH008', N'Bùi Quốc Anh',       '0901230008', '1991-11-25', '001234567897', 'anh.bui@email.com'),
-('KH009', N'Đỗ Hữu Thiện',       '0901230009', '1994-07-07', '001234567898', 'thien.do@email.com'),
-('KH010', N'Ngô Gia Bảo',        '0901230010', '1997-09-09', '001234567899', 'bao.ngo@email.com');
+('KH001', N'Nguyễn Minh Tuấn',   '0909030001', '1990-01-01', '030904567890', 'tuan.nguyen@email.com'),
+('KH002', N'Trần Thị Ngọc Anh',  '0919230002', '1992-02-02', '031924567891', 'anh.tran@email.com'),
+('KH003', N'Lê Văn Đạt',         '0909530003', '1995-10-15', '090954567892', 'dat.le@email.com'),
+('KH004', N'Phạm Thu Thủy',      '0919330004', '1993-05-20', '091934567893', 'thuy.pham@email.com'),
+('KH005', N'Hoàng Lương Khang',  '0908830005', '1988-12-05', '030884567894', 'khang.hoang@email.com'),
+('KH006', N'Đặng Thanh Mai',     '0919930006', '1999-08-30', '031994567895', 'mai.dang@email.com'),
+('KH007', N'Vũ Hải Yến',         '0918530007', '1985-03-12', '091854567896', 'yen.vu@email.com'),
+('KH008', N'Bùi Quốc Anh',       '0909130008', '1991-11-25', '090914567897', 'anh.bui@email.com'),
+('KH009', N'Đỗ Hữu Thiện',       '0909430009', '1994-07-07', '030944567898', 'thien.do@email.com'),
+('KH010', N'Ngô Gia Bảo',        '0909730010', '1997-09-09', '030974567899', 'bao.ngo@email.com');
 
 -- NV
 -- Thứ tự cột: maNV, hoTen, soDT, soCCCD, diaChi, ngaySinh, ngayVaoLam, trinhDo, mk, role, trangThai, maQL
 INSERT INTO NV VALUES
 ('ADMIN',   N'LUCIA OWNER',         NULL,          NULL,           NULL,       NULL,         NULL,         NULL,        '123', N'ADMIN',     NULL,        NULL),
-('LUCIA001',N'Phạm Lê Khánh An',   '0365755828',  '079205083937', N'TP.HCM', '1995-06-07', '2024-02-01', N'DAIHOC',   '123', N'QUAN_LY',   'CON_LAM',   'ADMIN'),
-('LUCIA002',N'Hoàng Văn Hưng',       '0365755829',  '079205083938', N'Hà Nội', '1992-04-12', '2024-02-01', N'DAIHOC',   '123', N'QUAN_LY',   'CON_LAM',   'ADMIN'),
-('LUCIA003',N'Lưu Anh',             '0355558888',  '079205348888', N'TP.HCM', '2000-05-05', '2024-02-15', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
-('LUCIA004',N'Trần Văn A',          '0344448888',  '079205828290', N'Đà Nẵng', '2001-02-02', '2024-03-01', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
-('LUCIA005',N'Nguyễn Thị Bằng',      '0344448889',  '079205828291', N'Cần Thơ', '1998-11-20', '2024-03-15', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
-('LUCIA006',N'Lê Minh Cường',        '0344448890',  '079205828292', N'Hải Phòng', '2002-08-14', '2024-04-01', N'THPT',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
-('LUCIA007',N'Phan Thị Duyên',       '0344448891',  '079205828293', N'Nha Trang', '1999-01-10', '2024-04-10', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
-('LUCIA008',N'Võ Thanh Tú',          '0344448892',  '079205828294', N'Vũng Tàu', '2003-07-22', '2024-05-01', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
-('LUCIA009',N'Đinh Khải Hoàn',       '0344448893',  '079205828295', N'TP.HCM', '2001-09-09', '2024-05-15', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
-('LUCIA010',N'Trịnh Ngọc Hà',        '0344448894',  '079205828296', N'Đà Lạt', '1997-12-25', '2024-06-01', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
-('LUCIA011',N'Lý Quang Vinh',        '0344448895',  '079205828297', N'Hà Tĩnh', '2000-03-30', '2024-06-15', N'THPT',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
-('LUCIA012',N'Bùi Tuấn Phong',       '0344448896',  '079205828298', N'TP.HCM', '1996-05-12', '2024-07-01', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002');
+('LUCIA001',N'Phạm Lê Khánh An',   '0365755828',  '079090909090', N'TP.HCM', '1990-06-07', '2024-02-01', N'DAIHOC',   '123', N'QUAN_LY',   'CON_LAM',   'ADMIN'),
+('LUCIA002',N'Hoàng Văn Hưng',       '0365755829',  '079090909091', N'Hà Nội', '1990-04-12', '2024-02-01', N'DAIHOC',   '123', N'QUAN_LY',   'CON_LAM',   'ADMIN'),
+('LUCIA003',N'Lưu Anh',             '0355558888',  '079300348888', N'TP.HCM', '2000-05-05', '2024-02-15', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
+('LUCIA004',N'Trần Văn A',          '0344448888',  '079200828290', N'Đà Nẵng', '2000-02-02', '2024-03-01', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
+('LUCIA005',N'Nguyễn Thị Bằng',      '0344448889',  '079300828291', N'Cần Thơ', '2000-11-20', '2024-03-15', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
+('LUCIA006',N'Lê Minh Cường',        '0344448890',  '079200828292', N'Hải Phòng', '2000-08-14', '2024-04-01', N'THPT',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
+('LUCIA007',N'Phan Thị Duyên',       '0344448891',  '079105828293', N'Nha Trang', '2005-01-10', '2024-04-10', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA001'),
+('LUCIA008',N'Võ Thanh Tú',          '0344448892',  '079203828294', N'Vũng Tàu', '2003-07-22', '2024-05-01', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
+('LUCIA009',N'Đinh Khải Hoàn',       '0344448893',  '079201828295', N'TP.HCM', '2001-09-09', '2024-05-15', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
+('LUCIA010',N'Trịnh Ngọc Hà',        '0344448894',  '079197828296', N'Đà Lạt', '1997-12-25', '2024-06-01', N'CAODANG',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
+('LUCIA011',N'Lý Quang Vinh',        '0344448895',  '079200828297', N'Hà Tĩnh', '2000-03-30', '2024-06-15', N'THPT',  '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002'),
+('LUCIA012',N'Bùi Tuấn Phong',       '0344448896',  '079096828298', N'TP.HCM', '1996-05-12', '2024-07-01', N'DAIHOC',   '123', N'NHAN_VIEN', 'CON_LAM',   'LUCIA002');
 
 -- LoaiPhong (thêm tenLoaiPhong)
 -- Thứ tự cột: maLoaiPhong, tenLoaiPhong, gia, sucChua
@@ -43,7 +43,7 @@ INSERT INTO LoaiPhong (maLoaiPhong, tenLoaiPhong, gia, sucChua) VALUES
 -- Phong
 INSERT INTO Phong (maPhong, tenPhong, loaiPhong, tinhTrang, soPhong, soTang) VALUES
 ('P101', N'Phòng 101', 'SINGLE', N'CONTRONG',   101, 1),
-('P102', N'Phòng 102', 'DOUBLE', N'DANGSUDUNG', 102, 1),
+('P102', N'Phòng 102', 'DOUBLE', N'CONTRONG', 102, 1),
 ('P103', N'Phòng 103', 'TWIN',   N'CONTRONG',   103, 1),
 ('P104', N'Phòng 104', 'TRIPLE', N'CONTRONG',   104, 1),
 ('P105', N'Phòng 105', 'FAMILY', N'CONTRONG',   105, 1),
@@ -72,12 +72,12 @@ INSERT INTO Phong (maPhong, tenPhong, loaiPhong, tinhTrang, soPhong, soTang) VAL
 -- Thứ tự cột: maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai
 INSERT INTO DatPhong (maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES
 ('DP001', '2026-03-20 14:00', 'KH001', '2026-03-20 14:00', '2026-03-22 12:00', N'DA_CHECKOUT'),
-('DP002', '2026-03-21 15:00', 'KH002', '2026-03-21 15:00', '2026-03-23 12:00', N'DA_CHECKIN');
+('DP002', '2026-03-21 15:00', 'KH002', '2026-03-21 15:00', '2026-03-23 12:00', N'DA_CHECKOUT');
 
 -- ChiTietDatPhong
 INSERT INTO ChiTietDatPhong (maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES
-('CTDP001', 'P101', 'DP001', 100000, 1, N'Không hút thuốc'),
-('CTDP002', 'P102', 'DP002', 150000, 2, N'Trẻ em đi kèm');
+('CTDP001', 'P101', 'DP001', 300000, 1, N'Không hút thuốc'),
+('CTDP002', 'P102', 'DP002', 500000, 2, N'Trẻ em đi kèm');
 
 -- DV (loaiDV đổi sang ASCII key)
 -- Thứ tự cột: maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai
@@ -100,10 +100,10 @@ INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES
 -- Sửa: khai báo rõ tên cột và bổ sung đủ loaiHD, trangThaiThanhToan, ngayThanhToan
 INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien,
                     loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan) VALUES
-('HD001', 'DP001', 'LUCIA002', '2026-03-22 12:30', 600000, 120000, 100000, 0, 620000,
- N'HOA_DON_PHONG', N'CHUA_THANH_TOAN', N'TIEN_MAT',      '2026-03-22 12:45'),
-('HD002', 'DP002', 'ADMIN',    '2026-03-23 11:00', 1000000, 100000, 150000, 0, 950000,
- N'HOA_DON_PHONG', N'CHUA_THANH_TOAN', NULL,           NULL);
+('HD001', 'DP001', 'LUCIA002', '2026-03-22 12:30', 600000, 120000, 300000, 0, 620000,
+ N'HOA_DON_PHONG', N'DA_THANH_TOAN', N'TIEN_MAT', '2026-03-22 12:45'),
+('HD002', 'DP002', 'ADMIN',    '2026-03-23 11:00', 1000000, 100000, 500000, 0, 950000,
+ N'HOA_DON_PHONG', N'DA_THANH_TOAN', N'TIEN_MAT', '2026-03-23 13:45');
 
 -- ChiTietHoaDon (bỏ soLuongPhong vì đã xóa cột ra khỏi bảng)
 -- Thứ tự cột: maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien
