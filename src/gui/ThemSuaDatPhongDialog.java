@@ -787,7 +787,8 @@ public class ThemSuaDatPhongDialog extends Stage {
             showError("⚠ Vui lòng điền đầy đủ thông tin và thanh toán cọc để xác nhận đặt phòng.");
             return;
         }
-
+        
+        
         // Trích xuất toàn bộ dữ liệu trên FX Thread
         final String hoTen = ValidationUtils.toTitleCase(txtHoTen.getText().trim().replaceAll("\\s+", " "));
         final String soDT = txtSoDT.getText().trim();
@@ -799,7 +800,9 @@ public class ThemSuaDatPhongDialog extends Stage {
         final double tienCoc = parseTienCoc();
         final String ghiChu = txtGhiChu.getText().trim();
 
-        final String preGenMaKH = khachHangDAO.getNextMaKH();
+        String tempMa = khachHangDAO.getNextMaKH();
+        if (tempMa == null) tempMa = "KH001"; // Phòng hờ nếu database lỗi trả về null
+        final String preGenMaKH = tempMa;
         final String preGenMaDat = datPhongDAO.generateMaDat();
         final String baseMaCTDP = ctdpDAO.generateMaCTDP();
         final String preGenMaHD = new dao.HoaDonDAO().generateMaHD();
@@ -817,7 +820,7 @@ public class ThemSuaDatPhongDialog extends Stage {
             try (Connection con = ConnectDatabase.getInstance().getConnection()) {
                 con.setAutoCommit(false);
                 try {
-                    String maKH = khachHangDAO.findOrCreate(con, hoTen, soDT, cccd, ngaySinh, null);
+                	String maKH = khachHangDAO.findOrCreate(con, hoTen, soDT, cccd, ngaySinh, preGenMaKH);
                     String trangThaiMoi = "DA_XACNHAN"; // Always DA_XACNHAN because we force deposit
                     datPhongDAO.insertWithConnection(con, preGenMaDat, maKH, checkIn, checkOut, trangThaiMoi);
 
@@ -830,16 +833,26 @@ public class ThemSuaDatPhongDialog extends Stage {
                         }
                     }
 
-                    int baseCdpNguoi = Math.max(1, soNguoi / Math.max(1, finalPhongs.size()));
-                    int remainderCdp = soNguoi % Math.max(1, finalPhongs.size());
+                 // --- ĐOẠN MỚI THAY THẾ ---
+                    int nguoiConLai = soNguoi; 
+
                     for (int i = 0; i < finalPhongs.size(); i++) {
                         Phong p = finalPhongs.get(i);
                         String maCTDP = String.format("CTDP%04d", baseNum + i);
-                        double cdpCoc = p.getLoaiPhong().getGia(); // Cọc = 1 đêm
-                        int currentCdpNguoi = baseCdpNguoi + (i == finalPhongs.size() - 1 ? remainderCdp : 0);
-                        ctdpDAO.insertWithConnection(con, maCTDP, p.getMaPhong(), preGenMaDat, cdpCoc, currentCdpNguoi,
-                                ghiChu);
+                        double cdpCoc = p.getLoaiPhong().getGia(); 
+
+                        // Tính số người cho từng phòng: dồn vào cho đến khi hết người
+                        int currentCdpNguoi = 0;
+                        if (nguoiConLai > 0) {
+                            int sucChua = p.getLoaiPhong().getSucChua();
+                            // Lấy số người nhỏ hơn giữa "người còn dư" và "sức chứa của phòng"
+                            currentCdpNguoi = Math.min(nguoiConLai, sucChua);
+                            nguoiConLai -= currentCdpNguoi;
+                        }
+
+                        ctdpDAO.insertWithConnection(con, maCTDP, p.getMaPhong(), preGenMaDat, cdpCoc, currentCdpNguoi, ghiChu);
                     }
+                    // --- HẾT ĐOẠN THAY THẾ ---
 
                     // Tự động sinh Hóa Đơn ngay khi tạo phiếu đặt phòng thành công
                     dao.HoaDonDAO hdDAO = new dao.HoaDonDAO();
