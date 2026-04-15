@@ -287,6 +287,14 @@ public class DatPhongView extends BorderPane {
                         bg = "#fef3c7";
                         fg = "#d97706";
                     }
+                    case"HUY_HOAN_COC" -> {
+                        bg = "#e0e7ff";
+                        fg = "#3730a3";
+                    }
+                    case "HUY_MAT_COC" -> {
+                        bg = "#fce7f3"; 
+                        fg = "#be185d";
+                    }
                     default -> {
                         bg = "#dbeafe";
                         fg = "#1e40af";
@@ -334,7 +342,14 @@ public class DatPhongView extends BorderPane {
                        dp.ngayCheckIn, dp.ngayCheckOut,
                        SUM(ctdp.soNguoi) as soNguoi,
                        SUM(ctdp.giaCoc) as giaCoc,
-                       dp.trangThai AS trangThai,
+                       
+                       -- Dùng EXISTS để tìm hóa đơn mà không làm nhân đôi dòng
+                       CASE 
+                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND loaiHD = 'HOA_DON_HOAN_TIEN') THEN 'HUY_HOAN_COC'
+                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND loaiHD = 'HOA_DON_PHONG') THEN 'HUY_MAT_COC'
+                           ELSE dp.trangThai
+                       END AS trangThai,
+                       
                        dp.ngayDat
                 FROM DatPhong dp
                 JOIN KH kh ON dp.maKH = kh.maKH
@@ -416,42 +431,91 @@ public class DatPhongView extends BorderPane {
 
 
 
-    private void confirmCancel(Object[] row) {
+private void confirmCancel(Object[] row) {
         String maDat = (String) row[0];
         String tenKH = (String) row[1];
-        LocalDateTime ngayDat = (LocalDateTime) row[9]; // ngayDat lưu ở index 9
-
-        if (ngayDat == null) {
-            showError("Không tìm thấy thông tin ngày lập phiếu để tính toán hoàn cọc.");
+        
+        // 1. LẤY NGÀY CHECK-IN ĐỂ TÍNH TOÁN THEO NGHIỆP VỤ KHÁCH SẠN
+        String checkInStr = (String) row[4]; // Cột 4 trên bảng là Chuỗi ngày Check-in
+        if (checkInStr == null || checkInStr.equals("—")) {
+            showError("Đơn này chưa có ngày Check-in, không thể tính toán!");
             return;
         }
 
-        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(ngayDat, LocalDateTime.now());
-        boolean duocHoanCoc = (daysBetween < 3);
+        LocalDateTime ngayCheckIn;
+        try {
+            // Ép chuỗi "16/04/2026 14:00" về kiểu Ngày giờ
+            ngayCheckIn = LocalDateTime.parse(checkInStr, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        } catch (Exception e) {
+            showError("Lỗi hệ thống khi đọc định dạng ngày Check-in.");
+            return;
+        }
+
+        // 2. TÍNH SỐ NGÀY TỪ HÔM NAY ĐẾN LÚC CHECK-IN
+        // Tính bằng LocalDate để bỏ qua giờ phút, chỉ đếm ngày chênh lệch
+        long daysUntilCheckIn = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), ngayCheckIn.toLocalDate());
+        
+        // Hủy trước 3 ngày trở lên -> Hoàn. Dưới 3 ngày -> Mất.
+        boolean duocHoanCoc = (daysUntilCheckIn >= 3);
 
         String msg = String.format(
-                "Bạn có chắc chắn muốn HỦY đơn đặt phòng %s của khách %s?\n\n" +
-                "📅 Ngày lập phiếu: %s\n" +
-                "⏳ Đã lập được: %d ngày\n" +
-                "💰 Trạng thái cọc: %s",
+                "Xác nhận HỦY đơn %s của khách %s?\n\n" +
+                "📅 Ngày Check-in: %s\n" +
+                "⏳ Khách hủy trước: %d ngày\n" +
+                "💰 Chế độ: %s",
                 maDat, tenKH, 
-                ngayDat.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                daysBetween,
-                duocHoanCoc ? "TRONG 3 NGÀY - ĐƯỢC HOÀN CỌC ✅" : "QUÁ 3 NGÀY - KHÔNG HOÀN CỌC ❌"
+                checkInStr,
+                daysUntilCheckIn,
+                duocHoanCoc ? "Hủy sớm (>= 3 ngày) -> ĐƯỢC HOÀN CỌC ✅" : "Hủy sát ngày/Trễ hạn -> BỊ MẤT CỌC ❌"
         );
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Xác nhận hủy đơn");
-        alert.setHeaderText(null);
+        alert.setTitle("Hủy đơn đặt phòng");
         alert.setContentText(msg);
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            if (datPhongDAO.updateTrangThai(maDat, "DA_HUY")) {
-                loadData();
-                showInfo("Thành công", "Đơn đặt phòng " + maDat + " đã được chuyển sang trạng thái ĐÃ HỦY.");
-            } else {
-                showError("Lỗi khi cập nhật trạng thái đơn.");
+            try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+                con.setAutoCommit(false); 
+                try {
+                    // Chuyển đơn thành DA_HUY
+                    try (PreparedStatement ps = con.prepareStatement("UPDATE DatPhong SET trangThai = 'DA_HUY' WHERE maDat = ?")) {
+                        ps.setString(1, maDat);
+                        ps.executeUpdate();
+                    }
+
+                    // Trả lại phòng trống
+                    try (PreparedStatement ps = con.prepareStatement("UPDATE Phong SET tinhTrang = N'CONTRONG' WHERE maPhong IN (SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?)")) {
+                        ps.setString(1, maDat);
+                        ps.executeUpdate();
+                    }
+
+                    // Lưu Hóa Đơn bằng chứng
+                    // 3. CẬP NHẬT LẠI HÓA ĐƠN ĐÃ CÓ SẴN (Chuyển trạng thái từ Cọc -> Đã thanh toán)
+                    String loaiHD = duocHoanCoc ? "HOA_DON_HOAN_TIEN" : "HOA_DON_PHONG";
+                    String ghiChu = duocHoanCoc ? "Hoàn cọc (Hủy trước " + daysUntilCheckIn + " ngày)" : "Thu phạt (Hủy sát ngày/Trễ hạn)";
+                    
+                    // Dùng lệnh UPDATE để sửa chính hóa đơn gốc, không đẻ thêm hóa đơn mới
+                    String sqlUpdateHD = "UPDATE HoaDon SET loaiHD = ?, trangThaiThanhToan = 'DA_THANH_TOAN', ghiChuThanhToan = ?, ngayThanhToan = GETDATE() WHERE maDat = ?";
+                    
+                    try (PreparedStatement ps = con.prepareStatement(sqlUpdateHD)) {
+                        ps.setString(1, loaiHD);
+                        ps.setString(2, ghiChu);
+                        ps.setString(3, maDat); 
+                        ps.executeUpdate();
+                    }
+
+                    con.commit();
+                    loadData();
+                    showInfo("Thành công", "Đã hủy đơn " + maDat + ". Hóa đơn tự động: " + (duocHoanCoc ? "HOÀN CỌC" : "THU PHẠT") + ".");
+                } catch (Exception ex) {
+                    con.rollback();
+                    showError("Lỗi CSDL: " + ex.getMessage());
+                } finally {
+                    con.setAutoCommit(true);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         }
     }
