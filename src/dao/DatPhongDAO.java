@@ -84,10 +84,10 @@ public class DatPhongDAO {
                 dp.setTrangThai(rs.getString("trangThai"));
 
                 dp.setNgayCheckIn(
-                        rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay()
+                        rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime()
                                 : null);
                 dp.setNgayCheckOut(
-                        rs.getDate("ngayCheckOut") != null ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay()
+                        rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime()
                                 : null);
 
                 return dp;
@@ -111,11 +111,11 @@ public class DatPhongDAO {
                     : Timestamp.valueOf(LocalDateTime.now()));
             pstmt.setString(3, dp.getKhachHang().getMaKH());
 
-            // SỬA Ở ĐÂY: Lấy LocalDateTime -> LocalDate -> java.sql.Date
-            pstmt.setDate(4,
-                    dp.getNgayCheckIn() != null ? java.sql.Date.valueOf(dp.getNgayCheckIn().toLocalDate()) : null);
-            pstmt.setDate(5,
-                    dp.getNgayCheckOut() != null ? java.sql.Date.valueOf(dp.getNgayCheckOut().toLocalDate()) : null);
+            // SỬA Ở ĐÂY: Lưu nguyên LocalDateTime xuống dạng Timestamp
+            pstmt.setTimestamp(4,
+                    dp.getNgayCheckIn() != null ? Timestamp.valueOf(dp.getNgayCheckIn()) : null);
+            pstmt.setTimestamp(5,
+                    dp.getNgayCheckOut() != null ? Timestamp.valueOf(dp.getNgayCheckOut()) : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
@@ -202,12 +202,12 @@ public class DatPhongDAO {
                         : null);
                 dp.setKhachHang(kh);
 
-                // SỬA Ở ĐÂY: Date -> LocalDate -> LocalDateTime
-                dp.setNgayCheckIn(rs.getDate("ngayCheckIn") != null
-                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay()
+                // SỬA Ở ĐÂY: Dùng Timestamp để lấy đủ ngày giờ (14:00, 12:00) thay vì 00:00
+                dp.setNgayCheckIn(rs.getTimestamp("ngayCheckIn") != null
+                        ? rs.getTimestamp("ngayCheckIn").toLocalDateTime()
                         : null);
-                dp.setNgayCheckOut(rs.getDate("ngayCheckOut") != null
-                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay()
+                dp.setNgayCheckOut(rs.getTimestamp("ngayCheckOut") != null
+                        ? rs.getTimestamp("ngayCheckOut").toLocalDateTime()
                         : null);
 
                 double giaCoc = rs.getDouble("giaCoc");
@@ -239,7 +239,8 @@ public class DatPhongDAO {
 
     public boolean saveServiceOrder(String maPhong, java.util.Map<model.entities.DichVu, Integer> cart) {
         String maCTDP = getMaCTDPDangSuDungByMaPhong(maPhong);
-        if (maCTDP == null) return false;
+        if (maCTDP == null)
+            return false;
 
         String sql = "MERGE INTO DichVuSuDung AS target " +
                 "USING (VALUES (?, ?, ?, ?)) AS source (maDV, maCTDP, soLuong, giaDV) " +
@@ -252,12 +253,14 @@ public class DatPhongDAO {
                 "    VALUES (source.maDV, source.maCTDP, GETDATE(), source.soLuong, source.giaDV, 0);";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-            if (con == null) return false;
+            if (con == null)
+                return false;
             con.setAutoCommit(false);
             try {
                 try (PreparedStatement ps = con.prepareStatement(sql)) {
                     for (java.util.Map.Entry<model.entities.DichVu, Integer> entry : cart.entrySet()) {
-                        if (entry.getKey().getGia() == null) continue;
+                        if (entry.getKey().getGia() == null)
+                            continue;
                         ps.setString(1, entry.getKey().getMaDV());
                         ps.setString(2, maCTDP);
                         ps.setInt(3, entry.getValue());
@@ -336,8 +339,10 @@ public class DatPhongDAO {
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDat);
             ps.setString(2, maKH);
-            ps.setDate(3, java.sql.Date.valueOf(checkIn));
-            ps.setDate(4, java.sql.Date.valueOf(checkOut));
+            // ps.setDate(3, java.sql.Date.valueOf(checkIn));
+            // ps.setDate(4, java.sql.Date.valueOf(checkOut));
+            ps.setTimestamp(3, Timestamp.valueOf(checkIn.atTime(14, 0)));
+            ps.setTimestamp(4, Timestamp.valueOf(checkOut.atTime(12, 0)));
             ps.setString(5, trangThai);
             return ps.executeUpdate() > 0;
         }
@@ -427,11 +432,11 @@ public class DatPhongDAO {
                 dp.setMaDat(rs.getString("maDat"));
                 dp.setKhachHang(kh);
                 dp.setTrangThai(rs.getString("trangThai"));
-                dp.setNgayCheckIn(rs.getDate("ngayCheckIn") != null
-                        ? rs.getDate("ngayCheckIn").toLocalDate().atStartOfDay()
+                dp.setNgayCheckIn(rs.getTimestamp("ngayCheckIn") != null
+                        ? rs.getTimestamp("ngayCheckIn").toLocalDateTime()
                         : null);
-                dp.setNgayCheckOut(rs.getDate("ngayCheckOut") != null
-                        ? rs.getDate("ngayCheckOut").toLocalDate().atStartOfDay()
+                dp.setNgayCheckOut(rs.getTimestamp("ngayCheckOut") != null
+                        ? rs.getTimestamp("ngayCheckOut").toLocalDateTime()
                         : null);
             }
         } catch (Exception e) {

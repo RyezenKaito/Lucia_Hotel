@@ -268,10 +268,9 @@ public class CheckInView extends BorderPane {
 
         VBox scheduleBox = new VBox(12);
         scheduleBox.getChildren().addAll(
-                createDetailItem("Ngay nhan", dp.getNgayCheckIn() != null ? dp.getNgayCheckIn().format(dtf) : "---"),
-                createDetailItem("Ngay tra du kien",
-                        dp.getNgayCheckOut() != null ? dp.getNgayCheckOut().format(dtf) : "---"),
-                createDetailItem("Trang thai don", trangThaiStr));
+                createDetailItem("Ngày nhận", dp.getNgayCheckIn() != null ? dp.getNgayCheckIn().format(dtf) : "---"),
+                createDetailItem("Ngày trả", dp.getNgayCheckOut() != null ? dp.getNgayCheckOut().format(dtf) : "---"),
+                createDetailItem("Trạng thái đơn", trangThaiStr));
 
         detailSection.getChildren().addAll(infoBox, sep, scheduleBox);
     }
@@ -328,17 +327,19 @@ public class CheckInView extends BorderPane {
                 return;
 
             try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-                if (con == null) return;
+                if (con == null)
+                    return;
                 con.setAutoCommit(false);
                 try {
                     HoaDon hd = hoaDonDAO.getByMaDat(currentDatPhong.getMaDat());
-                    
+
                     String baseMaCTHD = cthdDAO.generateMaCTHD();
                     int lastNum = 0;
                     if (baseMaCTHD != null && baseMaCTHD.length() > 4) {
                         try {
                             lastNum = Integer.parseInt(baseMaCTHD.substring(4));
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
 
                     // 1. Cập nhật phòng -> DANGSUDUNG & tạo ChiTietHoaDon

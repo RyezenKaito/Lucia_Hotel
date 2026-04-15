@@ -15,12 +15,13 @@ import javafx.stage.Window;
 import javafx.scene.input.MouseButton;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.text.DecimalFormat;
 import java.util.Optional;
 
 import connectDatabase.ConnectDatabase;
-import model.utils.DimOverlay; // Thêm import này
+import model.utils.DimOverlay;
 
 /**
  * DatPhongView – Giao diện quản lý đặt phòng (JavaFX).
@@ -37,7 +38,7 @@ public class DatPhongView extends BorderPane {
     private static final String C_BLUE = "#2563eb";
     private static final String C_BLUE_HOVER = "#1d4ed8";
 
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DecimalFormat DF = new DecimalFormat("#,###");
 
     /* ── State ────────────────────────────────────────────────────── */
@@ -47,6 +48,8 @@ public class DatPhongView extends BorderPane {
 
     private Label lblTotal, lblDaDat, lblChoXacNhan, lblDangO, lblDaTra;
     private TextField txtSearch;
+
+    private final dao.DatPhongDAO datPhongDAO = new dao.DatPhongDAO();
 
     /* ── Constructor ──────────────────────────────────────────────── */
     public DatPhongView() {
@@ -170,7 +173,16 @@ public class DatPhongView extends BorderPane {
             miDetail.setStyle("-fx-font-size: 13px;");
             miDetail.setOnAction(e -> {
                 Object[] r = row.getItem();
-                if (r != null) openDetailDialog((String) r[0]);
+                if (r != null)
+                    openDetailDialog((String) r[0]);
+            });
+
+            MenuItem miCancel = new MenuItem("Hủy đơn đặt phòng");
+            miCancel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ea580c;");
+            miCancel.setOnAction(e -> {
+                Object[] r = row.getItem();
+                if (r != null)
+                    confirmCancel(r);
             });
 
             MenuItem miDelete = new MenuItem("Xóa đơn đặt phòng");
@@ -181,8 +193,24 @@ public class DatPhongView extends BorderPane {
                     confirmDelete(r);
             });
 
-            ctx.getItems().addAll(miDetail, new SeparatorMenuItem(), miDelete);
+            // KHÓA CHỨC NĂNG HỦY/XÓA DỰA TRÊN TRẠNG THÁI
+            row.itemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    String status = (String) newVal[8];
+                    
+                    // Chỉ cho hủy khi CHƯA nhận phòng (CHO_XACNHAN hoặc DA_XACNHAN)
+                    boolean canCancel = "CHO_XACNHAN".equals(status) || "DA_XACNHAN".equals(status);
+                    miCancel.setDisable(!canCancel);
+
+                    // Chỉ cho xóa nếu KHÔNG phải đang ở hoặc đã trả phòng
+                    boolean canDelete = !"DA_CHECKIN".equals(status) && !"DA_CHECKOUT".equals(status);
+                    miDelete.setDisable(!canDelete);
+                }
+            });
+
+            ctx.getItems().addAll(miDetail, miCancel, new SeparatorMenuItem(), miDelete);
             row.setContextMenu(ctx);
+
 
             row.setOnMouseClicked(e -> {
                 if (e.getClickCount() == 2 && !row.isEmpty()) {
@@ -211,9 +239,9 @@ public class DatPhongView extends BorderPane {
         colSDT.setStyle("-fx-alignment: CENTER;");
         TableColumn<Object[], String> colPhong = col("Phòng", 3, 90);
         colPhong.setStyle("-fx-alignment: CENTER;");
-        TableColumn<Object[], String> colIn = col("Ngày nhận", 4, 105);
+        TableColumn<Object[], String> colIn = col("Ngày nhận", 4, 130);
         colIn.setStyle("-fx-alignment: CENTER;");
-        TableColumn<Object[], String> colOut = col("Ngày trả", 5, 105);
+        TableColumn<Object[], String> colOut = col("Ngày trả", 5, 130);
         colOut.setStyle("-fx-alignment: CENTER;");
         TableColumn<Object[], String> colNguoi = col("Số người", 6, 75);
         colNguoi.setStyle("-fx-alignment: CENTER;");
@@ -306,7 +334,8 @@ public class DatPhongView extends BorderPane {
                        dp.ngayCheckIn, dp.ngayCheckOut,
                        SUM(ctdp.soNguoi) as soNguoi,
                        SUM(ctdp.giaCoc) as giaCoc,
-                       dp.trangThai AS trangThai
+                       dp.trangThai AS trangThai,
+                       dp.ngayDat
                 FROM DatPhong dp
                 JOIN KH kh ON dp.maKH = kh.maKH
                 LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
@@ -324,14 +353,15 @@ public class DatPhongView extends BorderPane {
                 String tenKH = rs.getString("tenKH");
                 String soDT = rs.getString("soDT");
                 String maPhong = rs.getString("maPhong") != null ? rs.getString("maPhong") : "—";
-                String checkIn = rs.getDate("ngayCheckIn") != null ? rs.getDate("ngayCheckIn").toLocalDate().format(FMT)
+                String checkIn = rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime().format(FMT)
                         : "—";
-                String checkOut = rs.getDate("ngayCheckOut") != null
-                        ? rs.getDate("ngayCheckOut").toLocalDate().format(FMT)
+                String checkOut = rs.getTimestamp("ngayCheckOut") != null
+                        ? rs.getTimestamp("ngayCheckOut").toLocalDateTime().format(FMT)
                         : "—";
                 String soNguoi = rs.getObject("soNguoi") != null ? String.valueOf(rs.getInt("soNguoi")) : "—";
                 String giaCoc = rs.getObject("giaCoc") != null ? DF.format(rs.getDouble("giaCoc")) + " đ" : "0 đ";
                 String tt = rs.getString("trangThai");
+                LocalDateTime ngayDat = rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null;
 
                 switch (tt) {
                     case "DA_CHECKIN" -> cntDangO++;
@@ -340,7 +370,7 @@ public class DatPhongView extends BorderPane {
                     case "CHO_XACNHAN" -> cntChoXacNhan++;
                 }
 
-                masterData.add(new Object[] { maDat, tenKH, soDT, maPhong, checkIn, checkOut, soNguoi, giaCoc, tt });
+                masterData.add(new Object[] { maDat, tenKH, soDT, maPhong, checkIn, checkOut, soNguoi, giaCoc, tt, ngayDat });
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -385,6 +415,46 @@ public class DatPhongView extends BorderPane {
     }
 
 
+
+    private void confirmCancel(Object[] row) {
+        String maDat = (String) row[0];
+        String tenKH = (String) row[1];
+        LocalDateTime ngayDat = (LocalDateTime) row[9]; // ngayDat lưu ở index 9
+
+        if (ngayDat == null) {
+            showError("Không tìm thấy thông tin ngày lập phiếu để tính toán hoàn cọc.");
+            return;
+        }
+
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(ngayDat, LocalDateTime.now());
+        boolean duocHoanCoc = (daysBetween < 3);
+
+        String msg = String.format(
+                "Bạn có chắc chắn muốn HỦY đơn đặt phòng %s của khách %s?\n\n" +
+                "📅 Ngày lập phiếu: %s\n" +
+                "⏳ Đã lập được: %d ngày\n" +
+                "💰 Trạng thái cọc: %s",
+                maDat, tenKH, 
+                ngayDat.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                daysBetween,
+                duocHoanCoc ? "TRONG 3 NGÀY - ĐƯỢC HOÀN CỌC ✅" : "QUÁ 3 NGÀY - KHÔNG HOÀN CỌC ❌"
+        );
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Xác nhận hủy đơn");
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            if (datPhongDAO.updateTrangThai(maDat, "DA_HUY")) {
+                loadData();
+                showInfo("Thành công", "Đơn đặt phòng " + maDat + " đã được chuyển sang trạng thái ĐÃ HỦY.");
+            } else {
+                showError("Lỗi khi cập nhật trạng thái đơn.");
+            }
+        }
+    }
 
     private void confirmDelete(Object[] row) {
         String maDat = (String) row[0];
