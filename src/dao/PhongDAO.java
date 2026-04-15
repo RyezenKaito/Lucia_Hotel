@@ -231,7 +231,6 @@ public class PhongDAO {
         String sql = "SELECT p.*, l.gia, l.sucChua, l.tenLoaiPhong FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
                 "WHERE p.loaiPhong IN (" + placeholders + ") " +
-                "AND p.tinhTrang = N'CONTRONG' " +
                 "AND p.maPhong NOT IN (" +
                 "  SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
                 "  JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
