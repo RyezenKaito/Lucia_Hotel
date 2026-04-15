@@ -238,35 +238,28 @@ public class DatPhongDAO {
     }
 
     public boolean saveServiceOrder(String maPhong, java.util.Map<model.entities.DichVu, Integer> cart) {
-        String maHD = getMaHDByMaPhong(maPhong);
-        if (maHD == null)
-            return false;
-
-        String maCTHD = findMaCTHDByMaHD(maHD);
-        if (maCTHD == null)
-            return false;
+        String maCTDP = getMaCTDPDangSuDungByMaPhong(maPhong);
+        if (maCTDP == null) return false;
 
         String sql = "MERGE INTO DichVuSuDung AS target " +
-                "USING (VALUES (?, ?, ?, ?)) AS source (maDV, maCTHD, soLuong, giaDV) " +
-                "ON target.maDV = source.maDV AND target.maCTHD = source.maCTHD " +
+                "USING (VALUES (?, ?, ?, ?)) AS source (maDV, maCTDP, soLuong, giaDV) " +
+                "ON target.maDV = source.maDV AND target.maCTDP = source.maCTDP " +
                 "WHEN MATCHED THEN " +
                 "    UPDATE SET target.soLuong = target.soLuong + source.soLuong, " +
                 "              target.ngaySuDung = GETDATE() " +
                 "WHEN NOT MATCHED THEN " +
-                "    INSERT (maDV, maCTHD, ngaySuDung, soLuong, giaDV, trangThai) " +
-                "    VALUES (source.maDV, source.maCTHD, GETDATE(), source.soLuong, source.giaDV, 0);";
+                "    INSERT (maDV, maCTDP, ngaySuDung, soLuong, giaDV, trangThai) " +
+                "    VALUES (source.maDV, source.maCTDP, GETDATE(), source.soLuong, source.giaDV, 0);";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-            if (con == null)
-                return false;
+            if (con == null) return false;
             con.setAutoCommit(false);
             try {
                 try (PreparedStatement ps = con.prepareStatement(sql)) {
                     for (java.util.Map.Entry<model.entities.DichVu, Integer> entry : cart.entrySet()) {
-                        if (entry.getKey().getGia() == null)
-                            continue;
+                        if (entry.getKey().getGia() == null) continue;
                         ps.setString(1, entry.getKey().getMaDV());
-                        ps.setString(2, maCTHD);
+                        ps.setString(2, maCTDP);
                         ps.setInt(3, entry.getValue());
                         ps.setDouble(4, entry.getKey().getGia());
                         ps.addBatch();
@@ -288,14 +281,16 @@ public class DatPhongDAO {
         }
     }
 
-    private String findMaCTHDByMaHD(String maHD) {
-        String sql = "SELECT TOP 1 maCTHD FROM ChiTietHoaDon WHERE maHD = ?";
+    private String getMaCTDPDangSuDungByMaPhong(String maPhong) {
+        String sql = "SELECT ctdp.maCTDP FROM ChiTietDatPhong ctdp " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, maHD);
+            ps.setString(1, maPhong);
             ResultSet rs = ps.executeQuery();
             if (rs.next())
-                return rs.getString("maCTHD");
+                return rs.getString("maCTDP");
         } catch (SQLException e) {
             e.printStackTrace();
         }

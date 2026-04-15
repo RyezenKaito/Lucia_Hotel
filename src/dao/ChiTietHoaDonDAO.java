@@ -163,7 +163,7 @@ public class ChiTietHoaDonDAO {
         List<Object[]> list = new ArrayList<>();
         String sql =
             "SELECT p.maPhong, p.tenPhong, lp.tenLoaiPhong, " +
-            "       cthd.thoiGianLuuTru, cthd.thanhTien, ctdp.giaCoc " +
+            "       cthd.thoiGianLuuTru, cthd.thanhTien, ctdp.giaCoc, ctdp.maCTDP " +
             "FROM ChiTietHoaDon cthd " +
             "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
             "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
@@ -180,7 +180,8 @@ public class ChiTietHoaDonDAO {
                     rs.getString("tenLoaiPhong"),
                     rs.getDouble("thoiGianLuuTru"),
                     rs.getDouble("thanhTien"),
-                    rs.getDouble("giaCoc")
+                    rs.getDouble("giaCoc"),
+                    rs.getString("maCTDP")
                 });
             }
         } catch (Exception e) {

@@ -222,13 +222,17 @@ public class HoaDonView extends BorderPane {
             makeBillInfoRow("🏠 Mã đặt phòng:", maDat)
         );
 
-        Label lblPhongHeader = new Label("🛏  Phòng đã trả");
+        // DAO dịch vụ sử dụng
+        dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
+
+        Label lblPhongHeader = new Label("🛏  Phòng đã trả (Nhấn để xem dịch vụ)");
         lblPhongHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
         lblPhongHeader.setTextFill(Color.web(C_TEXT_DARK));
 
         VBox phongBox = new VBox(8);
         double tongTienPhong = 0;
         double tongCoc = 0;
+        double dynamicTienDV = 0;
 
         if (dsPhong.isEmpty()) {
             phongBox.getChildren().add(new Label("— Chưa có dữ liệu phòng"));
@@ -240,32 +244,81 @@ public class HoaDonView extends BorderPane {
                 double sodem      = (double)  row[3];
                 double thanhTien  = (double)  row[4];
                 double giaCoc     = (double)  row[5];
+                String maCTDP     = (String) row[6];
                 tongTienPhong += thanhTien;
                 tongCoc       += giaCoc;
 
+                VBox roomContainer = new VBox();
+                roomContainer.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 6; -fx-border-color: #e5e7eb; -fx-border-radius: 6;");
+
                 HBox r = new HBox();
                 r.setPadding(new Insets(8, 12, 8, 12));
-                r.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 6;");
+                r.setStyle("-fx-cursor: hand;");
                 Label lblP = new Label("🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
-                        + "  •  " + (int)sodem + " đêm");
+                        + "  •  " + (int)sodem + " đêm  ▼");
                 lblP.setFont(Font.font("Segoe UI", 13));
                 HBox.setHgrow(lblP, Priority.ALWAYS);
                 Label lblAmt = new Label(String.format("%,.0f đ", thanhTien));
                 lblAmt.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
                 lblAmt.setTextFill(Color.web(C_BLUE));
                 r.getChildren().addAll(lblP, lblAmt);
-                phongBox.getChildren().add(r);
+
+                VBox dvBox = new VBox(4);
+                dvBox.setPadding(new Insets(0, 12, 10, 32));
+                dvBox.setManaged(false);
+                dvBox.setVisible(false);
+
+                // Load services for this room
+                java.util.List<model.entities.DichVuSuDung> dvList = dvsdDAO.findByMaCTDP(maCTDP);
+                if (dvList.isEmpty()) {
+                    Label lblEmpty = new Label("— Không sử dụng dịch vụ");
+                    lblEmpty.setTextFill(Color.web(C_TEXT_GRAY));
+                    lblEmpty.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 12));
+                    dvBox.getChildren().add(lblEmpty);
+                } else {
+                    for (model.entities.DichVuSuDung dv : dvList) {
+                        dynamicTienDV += dv.getThanhTien();
+                        HBox dvRow = new HBox();
+                        Label dvName = new Label("🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
+                        dvName.setTextFill(Color.web(C_TEXT_GRAY));
+                        dvName.setFont(Font.font("Segoe UI", 12));
+                        HBox.setHgrow(dvName, Priority.ALWAYS);
+                        Label dvPrice = new Label(String.format("%,.0f đ", dv.getThanhTien()));
+                        dvPrice.setTextFill(Color.web(C_TEXT_DARK));
+                        dvPrice.setFont(Font.font("Segoe UI", 12));
+                        dvRow.getChildren().addAll(dvName, dvPrice);
+                        dvBox.getChildren().add(dvRow);
+                    }
+                }
+
+                r.setOnMouseClicked(e -> {
+                    boolean isVis = dvBox.isVisible();
+                    dvBox.setVisible(!isVis);
+                    dvBox.setManaged(!isVis);
+                    lblP.setText(lblP.getText().replace(isVis ? "▲" : "▼", isVis ? "▼" : "▲"));
+                });
+
+                roomContainer.getChildren().addAll(r, dvBox);
+                phongBox.getChildren().add(roomContainer);
             }
         }
+
+        // Adding ScrollPane for phongBox
+        ScrollPane scrollPhong = new ScrollPane(phongBox);
+        scrollPhong.setFitToWidth(true);
+        scrollPhong.setMaxHeight(300);
+        scrollPhong.setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
+        scrollPhong.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         // Tóm tắt tiền
         Separator sep = new Separator();
         VBox sumBox = new VBox(10);
         sumBox.setPadding(new Insets(8, 0, 0, 0));
 
-        double tienDV   = hd.getTienDV();
+        double tienDV   = dynamicTienDV > 0 ? dynamicTienDV : hd.getTienDV();
         double tienCoc  = tongCoc > 0 ? tongCoc : hd.getTienCoc();
-        double tongTT   = hd.getTongTien() > 0 ? hd.getTongTien() : Math.max(0, tongTienPhong + tienDV - tienCoc);
+        // Cọc chỉ trừ vào tiền phòng, không thế bù vào tiền dịch vụ
+        double tongTT   = Math.max(0, tongTienPhong - tienCoc) + tienDV;
 
         sumBox.getChildren().addAll(
             makeSumRow("Tiền phòng:",         String.format("%,.0f đ", tongTienPhong),  Color.web(C_TEXT_DARK)),
@@ -292,7 +345,7 @@ public class HoaDonView extends BorderPane {
         HBox btnRow = new HBox(btnClose);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
-        root.getChildren().addAll(lblTitle, khachBox, lblPhongHeader, phongBox, sumBox, btnRow);
+        root.getChildren().addAll(lblTitle, khachBox, lblPhongHeader, scrollPhong, sumBox, btnRow);
 
         Scene scene = new Scene(root);
         detailStage.setScene(scene);
@@ -316,6 +369,20 @@ public class HoaDonView extends BorderPane {
 
     private void loadData() {
         List<HoaDon> list = dao.getAllWithKhachHang(); // JOIN tên khách
+        
+        // Tự động tính toán lại tổng tiền dựa trên công thức mới để bảng và Doanh thu luôn hiện đúng
+        dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
+        for (HoaDon hd : list) {
+             double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
+             java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
+             double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
+             double tongTT = Math.max(0, currentSumPhong - hd.getTienCoc()) + totalTienDV;
+             
+             hd.setTienPhong(currentSumPhong);
+             hd.setTienDV(totalTienDV);
+             hd.setTongTien(tongTT);
+        }
+
         masterData.setAll(list);
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);

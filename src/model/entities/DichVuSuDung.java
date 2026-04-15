@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public class DichVuSuDung {
     private DichVu dichVu;
-    private ChiTietHoaDon chiTietHoaDon;
+    private ChiTietDatPhong chiTietDatPhong;
     private LocalDate ngaySuDung;
     private int soLuong;
     private double giaDV;
@@ -13,9 +13,9 @@ public class DichVuSuDung {
     public DichVuSuDung() {
     }
 
-    public DichVuSuDung(DichVu dichVu, ChiTietHoaDon chiTietHoaDon, LocalDate ngaySuDung, int soLuong, double giaDV, boolean trangThai) {
+    public DichVuSuDung(DichVu dichVu, ChiTietDatPhong chiTietDatPhong, LocalDate ngaySuDung, int soLuong, double giaDV, boolean trangThai) {
         this.dichVu = dichVu;
-        this.chiTietHoaDon = chiTietHoaDon;
+        this.chiTietDatPhong = chiTietDatPhong;
         this.ngaySuDung = ngaySuDung;
         this.soLuong = soLuong;
         this.giaDV = giaDV;
@@ -25,8 +25,8 @@ public class DichVuSuDung {
     public DichVu getDichVu() { return dichVu; }
     public void setDichVu(DichVu dichVu) { this.dichVu = dichVu; }
 
-    public ChiTietHoaDon getChiTietHoaDon() { return chiTietHoaDon; }
-    public void setChiTietHoaDon(ChiTietHoaDon chiTietHoaDon) { this.chiTietHoaDon = chiTietHoaDon; }
+    public ChiTietDatPhong getChiTietDatPhong() { return chiTietDatPhong; }
+    public void setChiTietDatPhong(ChiTietDatPhong chiTietDatPhong) { this.chiTietDatPhong = chiTietDatPhong; }
 
     public LocalDate getNgaySuDung() { return ngaySuDung; }
     public void setNgaySuDung(LocalDate ngaySuDung) { this.ngaySuDung = ngaySuDung; }

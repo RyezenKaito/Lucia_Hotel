@@ -1,4 +1,4 @@
-﻿--CREATE DATABASE QuanLyDatPhong;
+--CREATE DATABASE QuanLyDatPhong;
 --GO
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'LuciaHT')
 BEGIN
@@ -155,14 +155,14 @@ CREATE TABLE ChiTietHoaDon (
 
 CREATE TABLE DichVuSuDung (
     maDV         VARCHAR(20),
-    maCTHD       VARCHAR(20),
+    maCTDP       VARCHAR(20),
     ngaySuDung   DATE,
     soLuong      INT,
     giaDV        DECIMAL(18,2),
     trangThai    BIT DEFAULT 0,  -- 0: chÆ°a tÃ­nh vÃ o HÄ, 1: Ä‘Ã£ tÃ­nh vÃ o HÄ
-    CONSTRAINT PK_DVSD   PRIMARY KEY (maDV, maCTHD),
+    CONSTRAINT PK_DVSD   PRIMARY KEY (maDV, maCTDP),
     CONSTRAINT FK_DVSD_DV   FOREIGN KEY (maDV)   REFERENCES DV(maDV),
-    CONSTRAINT FK_DVSD_CTHD FOREIGN KEY (maCTHD) REFERENCES ChiTietHoaDon(maCTHD)
+    CONSTRAINT FK_DVSD_CTDP FOREIGN KEY (maCTDP) REFERENCES ChiTietDatPhong(maCTDP)
 );
 
 -- =============================

@@ -112,11 +112,11 @@ INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien) VALU
 ('CTHD002', 'HD002', 'CTDP002', 2, 1000000);
 
 -- DichVuSuDung
--- Thứ tự cột: maDV, maCTHD, ngaySuDung, soLuong, giaDV, trangThai
-INSERT INTO DichVuSuDung (maDV, maCTHD, ngaySuDung, soLuong, giaDV, trangThai) VALUES
-('DV001', 'CTHD001', '2026-03-21', 2,  20000, 1),
-('DV002', 'CTHD001', '2026-03-21', 1,  80000, 1),
-('DV003', 'CTHD002', '2026-03-22', 1, 100000, 1);
+-- Thứ tự cột: maDV, maCTDP, ngaySuDung, soLuong, giaDV, trangThai
+INSERT INTO DichVuSuDung (maDV, maCTDP, ngaySuDung, soLuong, giaDV, trangThai) VALUES
+('DV001', 'CTDP001', '2026-03-21', 2,  20000, 1),
+('DV002', 'CTDP001', '2026-03-21', 1,  80000, 1),
+('DV003', 'CTDP002', '2026-03-22', 1, 100000, 1);
 
 -- BangGiaDV_Header
 INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES

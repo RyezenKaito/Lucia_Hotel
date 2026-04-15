@@ -408,7 +408,7 @@ public class DatPhongView extends BorderPane {
                     }
 
                     String[] sqls = {
-                            "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietHoaDon cthd ON dvsd.maCTHD = cthd.maCTHD JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
+                            "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietDatPhong ctdp ON dvsd.maCTDP = ctdp.maCTDP WHERE ctdp.maDat = ?",
                             "DELETE cthd FROM ChiTietHoaDon cthd JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
                             "DELETE FROM HoaDon WHERE maDat = ?",
                             "DELETE FROM ChiTietDatPhong WHERE maDat = ?",

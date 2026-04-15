@@ -67,7 +67,6 @@ public class CheckOutView extends BorderPane {
 
     /* ── State hiện tại (search theo phòng) ────────────────────────── */
     private DatPhong currentDatPhong;
-    private String   currentMaHD;
     private String   currentMaPhong;
     private String   currentMaCTDP;
     private double   currentGiaPhong   = 0;
@@ -284,7 +283,6 @@ public class CheckOutView extends BorderPane {
             currentGiaPhong = (double) info[2];
             currentMaPhong  = (String) info[3];
             currentMaCTDP   = findMaCTDPByMaPhong(currentDatPhong.getMaDat(), maPhong);
-            currentMaHD     = datPhongDAO.getMaHDByMaPhong(maPhong);
 
             updateDetailUI_Phong();
             loadServices();
@@ -418,8 +416,8 @@ public class CheckOutView extends BorderPane {
 
     /* ── Service loading ────────────────────────────────────────────── */
     private void loadServices() {
-        if (currentMaHD != null) {
-            List<DichVuSuDung> list = dvsdDAO.findByMaHD(currentMaHD);
+        if (currentMaCTDP != null) {
+            List<DichVuSuDung> list = dvsdDAO.findByMaCTDP(currentMaCTDP);
             serviceTable.setItems(FXCollections.observableArrayList(list));
             currentTienDV = list.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
         } else {
@@ -447,8 +445,7 @@ public class CheckOutView extends BorderPane {
             else if (hour >= 12) currentLateFee = currentGiaPhong * 0.3;
         }
 
-        currentTongTien = currentTienPhong + currentTienDV + currentLateFee - currentTienCoc;
-        if (currentTongTien < 0) currentTongTien = 0;
+        currentTongTien = Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV;
     }
 
     /* ── Billing UI (mode theo phòng) ──────────────────────────────── */
@@ -599,10 +596,14 @@ public class CheckOutView extends BorderPane {
 
             // 4. Tính toán lại tổng tiền của HoaDon
             double currentSumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
-            double newTongTien = Math.max(0, currentSumPhong + currentTienDV - hd.getTienCoc());
+            
+            List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
+            double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
+            
+            double newTongTien = Math.max(0, currentSumPhong - hd.getTienCoc()) + totalTienDV;
             
             hd.setTienPhong(currentSumPhong);
-            hd.setTienDV(currentTienDV);
+            hd.setTienDV(totalTienDV);
             hd.setTongTien(newTongTien);
             hd.setNgayTaoHD(LocalDateTime.now());
             
@@ -703,7 +704,7 @@ public class CheckOutView extends BorderPane {
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
             
-            double newTongTien = Math.max(0, currentSumPhong + tienDV - hd.getTienCoc());
+            double newTongTien = Math.max(0, currentSumPhong - hd.getTienCoc()) + tienDV;
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(tienDV);
             hd.setTongTien(newTongTien);
@@ -762,7 +763,6 @@ public class CheckOutView extends BorderPane {
     private void resetView() {
         if (txtSearch != null) txtSearch.clear();
         currentDatPhong  = null;
-        currentMaHD      = null;
         currentMaPhong   = null;
         currentMaCTDP    = null;
         currentRoomList  = null;
