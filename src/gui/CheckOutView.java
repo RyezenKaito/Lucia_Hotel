@@ -671,6 +671,7 @@ public class CheckOutView extends BorderPane {
                     s.showAndWait();
                     resetView();
                     loadQuickSuggestions();
+                    serviceTable.getItems().clear();
                 } else {
                     new Alert(Alert.AlertType.ERROR, "Lưu dữ liệu thất bại. Vui lòng thử lại.").showAndWait();
                 }

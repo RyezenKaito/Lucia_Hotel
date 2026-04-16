@@ -560,7 +560,14 @@ public class DatPhongDAO {
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, trangThai);
             ps.setString(2, maDat);
-            return ps.executeUpdate() > 0;
+            boolean ok = ps.executeUpdate() > 0;
+            
+            // Đồng bộ trạng thái hóa đơn nếu là HỦY
+            if (ok && "DA_HUY".equals(trangThai)) {
+                new HoaDonDAO().updateTrangThaiByMaDatWithCon(con, maDat, "DA_HUY");
+            }
+            
+            return ok;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

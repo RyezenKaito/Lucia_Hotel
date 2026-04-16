@@ -1,4 +1,3 @@
-
 package dao;
 
 import java.sql.*;
@@ -286,5 +285,23 @@ public class HoaDonDAO {
             if (rs.next()) return rs.getDouble(1);
         } catch (Exception e) { e.printStackTrace(); }
         return 0;
+    }
+
+    public boolean updateTrangThaiByMaDatWithCon(Connection con, String maDat, String trangThai) throws SQLException {
+        String sql = "UPDATE HoaDon SET trangThaiThanhToan = ? WHERE maDat = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, trangThai);
+            ps.setString(2, maDat);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateTrangThaiByMaDat(String maDat, String trangThai) {
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            return updateTrangThaiByMaDatWithCon(con, maDat, trangThai);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

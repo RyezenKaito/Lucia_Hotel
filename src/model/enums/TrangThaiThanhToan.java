@@ -3,7 +3,8 @@ package model.enums;
 public enum TrangThaiThanhToan {
     CHUA_THANH_TOAN("Chưa thanh toán"),
     DA_THANH_TOAN_COC("Đã thanh toán cọc"),
-    DA_THANH_TOAN("Đã thanh toán xong");
+    DA_THANH_TOAN("Đã thanh toán xong"),
+    DA_HUY("Đã hủy");
 
     private final String displayName;
 
