@@ -124,9 +124,11 @@ CREATE TABLE HoaDon (
     -- Tráº¡ng thÃ¡i thanh toÃ¡n
     trangThaiThanhToan   NVARCHAR(30)  NOT NULL DEFAULT N'CHUA_THANH_TOAN'
                          CHECK (trangThaiThanhToan IN (
-                             N'CHUA_THANH_TOAN',     -- HÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t nhÆ°ng chÆ°a thu tiá»n
-                             N'DA_THANH_TOAN_COC',   -- ÄÃ£ thu cá»c, chÆ°a thanh toÃ¡n toÃ n bá»™
-                             N'DA_THANH_TOAN'        -- ÄÃ£ thu Ä‘á»§ tiá»n
+                            N'CHUA_THANH_TOAN',     -- HÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t nhÆ°ng chÆ°a thu tiá»n
+                            N'DA_THANH_TOAN_COC',   -- ÄÃ£ thu cá»c, chÆ°a thanh toÃ¡n toÃ n bá»™
+                            N'DA_THANH_TOAN',        -- ÄÃ£ thu Ä‘á»§ tiá»n
+                            N'DA_HOAN_COC',    -- MỚI
+                            N'DA_MAT_COC' 
                          )),
 
     -- ThÃ´ng tin thanh toÃ¡n (Ä‘iá»n khi DA_THANH_TOAN)
