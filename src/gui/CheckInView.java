@@ -309,6 +309,12 @@ public class CheckInView extends BorderPane {
      * 1. Update phong -> DANGSUDUNG (tung phong)
      * 2. Update don -> DA_CHECKIN (trong transaction)
      */
+/**
+     * Xac nhan check-in:
+     * 1. Tao Hoa Don (neu chua co)
+     * 2. Update phong -> DANGSUDUNG (tung phong) & Tao ChiTietHoaDon
+     * 3. Update don -> DA_CHECKIN (trong transaction)
+     */
     private void handleConfirm() {
         if (currentDatPhong == null || currentMaPhongs == null || currentMaPhongs.isEmpty())
             return;
@@ -316,7 +322,7 @@ public class CheckInView extends BorderPane {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Ban giao phong: " + String.join(", ", currentMaPhongs)
                         + "\n\nHe thong se:\n - Cap nhat trang thai phong -> Dang su dung"
-                        + "\n - Cap nhat don dat phong -> Da nhan phong",
+                        + "\n - Cap nhat don dat phong -> Da nhan phong\n - Tao hoa don moi cho don dat phong",
                 ButtonType.OK, ButtonType.CANCEL);
         confirm.setTitle("Xac nhan Check-in");
         confirm.setHeaderText("Xac nhan cho khach " + currentDatPhong.getKhachHang().getTenKH()
@@ -331,8 +337,31 @@ public class CheckInView extends BorderPane {
                     return;
                 con.setAutoCommit(false);
                 try {
+                    // ==========================================
+                    // 1. TÌM HOẶC TẠO HÓA ĐƠN MỚI
+                    // ==========================================
                     HoaDon hd = hoaDonDAO.getByMaDat(currentDatPhong.getMaDat());
+                    
+                    if (hd == null) {
+                        hd = new HoaDon();
+                        hd.setMaHD(hoaDonDAO.generateMaHD()); // Tự sinh mã HD0xx
+                        hd.setDatPhong(currentDatPhong);
+                        hd.setNhanVien(staff); // staff lấy từ constructor CheckInView
+                        hd.setTienPhong(0.0);
+                        hd.setTienDV(0.0);
+                        hd.setTienCoc(0.0); 
+                        hd.setThueVAT(0.0);
+                        hd.setTongTien(0.0);
+                        hd.setLoaiHD("HOA_DON_PHONG");
+                        hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
+                        
+                        // Insert hóa đơn vào DB
+                        hoaDonDAO.insertWithConnection(con, hd);
+                    }
 
+                    // ==========================================
+                    // 2. LẤY MÃ CHI TIẾT HÓA ĐƠN TIẾP THEO
+                    // ==========================================
                     String baseMaCTHD = cthdDAO.generateMaCTHD();
                     int lastNum = 0;
                     if (baseMaCTHD != null && baseMaCTHD.length() > 4) {
@@ -342,19 +371,26 @@ public class CheckInView extends BorderPane {
                         }
                     }
 
-                    // 1. Cập nhật phòng -> DANGSUDUNG & tạo ChiTietHoaDon
+                    // ==========================================
+                    // 3. CẬP NHẬT PHÒNG & TẠO CHI TIẾT HÓA ĐƠN
+                    // ==========================================
                     for (String maPhong : currentMaPhongs) {
                         phongDAO.updateTrangThaiWithCon(con, maPhong, "DANGSUDUNG");
                         String maCTDP = datPhongDAO.findMaCTDPByMaPhong(currentDatPhong.getMaDat(), maPhong);
+                        
                         if (maCTDP != null && hd != null) {
                             String maCTHD = String.format("CTHD%03d", lastNum++);
+                            // Tạo liên kết giữa Hóa Đơn và Chi tiết đặt phòng
                             cthdDAO.insertWithConnection(con, maCTHD, hd.getMaHD(), maCTDP, 0, 0);
                         }
                     }
 
-                    // 2. Cập nhật Đơn đặt phòng -> DA_CHECKIN
+                    // ==========================================
+                    // 4. CẬP NHẬT ĐƠN ĐẶT PHÒNG
+                    // ==========================================
                     datPhongDAO.updateTrangThaiWithCon(con, currentDatPhong.getMaDat(), "DA_CHECKIN");
 
+                    // LƯU TOÀN BỘ VÀO DATABASE
                     con.commit();
 
                     Alert ok = new Alert(Alert.AlertType.INFORMATION,
@@ -367,7 +403,7 @@ public class CheckInView extends BorderPane {
                     resetView();
                     loadQuickSuggestions();
                 } catch (Exception ex) {
-                    con.rollback();
+                    con.rollback(); // Nếu có lỗi thì hủy bỏ toàn bộ thao tác
                     throw ex;
                 } finally {
                     con.setAutoCommit(true);
