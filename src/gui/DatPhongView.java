@@ -12,25 +12,23 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Window;
-import javafx.scene.input.MouseButton;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.text.DecimalFormat;
 import java.util.Optional;
 
 import connectDatabase.ConnectDatabase;
-import model.utils.DimOverlay;
 
 /**
  * DatPhongView – Giao diện quản lý đặt phòng (JavaFX).
- * Cấu trúc đồng bộ với KhachHangView và NhanVienView.
  */
 public class DatPhongView extends BorderPane {
 
     /* ── Bảng màu ────────────────────────────────────────────────── */
-    private static final String C_SIDEBAR = "#1e3a8a";
     private static final String C_ACTIVE = "#1d4ed8";
     private static final String C_CONTENT_BG = "#f8f9fa";
     private static final String C_BORDER = "#e9ecef";
@@ -51,7 +49,6 @@ public class DatPhongView extends BorderPane {
 
     private final dao.DatPhongDAO datPhongDAO = new dao.DatPhongDAO();
 
-    /* ── Constructor ──────────────────────────────────────────────── */
     public DatPhongView() {
         setStyle("-fx-background-color: " + C_CONTENT_BG + ";");
         setPadding(new Insets(24, 32, 24, 32));
@@ -192,16 +189,16 @@ public class DatPhongView extends BorderPane {
                     confirmDelete(r);
             });
 
-            // KHÓA CHỨC NĂNG HỦY/XÓA DỰA TRÊN TRẠNG THÁI
+            // Khóa chức năng hủy/xóa dựa trên trạng thái
             row.itemProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
                     String status = (String) newVal[8];
 
-                    // Chỉ cho hủy khi CHƯA nhận phòng (CHO_XACNHAN hoặc DA_XACNHAN)
+                    // Chỉ cho hủy khi CHƯA nhận phòng
                     boolean canCancel = "CHO_XACNHAN".equals(status) || "DA_XACNHAN".equals(status);
                     miCancel.setDisable(!canCancel);
 
-                    // Chỉ cho xóa nếu KHÔNG phải đang ở hoặc đã trả phòng
+                    // Chỉ cho xóa nếu không phải đang ở hoặc đã trả phòng
                     boolean canDelete = !"DA_CHECKIN".equals(status) && !"DA_CHECKOUT".equals(status);
                     miDelete.setDisable(!canDelete);
                 }
@@ -228,7 +225,7 @@ public class DatPhongView extends BorderPane {
         colSTT.setMinWidth(50);
         colSTT.setMaxWidth(60);
         colSTT.setStyle("-fx-alignment: CENTER;");
-        colSTT.setReorderable(false); // KHÓA CỘT STT
+        colSTT.setReorderable(false);
 
         TableColumn<Object[], String> colMaDat = col("Mã đặt", 0, 80);
         colMaDat.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
@@ -248,9 +245,9 @@ public class DatPhongView extends BorderPane {
 
         // Trạng thái Badge
         TableColumn<Object[], String> colStatus = new TableColumn<>("Trạng thái");
-        colStatus.setReorderable(false); // KHÓA CỘT TRẠNG THÁI
+        colStatus.setReorderable(false);
         colStatus.setCellValueFactory(cd -> new SimpleStringProperty((String) cd.getValue()[8]));
-        colStatus.setMinWidth(110);
+        colStatus.setMinWidth(140);
         colStatus.setStyle("-fx-alignment: CENTER;");
         colStatus.setCellFactory(c -> new TableCell<>() {
             @Override
@@ -265,38 +262,14 @@ public class DatPhongView extends BorderPane {
                 badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 String bg, fg;
                 switch (item) {
-                    case "DA_CHECKIN" -> {
-                        bg = "#d1fae5";
-                        fg = "#065f46";
-                    }
-                    case "DA_CHECKOUT" -> {
-                        bg = "#f3f4f6";
-                        fg = "#6b7280";
-                    }
-                    case "DA_HUY" -> {
-                        bg = "#fee2e2";
-                        fg = "#b91c1c";
-                    }
-                    case "DA_XACNHAN" -> {
-                        bg = "#ecfdf5";
-                        fg = "#10b981";
-                    }
-                    case "CHO_XACNHAN" -> {
-                        bg = "#fef3c7";
-                        fg = "#d97706";
-                    }
-                    case "HUY_HOAN_COC" -> {
-                        bg = "#e0e7ff";
-                        fg = "#3730a3";
-                    }
-                    case "HUY_MAT_COC" -> {
-                        bg = "#fce7f3";
-                        fg = "#be185d";
-                    }
-                    default -> {
-                        bg = "#dbeafe";
-                        fg = "#1e40af";
-                    }
+                    case "DA_CHECKIN" -> { bg = "#d1fae5"; fg = "#065f46"; }
+                    case "DA_CHECKOUT" -> { bg = "#f3f4f6"; fg = "#6b7280"; }
+                    case "DA_HUY" -> { bg = "#fee2e2"; fg = "#b91c1c"; }
+                    case "DA_XACNHAN" -> { bg = "#ecfdf5"; fg = "#10b981"; }
+                    case "CHO_XACNHAN" -> { bg = "#fef3c7"; fg = "#d97706"; }
+                    case "HUY_HOAN_COC" -> { bg = "#e0e7ff"; fg = "#3730a3"; }
+                    case "HUY_MAT_COC" -> { bg = "#fce7f3"; fg = "#be185d"; }
+                    default -> { bg = "#dbeafe"; fg = "#1e40af"; }
                 }
                 badge.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg +
                         "; -fx-padding: 3 10 3 10; -fx-background-radius: 12;");
@@ -325,7 +298,7 @@ public class DatPhongView extends BorderPane {
         c.setCellValueFactory(cd -> new SimpleStringProperty(
                 cd.getValue()[idx] != null ? cd.getValue()[idx].toString() : ""));
         c.setMinWidth(minW);
-        c.setReorderable(false); // KHÓA CÁC CỘT CÒN LẠI (KHÔNG CHO KÉO THẢ)
+        c.setReorderable(false);
         return c;
     }
 
@@ -341,10 +314,10 @@ public class DatPhongView extends BorderPane {
                        SUM(ctdp.soNguoi) as soNguoi,
                        SUM(ctdp.giaCoc) as giaCoc,
 
-                       -- Dùng EXISTS để tìm hóa đơn mà không làm nhân đôi dòng
+                       -- [ĐÃ SỬA] Dùng trangThaiThanhToan của HoaDon để phân biệt HỦY HOÀN CỌC / HỦY MẤT CỌC
                        CASE
-                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND loaiHD = 'HOA_DON_HOAN_TIEN') THEN 'HUY_HOAN_COC'
-                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND loaiHD = 'HOA_DON_PHONG') THEN 'HUY_MAT_COC'
+                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND trangThaiThanhToan = 'DA_HOAN_COC') THEN 'HUY_HOAN_COC'
+                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND trangThaiThanhToan = 'DA_MAT_COC') THEN 'HUY_MAT_COC'
                            ELSE dp.trangThai
                        END AS trangThai,
 
@@ -419,7 +392,6 @@ public class DatPhongView extends BorderPane {
 
     /* ── ACTIONS ────────────────────────────────────────────────────── */
 
-    // Gọi form Thêm
     private void openAddDialog() {
         Window owner = getScene().getWindow();
         new ThemSuaDatPhongDialog(owner, this::loadData).showDialog();
@@ -432,12 +404,17 @@ public class DatPhongView extends BorderPane {
         new ThemSuaDatPhongDialog(owner, maDat, this::loadData).showDialog();
     }
 
+    /**
+     * [ĐÃ REFACTOR] Xác nhận hủy đơn đặt phòng.
+     * Logic: ngày đặt cách ngày check-in >= 3 ngày → HOÀN CỌC.
+     *        ngày đặt cách ngày check-in <  3 ngày → MẤT CỌC.
+     * Không hiện UI chọn trạng thái — hệ thống tự xác định.
+     */
     private void confirmCancel(Object[] row) {
         String maDat = (String) row[0];
         String tenKH = (String) row[1];
+        String checkInStr = (String) row[4];
 
-        // 1. LẤY NGÀY CHECK-IN ĐỂ TÍNH TOÁN THEO NGHIỆP VỤ KHÁCH SẠN
-        String checkInStr = (String) row[4]; // Cột 4 trên bảng là Chuỗi ngày Check-in
         if (checkInStr == null || checkInStr.equals("—")) {
             showError("Đơn này chưa có ngày Check-in, không thể tính toán!");
             return;
@@ -445,83 +422,85 @@ public class DatPhongView extends BorderPane {
 
         LocalDateTime ngayCheckIn;
         try {
-            // Ép chuỗi "16/04/2026 14:00" về kiểu Ngày giờ
-            ngayCheckIn = LocalDateTime.parse(checkInStr, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            ngayCheckIn = LocalDateTime.parse(checkInStr, FMT);
         } catch (Exception e) {
             showError("Lỗi hệ thống khi đọc định dạng ngày Check-in.");
             return;
         }
 
-        // 2. TÍNH SỐ NGÀY TỪ HÔM NAY ĐẾN LÚC CHECK-IN
-        // Tính bằng LocalDate để bỏ qua giờ phút, chỉ đếm ngày chênh lệch
-        long daysUntilCheckIn = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(),
-                ngayCheckIn.toLocalDate());
-
-        // Hủy trước 3 ngày trở lên -> Hoàn. Dưới 3 ngày -> Mất.
+        // Tính số ngày từ HÔM NAY đến NGÀY CHECK-IN (bỏ qua giờ phút)
+        long daysUntilCheckIn = ChronoUnit.DAYS.between(LocalDate.now(), ngayCheckIn.toLocalDate());
         boolean duocHoanCoc = (daysUntilCheckIn >= 3);
 
+        String trangThaiLabel = duocHoanCoc
+                ? "✅  Được HOÀN CỌC (hủy sớm — cách check-in ≥ 3 ngày)"
+                : "❌  MẤT CỌC (hủy muộn — cách check-in < 3 ngày)";
+
         String msg = String.format(
-                "Xác nhận HỦY đơn %s của khách %s?\n\n" +
-                        "📅 Ngày Check-in: %s\n" +
-                        "⏳ Khách hủy trước: %d ngày\n" +
-                        "💰 Chế độ: %s",
-                maDat, tenKH,
-                checkInStr,
-                daysUntilCheckIn,
-                duocHoanCoc ? "Hủy sớm (>= 3 ngày) -> ĐƯỢC HOÀN CỌC ✅" : "Hủy sát ngày/Trễ hạn -> BỊ MẤT CỌC ❌");
+                "Xác nhận HỦY đơn %s của khách %s?%n%n" +
+                "📅 Ngày Check-in: %s%n" +
+                "⏳ Còn lại: %d ngày%n" +
+                "💰 Chế độ: %s",
+                maDat, tenKH, checkInStr, daysUntilCheckIn, trangThaiLabel);
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Hủy đơn đặt phòng");
+        alert.setHeaderText(null);
         alert.setContentText(msg);
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-                con.setAutoCommit(false);
-                try {
-                    // Chuyển đơn thành DA_HUY
-                    try (PreparedStatement ps = con
-                            .prepareStatement("UPDATE DatPhong SET trangThai = 'DA_HUY' WHERE maDat = ?")) {
-                        ps.setString(1, maDat);
-                        ps.executeUpdate();
-                    }
+        if (result.isEmpty() || result.get() != ButtonType.OK) return;
 
-                    // Trả lại phòng trống
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "UPDATE Phong SET tinhTrang = N'CONTRONG' WHERE maPhong IN (SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?)")) {
-                        ps.setString(1, maDat);
-                        ps.executeUpdate();
-                    }
+        executeCancel(maDat, duocHoanCoc, daysUntilCheckIn);
+    }
 
-                    // Lưu Hóa Đơn bằng chứng
-                    // 3. CẬP NHẬT LẠI HÓA ĐƠN ĐÃ CÓ SẴN (Chuyển trạng thái từ Cọc -> Đã thanh toán)
-                    String loaiHD = duocHoanCoc ? "HOA_DON_HOAN_TIEN" : "HOA_DON_PHONG";
-                    String ghiChu = duocHoanCoc ? "Hoàn cọc (Hủy trước " + daysUntilCheckIn + " ngày)"
-                            : "Thu phạt (Hủy sát ngày/Trễ hạn)";
-
-                    // Dùng lệnh UPDATE để sửa chính hóa đơn gốc, không đẻ thêm hóa đơn mới
-                    String sqlUpdateHD = "UPDATE HoaDon SET loaiHD = ?, trangThaiThanhToan = 'DA_THANH_TOAN', ghiChuThanhToan = ?, ngayThanhToan = GETDATE() WHERE maDat = ?";
-
-                    try (PreparedStatement ps = con.prepareStatement(sqlUpdateHD)) {
-                        ps.setString(1, loaiHD);
-                        ps.setString(2, ghiChu);
-                        ps.setString(3, maDat);
-                        ps.executeUpdate();
-                    }
-
-                    con.commit();
-                    loadData();
-                    showInfo("Thành công", "Đã hủy đơn " + maDat + ". Hóa đơn tự động: "
-                            + (duocHoanCoc ? "HOÀN CỌC" : "THU PHẠT") + ".");
-                } catch (Exception ex) {
-                    con.rollback();
-                    showError("Lỗi CSDL: " + ex.getMessage());
-                } finally {
-                    con.setAutoCommit(true);
+    /**
+     * Thực hiện hủy đơn và cập nhật hóa đơn theo chế độ hoàn cọc / mất cọc.
+     */
+    private void executeCancel(String maDat, boolean duocHoanCoc, long daysUntilCheckIn) {
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                // 1. Chuyển đơn thành DA_HUY
+                try (PreparedStatement ps = con
+                        .prepareStatement("UPDATE DatPhong SET trangThai = 'DA_HUY' WHERE maDat = ?")) {
+                    ps.setString(1, maDat);
+                    ps.executeUpdate();
                 }
+
+                // 2. [ĐÃ SỬA] Cập nhật hóa đơn gốc
+                //    - loaiHD:             HOA_DON_HOAN_TIEN (hoàn) hoặc HOA_DON_PHONG (mất cọc)
+                //    - trangThaiThanhToan: DA_HOAN_COC hoặc DA_MAT_COC (2 trạng thái mới)
+                String loaiHD = duocHoanCoc ? "HOA_DON_HOAN_TIEN" : "HOA_DON_PHONG";
+                String trangThaiTT = duocHoanCoc ? "DA_HOAN_COC" : "DA_MAT_COC";
+                String ghiChu = duocHoanCoc
+                        ? "Hoàn cọc (Hủy trước " + daysUntilCheckIn + " ngày)"
+                        : "Thu phạt (Hủy sát ngày/Trễ hạn)";
+
+                String sqlUpdateHD = "UPDATE HoaDon SET loaiHD = ?, trangThaiThanhToan = ?, " +
+                        "ghiChuThanhToan = ?, ngayThanhToan = GETDATE() WHERE maDat = ?";
+
+                try (PreparedStatement ps = con.prepareStatement(sqlUpdateHD)) {
+                    ps.setString(1, loaiHD);
+                    ps.setString(2, trangThaiTT);
+                    ps.setString(3, ghiChu);
+                    ps.setString(4, maDat);
+                    ps.executeUpdate();
+                }
+
+                con.commit();
+                loadData();
+                showInfo("Thành công",
+                        "Đã hủy đơn " + maDat + ". Chế độ: " + (duocHoanCoc ? "HOÀN CỌC" : "THU PHẠT"));
             } catch (Exception ex) {
-                ex.printStackTrace();
+                con.rollback();
+                showError("Lỗi CSDL: " + ex.getMessage());
+            } finally {
+                con.setAutoCommit(true);
             }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("Lỗi kết nối: " + ex.getMessage());
         }
     }
 
@@ -535,42 +514,35 @@ public class DatPhongView extends BorderPane {
         alert.setContentText("Bạn có chắc muốn xóa đơn " + maDat + " của " + tenKH + "?");
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-                con.setAutoCommit(false);
-                try {
-                    // Trước khi xóa, cập nhật trạng thái phòng về CONTRONG
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "UPDATE Phong SET tinhTrang = N'CONTRONG' WHERE maPhong IN (SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?) AND tinhTrang = N'DANGSUDUNG'")) {
+        if (result.isEmpty() || result.get() != ButtonType.OK) return;
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                String[] sqls = {
+                        "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietDatPhong ctdp ON dvsd.maCTDP = ctdp.maCTDP WHERE ctdp.maDat = ?",
+                        "DELETE cthd FROM ChiTietHoaDon cthd JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
+                        "DELETE FROM HoaDon WHERE maDat = ?",
+                        "DELETE FROM ChiTietDatPhong WHERE maDat = ?",
+                        "DELETE FROM DatPhong WHERE maDat = ?"
+                };
+                for (String s : sqls) {
+                    try (PreparedStatement ps = con.prepareStatement(s)) {
                         ps.setString(1, maDat);
                         ps.executeUpdate();
                     }
-
-                    String[] sqls = {
-                            "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietDatPhong ctdp ON dvsd.maCTDP = ctdp.maCTDP WHERE ctdp.maDat = ?",
-                            "DELETE cthd FROM ChiTietHoaDon cthd JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
-                            "DELETE FROM HoaDon WHERE maDat = ?",
-                            "DELETE FROM ChiTietDatPhong WHERE maDat = ?",
-                            "DELETE FROM DatPhong WHERE maDat = ?"
-                    };
-                    for (String s : sqls) {
-                        try (PreparedStatement ps = con.prepareStatement(s)) {
-                            ps.setString(1, maDat);
-                            ps.executeUpdate();
-                        }
-                    }
-                    con.commit();
-                    loadData();
-                    showInfo("Thành công!", "Đã xóa đơn đặt phòng " + maDat + ".");
-                } catch (Exception ex) {
-                    con.rollback();
-                    showError("Lỗi khi xóa: " + ex.getMessage());
-                } finally {
-                    con.setAutoCommit(true);
                 }
+                con.commit();
+                loadData();
+                showInfo("Thành công!", "Đã xóa đơn đặt phòng " + maDat + ".");
             } catch (Exception ex) {
-                ex.printStackTrace();
+                con.rollback();
+                showError("Lỗi khi xóa: " + ex.getMessage());
+            } finally {
+                con.setAutoCommit(true);
             }
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -583,6 +555,9 @@ public class DatPhongView extends BorderPane {
     }
 
     private String mapTrangThai(String key) {
+        // Map các trạng thái đặc biệt (không có trong enum)
+        if ("HUY_HOAN_COC".equals(key)) return "Hủy – Hoàn cọc";
+        if ("HUY_MAT_COC".equals(key)) return "Hủy – Mất cọc";
         try {
             return model.enums.TrangThaiDatPhong.valueOf(key).getThongTinTrangThai();
         } catch (Exception e) {
