@@ -1,7 +1,5 @@
 package model.utils;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -10,22 +8,32 @@ import java.util.Set;
  */
 public final class ValidationUtils {
 
-    // Chống khởi tạo class này (vì đây là Utility Class)
     private ValidationUtils() {
     }
 
     /*
      * ══════════════════════════════════════════════════════════════════
-     * 1. CÁC HẰNG SỐ REGEX (Dùng cho hàm .matches())
+     * 1. CÁC HẰNG SỐ REGEX
      * ══════════════════════════════════════════════════════════════════
      */
 
     /**
-     * * HỌ VÀ TÊN:
-     * - Chỉ cho phép chữ cái (hỗ trợ 100% tiếng Việt), khoảng trắng, nháy đơn, gạch
-     * nối.
+     * HỌ VÀ TÊN (ĐÃ SỬA):
+     * - Cho phép chữ cái (Unicode — hỗ trợ tiếng Việt, tên quốc tế).
+     * - Cho phép khoảng trắng.
+     * - Cho phép dấu nháy đơn ' (O'Brien).
+     * - Cho phép dấu gạch nối - (Jean-Paul — tên Pháp).
+     * - Cho phép dấu chấm . (Mr. John, tên nước ngoài).
+     * - KHÔNG cho phép 2 ký tự đặc biệt liên tiếp (--, .., .-, -., ''..)
+     *   → Dùng isValidNameStructure() để kiểm tra bổ sung sau khi matches.
      */
-    public static final String REGEX_NAME = "^[\\p{L}\\s\\'-]+$";
+    public static final String REGEX_NAME = "^[\\p{L}\\s\\.\\'-]+$";
+
+    /**
+     * Regex bắt 2 ký tự đặc biệt liên tiếp (dùng cho validate tên).
+     * Ký tự đặc biệt: . - ' (dấu chấm, gạch nối, nháy đơn)
+     */
+    public static final String REGEX_CONSECUTIVE_SPECIAL_CHARS = ".*[\\.\\-'][\\.\\-'].*";
 
     /**
      * CHỐNG LẶP KÝ TỰ BẤT THƯỜNG:
@@ -34,25 +42,24 @@ public final class ValidationUtils {
     public static final String REGEX_SPAM_CHAR = ".*(.)\\1{2,}.*";
 
     /**
-     * SỐ ĐIỆN THOẠI DI ĐỘNG & MÁY BÀN (Chuẩn Việt Nam mới nhất):
+     * SỐ ĐIỆN THOẠI DI ĐỘNG (Chuẩn Việt Nam):
      * - Di động (10 số): 03x, 05x, 07x, 08x, 09x
      */
     public static final String REGEX_PHONE_VN = "^(03|05|07|08|09)\\d{8}$";
 
     /**
-     * CĂN CƯỚC CÔNG DÂN (CCCD):
-     * - Đúng 12 chữ số.
+     * CĂN CƯỚC CÔNG DÂN (CCCD): Đúng 12 chữ số.
      */
     public static final String REGEX_CCCD_FORMAT = "^\\d{12}$";
 
     /*
      * ══════════════════════════════════════════════════════════════════
-     * 2. CÁC HÀM KIỂM TRA LOGIC NHANH
+     * 2. CÁC HÀM KIỂM TRA LOGIC
      * ══════════════════════════════════════════════════════════════════
      */
 
     /**
-     * Kiểm tra độ dài Họ và Tên (Tối thiểu 2 từ, Họ >= 1, Tên >= 2 ký tự)
+     * Kiểm tra độ dài Họ và Tên (Tối thiểu 2 từ).
      */
     public static boolean isValidNameLength(String ten) {
         if (ten == null || ten.trim().isEmpty())
@@ -64,10 +71,51 @@ public final class ValidationUtils {
     }
 
     /**
-     * Kiểm tra mã tỉnh từ 001 - 096
-     * không có 009,013,016, 018, 021, 024, 028, 029, 032, 039, 041, 043, 047, 050,
-     * 053,
-     * 055, 057, 059, 061, 063, 065, 069, 071, 073, 076, 078, 081, 085, 088, 090.
+     * [MỚI] Kiểm tra cấu trúc tên hợp lệ — không có 2 ký tự đặc biệt liên tiếp,
+     * không bắt đầu/kết thúc bằng ký tự đặc biệt.
+     *
+     * Các trường hợp CHẶN:
+     *   - "Jean--Paul"   (2 gạch nối liền)
+     *   - "Mr..John"     (2 chấm liền)
+     *   - "A.-B"         ( chấm rồi gạch)
+     *   - "-Nam"         (bắt đầu bằng gạch)
+     *   - "Nam."         (kết thúc bằng chấm)
+     *
+     * Các trường hợp CHẤP NHẬN:
+     *   - "Nguyễn Văn A"
+     *   - "Jean-Paul Sartre"
+     *   - "Mr. John"
+     *   - "O'Brien"
+     *   - "Ho Chi Minh"
+     *   - "Jean-Pierre O'Neil"
+     */
+    public static boolean isValidNameStructure(String ten) {
+        if (ten == null) return false;
+        String t = ten.trim();
+        if (t.isEmpty()) return false;
+
+        // Không cho bắt đầu/kết thúc bằng ký tự đặc biệt
+        char first = t.charAt(0);
+        char last = t.charAt(t.length() - 1);
+        if (first == '.' || first == '-' || first == '\'') return false;
+        if (last == '-' || last == '\'') return false;
+        // Ghi chú: dấu chấm cuối tên có thể chấp nhận cho viết tắt (VD: "John Jr.")
+        // => Mình cho phép kết thúc bằng dấu chấm
+
+        // Không cho 2 ký tự đặc biệt liên tiếp (cân nhắc cả khoảng trắng ở giữa:
+        // "Jean - Paul" với khoảng trắng 2 bên gạch vẫn OK vì không liên tiếp)
+        if (t.matches(REGEX_CONSECUTIVE_SPECIAL_CHARS)) return false;
+
+        // Không cho ký tự đặc biệt sát khoảng trắng (VD: "A .B" hoặc "A- B")
+        // Tuy nhiên chấp nhận "Mr. John" → dấu chấm đứng trước khoảng trắng.
+        // Không chặn "- " hoặc " -" vì đây là ý đồ viết thường gặp,
+        // chỉ chặn các cặp đặc biệt-đặc biệt liền nhau như "--", "..", ".-"...
+
+        return true;
+    }
+
+    /**
+     * Kiểm tra mã tỉnh trên CCCD có hợp lệ hay không.
      */
     private static final Set<String> PROVINCE_CODES = Set.of(
             "001", "002", "004", "006", "008", "010", "011", "012", "014", "015",
@@ -78,27 +126,19 @@ public final class ValidationUtils {
             "080", "082", "083", "084", "086", "087", "089", "091", "092", "093",
             "094", "095", "096");
 
-    // ── [ĐÃ SỬA Ở ĐÂY] ──────────────────────────────────────────────
     public static boolean isValidProvinceCode(String cccd) {
-        // Dùng luôn hằng số REGEX_CCCD_FORMAT để đảm bảo chuỗi không null và đủ 12 số
-        // Tránh lỗi StringIndexOutOfBoundsException khi dùng substring()
         if (cccd == null || !cccd.matches(REGEX_CCCD_FORMAT)) {
             return false;
         }
         return PROVINCE_CODES.contains(cccd.substring(0, 3));
     }
-    // ────────────────────────────────────────────────────────────────
 
-    /**
-     * Kiểm tra Mã thế kỷ và Giới tính (Số thứ 4 của CCCD) so với Năm sinh thực tế.
-     */
     public static boolean isValidCCCDCenturyAndGender(String cccd, int namSinh) {
         if (cccd == null || cccd.length() < 4)
             return false;
 
         int theKyGioiTinh = cccd.charAt(3) - '0';
 
-        // Quy định mã thế kỷ & giới tính của Bộ Công An (Nam chẵn, Nữ lẻ)
         if (namSinh >= 1900 && namSinh <= 1999)
             return (theKyGioiTinh == 0 || theKyGioiTinh == 1);
         if (namSinh >= 2000 && namSinh <= 2099)
@@ -106,9 +146,6 @@ public final class ValidationUtils {
         return false;
     }
 
-    /**
-     * Kiểm tra 2 số năm sinh (Số thứ 5 và 6 của CCCD) so với Năm sinh thực tế.
-     */
     public static boolean isValidCCCDBirthYear(String cccd, int namSinh) {
         if (cccd == null || cccd.length() < 6)
             return false;
@@ -125,14 +162,10 @@ public final class ValidationUtils {
      * ══════════════════════════════════════════════════════════════════
      */
 
-    /**
-     * Chuẩn hóa chuỗi Tên (Viết hoa chữ cái đầu mỗi từ, xóa khoảng trắng thừa).
-     */
     public static String toTitleCase(String input) {
         if (input == null || input.trim().isEmpty())
             return "";
 
-        // Xóa khoảng trắng thừa ở 2 đầu và giữa các chữ
         input = input.trim().replaceAll("\\s+", " ");
         StringBuilder sb = new StringBuilder();
         boolean nextUpper = true;
@@ -153,51 +186,37 @@ public final class ValidationUtils {
 
     /*
      * ══════════════════════════════════════════════════════════════════
-     * 4. HÀM TIỆN ÍCH GIAO DIỆN (UI UTILITIES)
+     * 4. HÀM TIỆN ÍCH GIAO DIỆN
      * ══════════════════════════════════════════════════════════════════
      */
 
-    /**
-     * Gắn bộ lọc vào TextField để CHỈ CHO PHÉP NHẬP SỐ và giới hạn độ dài.
-     */
     public static void applyNumericOnlyFilter(javafx.scene.control.TextField textField, int maxLength) {
         if (textField == null)
             return;
 
-        // Tạo bộ lọc: Chặn nếu ký tự mới thêm vào KHÔNG phải là số, hoặc tổng độ dài
-        // vượt quá maxLength
         javafx.scene.control.TextFormatter<String> formatter = new javafx.scene.control.TextFormatter<>(change -> {
             if (!change.isContentChange()) {
-                return change; // Trả về bình thường nếu không có nội dung thay đổi
+                return change;
             }
 
             String newText = change.getControlNewText();
-            // Nếu chuỗi mới rỗng (người dùng đang xóa) HOẶC chuỗi mới toàn là số và không
-            // vượt quá giới hạn
             if (newText.isEmpty() || (newText.matches("\\d+") && newText.length() <= maxLength)) {
-                return change; // Hợp lệ, cho phép thay đổi
+                return change;
             }
 
-            return null; // Trả về null nghĩa là từ chối thay đổi (không cho nhập)
+            return null;
         });
 
         textField.setTextFormatter(formatter);
     }
 
-    /**
-     * Chặn các dãy số CCCD "rác" hoặc giả mạo phổ biến.
-     * - Chặn 12 chữ số giống hệt nhau (111..., 222...).
-     * - Chặn chuỗi tiến/lùi đơn giản (0123..., 9876...).
-     */
     public static boolean isCCCDInBlacklist(String cccd) {
         if (cccd == null || cccd.length() != 12)
             return false;
 
-        // 1. Chặn chuỗi lặp 12 chữ số giống hệt nhau
         if (cccd.matches("^(\\d)\\1{11}$"))
             return true;
 
-        // 2. Chặn chuỗi tiến/lùi đơn giản
         String ascending = "01234567890123456789";
         String descending = "98765432109876543210";
         if (ascending.contains(cccd) || descending.contains(cccd))
