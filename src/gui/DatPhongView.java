@@ -113,7 +113,6 @@ public class DatPhongView extends BorderPane {
         stats.setAlignment(Pos.CENTER_RIGHT);
         stats.getChildren().addAll(
                 buildStatCard("Tổng", lblTotal, "#1f2937"),
-                buildStatCard("Chờ xác nhận", lblChoXacNhan, "#d97706"),
                 buildStatCard("Đã xác nhận", lblDaDat, C_ACTIVE),
                 buildStatCard("Đã nhận phòng", lblDangO, "#16a34a"),
                 buildStatCard("Đã trả phòng", lblDaTra, C_TEXT_MUTED));
@@ -178,7 +177,7 @@ public class DatPhongView extends BorderPane {
             });
 
             MenuItem miCancel = new MenuItem("Hủy đơn đặt phòng");
-            miCancel.setStyle("-fx-font-size: 13px; -fx-text-fill: #ea580c;");
+            miCancel.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miCancel.setOnAction(e -> {
                 Object[] r = row.getItem();
                 if (r != null)
@@ -197,7 +196,7 @@ public class DatPhongView extends BorderPane {
             row.itemProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
                     String status = (String) newVal[8];
-                    
+
                     // Chỉ cho hủy khi CHƯA nhận phòng (CHO_XACNHAN hoặc DA_XACNHAN)
                     boolean canCancel = "CHO_XACNHAN".equals(status) || "DA_XACNHAN".equals(status);
                     miCancel.setDisable(!canCancel);
@@ -210,7 +209,6 @@ public class DatPhongView extends BorderPane {
 
             ctx.getItems().addAll(miDetail, miCancel, new SeparatorMenuItem(), miDelete);
             row.setContextMenu(ctx);
-
 
             row.setOnMouseClicked(e -> {
                 if (e.getClickCount() == 2 && !row.isEmpty()) {
@@ -232,9 +230,9 @@ public class DatPhongView extends BorderPane {
         colSTT.setStyle("-fx-alignment: CENTER;");
         colSTT.setReorderable(false); // KHÓA CỘT STT
 
-        TableColumn<Object[], String> colMaDat = col("Mã đặt", 0, 100);
-        colMaDat.setStyle("-fx-alignment: CENTER;");
-        TableColumn<Object[], String> colTenKH = col("Khách hàng", 1, 160);
+        TableColumn<Object[], String> colMaDat = col("Mã đặt", 0, 80);
+        colMaDat.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        TableColumn<Object[], String> colTenKH = col("Khách hàng", 1, 150);
         TableColumn<Object[], String> colSDT = col("SĐT", 2, 110);
         colSDT.setStyle("-fx-alignment: CENTER;");
         TableColumn<Object[], String> colPhong = col("Phòng", 3, 90);
@@ -287,12 +285,12 @@ public class DatPhongView extends BorderPane {
                         bg = "#fef3c7";
                         fg = "#d97706";
                     }
-                    case"HUY_HOAN_COC" -> {
+                    case "HUY_HOAN_COC" -> {
                         bg = "#e0e7ff";
                         fg = "#3730a3";
                     }
                     case "HUY_MAT_COC" -> {
-                        bg = "#fce7f3"; 
+                        bg = "#fce7f3";
                         fg = "#be185d";
                     }
                     default -> {
@@ -342,14 +340,14 @@ public class DatPhongView extends BorderPane {
                        dp.ngayCheckIn, dp.ngayCheckOut,
                        SUM(ctdp.soNguoi) as soNguoi,
                        SUM(ctdp.giaCoc) as giaCoc,
-                       
+
                        -- Dùng EXISTS để tìm hóa đơn mà không làm nhân đôi dòng
-                       CASE 
+                       CASE
                            WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND loaiHD = 'HOA_DON_HOAN_TIEN') THEN 'HUY_HOAN_COC'
                            WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND loaiHD = 'HOA_DON_PHONG') THEN 'HUY_MAT_COC'
                            ELSE dp.trangThai
                        END AS trangThai,
-                       
+
                        dp.ngayDat
                 FROM DatPhong dp
                 JOIN KH kh ON dp.maKH = kh.maKH
@@ -368,7 +366,8 @@ public class DatPhongView extends BorderPane {
                 String tenKH = rs.getString("tenKH");
                 String soDT = rs.getString("soDT");
                 String maPhong = rs.getString("maPhong") != null ? rs.getString("maPhong") : "—";
-                String checkIn = rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime().format(FMT)
+                String checkIn = rs.getTimestamp("ngayCheckIn") != null
+                        ? rs.getTimestamp("ngayCheckIn").toLocalDateTime().format(FMT)
                         : "—";
                 String checkOut = rs.getTimestamp("ngayCheckOut") != null
                         ? rs.getTimestamp("ngayCheckOut").toLocalDateTime().format(FMT)
@@ -376,7 +375,9 @@ public class DatPhongView extends BorderPane {
                 String soNguoi = rs.getObject("soNguoi") != null ? String.valueOf(rs.getInt("soNguoi")) : "—";
                 String giaCoc = rs.getObject("giaCoc") != null ? DF.format(rs.getDouble("giaCoc")) + " đ" : "0 đ";
                 String tt = rs.getString("trangThai");
-                LocalDateTime ngayDat = rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null;
+                LocalDateTime ngayDat = rs.getTimestamp("ngayDat") != null
+                        ? rs.getTimestamp("ngayDat").toLocalDateTime()
+                        : null;
 
                 switch (tt) {
                     case "DA_CHECKIN" -> cntDangO++;
@@ -385,7 +386,8 @@ public class DatPhongView extends BorderPane {
                     case "CHO_XACNHAN" -> cntChoXacNhan++;
                 }
 
-                masterData.add(new Object[] { maDat, tenKH, soDT, maPhong, checkIn, checkOut, soNguoi, giaCoc, tt, ngayDat });
+                masterData.add(
+                        new Object[] { maDat, tenKH, soDT, maPhong, checkIn, checkOut, soNguoi, giaCoc, tt, ngayDat });
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -424,17 +426,16 @@ public class DatPhongView extends BorderPane {
     }
 
     private void openDetailDialog(String maDat) {
-        if (maDat == null) return;
+        if (maDat == null)
+            return;
         Window owner = getScene().getWindow();
         new ThemSuaDatPhongDialog(owner, maDat, this::loadData).showDialog();
     }
 
-
-
-private void confirmCancel(Object[] row) {
+    private void confirmCancel(Object[] row) {
         String maDat = (String) row[0];
         String tenKH = (String) row[1];
-        
+
         // 1. LẤY NGÀY CHECK-IN ĐỂ TÍNH TOÁN THEO NGHIỆP VỤ KHÁCH SẠN
         String checkInStr = (String) row[4]; // Cột 4 trên bảng là Chuỗi ngày Check-in
         if (checkInStr == null || checkInStr.equals("—")) {
@@ -453,21 +454,21 @@ private void confirmCancel(Object[] row) {
 
         // 2. TÍNH SỐ NGÀY TỪ HÔM NAY ĐẾN LÚC CHECK-IN
         // Tính bằng LocalDate để bỏ qua giờ phút, chỉ đếm ngày chênh lệch
-        long daysUntilCheckIn = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), ngayCheckIn.toLocalDate());
-        
+        long daysUntilCheckIn = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(),
+                ngayCheckIn.toLocalDate());
+
         // Hủy trước 3 ngày trở lên -> Hoàn. Dưới 3 ngày -> Mất.
         boolean duocHoanCoc = (daysUntilCheckIn >= 3);
 
         String msg = String.format(
                 "Xác nhận HỦY đơn %s của khách %s?\n\n" +
-                "📅 Ngày Check-in: %s\n" +
-                "⏳ Khách hủy trước: %d ngày\n" +
-                "💰 Chế độ: %s",
-                maDat, tenKH, 
+                        "📅 Ngày Check-in: %s\n" +
+                        "⏳ Khách hủy trước: %d ngày\n" +
+                        "💰 Chế độ: %s",
+                maDat, tenKH,
                 checkInStr,
                 daysUntilCheckIn,
-                duocHoanCoc ? "Hủy sớm (>= 3 ngày) -> ĐƯỢC HOÀN CỌC ✅" : "Hủy sát ngày/Trễ hạn -> BỊ MẤT CỌC ❌"
-        );
+                duocHoanCoc ? "Hủy sớm (>= 3 ngày) -> ĐƯỢC HOÀN CỌC ✅" : "Hủy sát ngày/Trễ hạn -> BỊ MẤT CỌC ❌");
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Hủy đơn đặt phòng");
@@ -476,16 +477,18 @@ private void confirmCancel(Object[] row) {
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-                con.setAutoCommit(false); 
+                con.setAutoCommit(false);
                 try {
                     // Chuyển đơn thành DA_HUY
-                    try (PreparedStatement ps = con.prepareStatement("UPDATE DatPhong SET trangThai = 'DA_HUY' WHERE maDat = ?")) {
+                    try (PreparedStatement ps = con
+                            .prepareStatement("UPDATE DatPhong SET trangThai = 'DA_HUY' WHERE maDat = ?")) {
                         ps.setString(1, maDat);
                         ps.executeUpdate();
                     }
 
                     // Trả lại phòng trống
-                    try (PreparedStatement ps = con.prepareStatement("UPDATE Phong SET tinhTrang = N'CONTRONG' WHERE maPhong IN (SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?)")) {
+                    try (PreparedStatement ps = con.prepareStatement(
+                            "UPDATE Phong SET tinhTrang = N'CONTRONG' WHERE maPhong IN (SELECT maPhong FROM ChiTietDatPhong WHERE maDat = ?)")) {
                         ps.setString(1, maDat);
                         ps.executeUpdate();
                     }
@@ -493,21 +496,23 @@ private void confirmCancel(Object[] row) {
                     // Lưu Hóa Đơn bằng chứng
                     // 3. CẬP NHẬT LẠI HÓA ĐƠN ĐÃ CÓ SẴN (Chuyển trạng thái từ Cọc -> Đã thanh toán)
                     String loaiHD = duocHoanCoc ? "HOA_DON_HOAN_TIEN" : "HOA_DON_PHONG";
-                    String ghiChu = duocHoanCoc ? "Hoàn cọc (Hủy trước " + daysUntilCheckIn + " ngày)" : "Thu phạt (Hủy sát ngày/Trễ hạn)";
-                    
+                    String ghiChu = duocHoanCoc ? "Hoàn cọc (Hủy trước " + daysUntilCheckIn + " ngày)"
+                            : "Thu phạt (Hủy sát ngày/Trễ hạn)";
+
                     // Dùng lệnh UPDATE để sửa chính hóa đơn gốc, không đẻ thêm hóa đơn mới
                     String sqlUpdateHD = "UPDATE HoaDon SET loaiHD = ?, trangThaiThanhToan = 'DA_THANH_TOAN', ghiChuThanhToan = ?, ngayThanhToan = GETDATE() WHERE maDat = ?";
-                    
+
                     try (PreparedStatement ps = con.prepareStatement(sqlUpdateHD)) {
                         ps.setString(1, loaiHD);
                         ps.setString(2, ghiChu);
-                        ps.setString(3, maDat); 
+                        ps.setString(3, maDat);
                         ps.executeUpdate();
                     }
 
                     con.commit();
                     loadData();
-                    showInfo("Thành công", "Đã hủy đơn " + maDat + ". Hóa đơn tự động: " + (duocHoanCoc ? "HOÀN CỌC" : "THU PHẠT") + ".");
+                    showInfo("Thành công", "Đã hủy đơn " + maDat + ". Hóa đơn tự động: "
+                            + (duocHoanCoc ? "HOÀN CỌC" : "THU PHẠT") + ".");
                 } catch (Exception ex) {
                     con.rollback();
                     showError("Lỗi CSDL: " + ex.getMessage());

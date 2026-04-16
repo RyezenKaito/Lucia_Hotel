@@ -189,7 +189,9 @@ public class TrangChuView extends BorderPane {
             lblTotal.setText(String.valueOf(total));
             lblOccupied.setText(String.valueOf(occupied));
             lblAvailable.setText(String.valueOf(available));
-            lblRevenue.setText("--"); // cần HoaDonDAO để tính
+            dao.HoaDonDAO hdDAO = new dao.HoaDonDAO();
+            double tongDoanhThu = hdDAO.getAll().stream().mapToDouble(model.entities.HoaDon::getTongTien).sum();
+            lblRevenue.setText(String.format("%,.0f đ", tongDoanhThu));
         } catch (Exception ignored) {
         }
     }

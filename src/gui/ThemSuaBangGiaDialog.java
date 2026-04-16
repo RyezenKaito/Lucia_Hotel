@@ -321,6 +321,8 @@ public class ThemSuaBangGiaDialog {
         TableColumn<Object[], String> cTen = col("Tên dịch vụ", 1, false, null);
         TableColumn<Object[], String> cLoai = col("Loại", 2, false, "-fx-alignment: CENTER;");
         TableColumn<Object[], String> cGiaAD = new TableColumn<>("Giá áp dụng (đ)");
+        cGiaAD.setReorderable(false);
+        cGiaAD.setSortable(false);
 
         cMa.setMaxWidth(1f * Integer.MAX_VALUE * 10);
         cTen.setMaxWidth(1f * Integer.MAX_VALUE * 45);
@@ -758,6 +760,11 @@ public class ThemSuaBangGiaDialog {
         cName.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getTenDV()));
         TableColumn<DichVuSelection, String> cType = new TableColumn<>("Loại");
         cType.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getLoaiDV()));
+        
+        for (TableColumn<DichVuSelection, ?> c : List.of(cCheck, cId, cName, cType)) {
+            c.setReorderable(false);
+            c.setSortable(false);
+        }
 
         pickerTable.getColumns().addAll(cCheck, cId, cName, cType);
         pickerTable.setEditable(true);

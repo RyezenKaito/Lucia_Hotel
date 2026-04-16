@@ -80,7 +80,6 @@ CREATE TABLE DatPhong (
     ngayCheckOut DATETIME,
     trangThai    NVARCHAR(20) NOT NULL DEFAULT N'CHO_XACNHAN'
                  CHECK (trangThai IN (
-                     N'CHO_XACNHAN',  -- Vá»«a Ä‘áº·t, chá» nhÃ¢n viÃªn xÃ¡c nháº­n
                      N'DA_XACNHAN',   -- NV Ä‘Ã£ xÃ¡c nháº­n, chá» khÃ¡ch Ä‘áº¿n
                      N'DA_CHECKIN',   -- KhÃ¡ch Ä‘ang á»Ÿ
                      N'DA_CHECKOUT',  -- KhÃ¡ch Ä‘Ã£ tráº£ phÃ²ng, hÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t

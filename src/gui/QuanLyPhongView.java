@@ -138,7 +138,7 @@ public class QuanLyPhongView extends BorderPane {
         // Cột Mã phòng
         TableColumn<Phong, String> colMa = new TableColumn<>("Mã phòng");
         colMa.setMinWidth(100);
-        colMa.setStyle("-fx-alignment: CENTER;");
+        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaPhong())));
 
         // Cột Loại phòng
@@ -210,9 +210,11 @@ public class QuanLyPhongView extends BorderPane {
                         ContextMenu statusMenu = new ContextMenu();
                         MenuItem m1 = new MenuItem("✅  " + TrangThaiPhong.CONTRONG.getLabel());
                         m1.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.CONTRONG));
-                        MenuItem m3 = new MenuItem("🔧  " + TrangThaiPhong.BAN.getLabel());
-                        m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
-                        statusMenu.getItems().addAll(m1, m3);
+                        MenuItem m2 = new MenuItem("🗑   " + TrangThaiPhong.BAN.getLabel());
+                        m2.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAN));
+                        MenuItem m3 = new MenuItem("🔧   " + TrangThaiPhong.BAOTRI.getLabel());
+                        m3.setOnAction(ev -> updateStatus((Phong) getTableRow().getItem(), TrangThaiPhong.BAOTRI));
+                        statusMenu.getItems().addAll(m1, m2, m3);
 
                         badge.setOnMouseClicked(e -> {
                             if (e.getButton() == MouseButton.PRIMARY) {

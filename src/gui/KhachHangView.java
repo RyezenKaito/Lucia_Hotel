@@ -187,7 +187,7 @@ public class KhachHangView extends BorderPane {
 
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã KH");
         colMa.setMinWidth(100);
-        colMa.setStyle("-fx-alignment: CENTER;");
+        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaKH())));
 
         TableColumn<KhachHang, String> colTen = new TableColumn<>("Họ và tên");

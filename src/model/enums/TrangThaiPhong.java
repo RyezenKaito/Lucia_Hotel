@@ -3,7 +3,8 @@ package model.enums;
 public enum TrangThaiPhong {
     CONTRONG("Còn trống"),
     BAN("Bẩn"),
-    DACOKHACH("Đã có khách");
+    DACOKHACH("Đã có khách"),
+    BAOTRI("Bảo trì");
 
     private String label;
 

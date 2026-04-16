@@ -54,7 +54,7 @@ public class ThemSuaNhanVienDialog extends Stage {
     private final NhanVienDAO dao = new NhanVienDAO();
     private final NhanVien nvEdit; // null = thêm mới
     private final NhanVien currentUser; // người đang đăng nhập
-    private final NhanVienView parentView; // để reload
+    private final QuanLyNhanVienView parentView; // để reload
     private final boolean isAdmin;
     /** Có phải ADMIN không (toàn quyền) */
 
@@ -73,7 +73,7 @@ public class ThemSuaNhanVienDialog extends Stage {
     private VBox nguoiQuanLyBox;
 
     /* ── Constructor ──────────────────────────────────────────────── */
-    public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit, NhanVien currentUser, NhanVienView parentView) {
+    public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit, NhanVien currentUser, QuanLyNhanVienView parentView) {
         this.owner = owner;
         this.nvEdit = nvEdit;
         this.currentUser = currentUser;

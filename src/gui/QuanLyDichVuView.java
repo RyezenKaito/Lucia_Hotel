@@ -288,7 +288,7 @@ public class QuanLyDichVuView extends BorderPane {
                     openDialog(dv);
             });
 
-            MenuItem miDelete = new MenuItem("🗑  Xóa dịch vụ");
+            MenuItem miDelete = new MenuItem("🗑 Xóa dịch vụ");
             miDelete.setStyle("-fx-text-fill: " + C_RED + ";");
             miDelete.setOnAction(e -> {
                 DichVu dv = table.getSelectionModel().getSelectedItem();

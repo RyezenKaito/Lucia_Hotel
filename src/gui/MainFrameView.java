@@ -176,7 +176,7 @@ public class MainFrameView {
                 navBtn("✅", "Nhận phòng", "checkin"),
                 navBtn("🚪", " Trả phòng", "checkout"),
                 buildServiceSection(),
-                navBtn("🧾", " Hóa đơn", "invoices"));
+                navBtn("💰", " Hóa đơn", "invoices"));
 
         // ── Nhóm: QUẢN LÝ (Master Data) ──
         nav.getChildren().add(navHeader("- Quản lý"));
@@ -426,7 +426,7 @@ public class MainFrameView {
                 if (!isAdmin) {
                     showFX(buildAccessDenied());
                 } else {
-                    showFX(new NhanVienView(staff));
+                    showFX(new QuanLyNhanVienView(staff));
                 }
             }
             case "booking" -> showFX(new DatPhongView());
@@ -435,7 +435,7 @@ public class MainFrameView {
             case "checkout" -> showFX(new CheckOutView(staff));
             case "invoices" -> showFX(new HoaDonView());
             // Phase 2 - đã migrate sang JavaFX
-            case "service" -> showFX(new DichVuView());
+            case "service" -> showFX(new SuDungDichVuView());
             case "serviceManager" -> showFX(new QuanLyDichVuView(isAdmin));
             case "servicePrice" -> showFX(new BangGiaDichVuView());
             case "rooms" -> showFX(new QuanLyPhongView(isAdmin));

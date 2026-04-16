@@ -235,6 +235,9 @@ public class CheckOutView extends BorderPane {
         serviceTable.getColumns().add(colSl);
         serviceTable.getColumns().add(colGia);
         serviceTable.getColumns().add(colTong);
+        for (TableColumn<DichVuSuDung, ?> c : serviceTable.getColumns()) {
+            c.setReorderable(false);
+        }
         VBox.setVgrow(serviceTable, Priority.ALWAYS);
         tableContainer.getChildren().addAll(lblTable, serviceTable);
         leftCol.getChildren().addAll(guestInfoSection, tableContainer);
@@ -254,9 +257,10 @@ public class CheckOutView extends BorderPane {
     private void loadQuickSuggestions() {
         quickCheckOutFlow.getChildren().clear();
         List<String> list;
-        
+
         if (modeByDon) {
-            if (lblQuickSuggestTitle != null) lblQuickSuggestTitle.setText("Hóa đơn/Đơn đặt phòng đang có khách:");
+            if (lblQuickSuggestTitle != null)
+                lblQuickSuggestTitle.setText("Hóa đơn/Đơn đặt phòng đang có khách:");
             list = datPhongDAO.getDonDangSuDung();
             if (list.isEmpty()) {
                 Label lbl = new Label("Không có đơn đặt phòng nào chưa thanh toán");
@@ -266,7 +270,8 @@ public class CheckOutView extends BorderPane {
                 return;
             }
         } else {
-            if (lblQuickSuggestTitle != null) lblQuickSuggestTitle.setText("Phòng đang có khách:");
+            if (lblQuickSuggestTitle != null)
+                lblQuickSuggestTitle.setText("Phòng đang có khách:");
             list = datPhongDAO.getPhongDangSuDung();
             if (list.isEmpty()) {
                 Label lbl = new Label("Không có phòng nào đang sử dụng");
@@ -324,7 +329,7 @@ public class CheckOutView extends BorderPane {
                 a.setContentText("Bạn có muốn giải phóng phòng này về 'Còn trống' không?");
                 a.showAndWait().ifPresent(t -> {
                     if (t == ButtonType.OK) {
-                        phongDAO.updateTrangThai(maPhong, "CONTRONG");
+                        phongDAO.updateTrangThai(maPhong, "BAN");
                         resetView();
                         loadQuickSuggestions();
                     }
@@ -423,22 +428,23 @@ public class CheckOutView extends BorderPane {
                 ? currentDatPhong.getNgayCheckIn().format(fmt)
                 : "—"), 1, 2);
 
-        // Danh sách phòng 
+        // Danh sách phòng
         VBox roomsBox = new VBox(10);
         roomsBox.setPadding(new Insets(12, 0, 0, 0));
         Label lblRooms = new Label("Các phòng được checkout (tất cả):");
         lblRooms.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblRooms.setTextFill(Color.web(C_TEXT_DARK));
-        
+
         FlowPane flowRooms = new FlowPane(10, 10);
         for (Object[] room : currentRoomList) {
             String maPhong = (String) room[1];
             Label lblP = new Label(maPhong);
             lblP.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-            lblP.setStyle("-fx-background-color: #eff6ff; -fx-text-fill: #1d4ed8; -fx-padding: 6 12; -fx-background-radius: 6;");
+            lblP.setStyle(
+                    "-fx-background-color: #eff6ff; -fx-text-fill: #1d4ed8; -fx-padding: 6 12; -fx-background-radius: 6;");
             flowRooms.getChildren().add(lblP);
         }
-        
+
         roomsBox.getChildren().addAll(lblRooms, flowRooms);
 
         guestInfoSection.getChildren().addAll(lblT, grid, new Separator(), roomsBox);
@@ -484,13 +490,14 @@ public class CheckOutView extends BorderPane {
     }
 
     private void calculateBilling_Don() {
-        if (currentDatPhong == null || currentRoomList == null) return;
-        
+        if (currentDatPhong == null || currentRoomList == null)
+            return;
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime checkIn = currentDatPhong.getNgayCheckIn();
         long soDem = checkIn != null ? Math.max(1, Duration.between(checkIn, now).toDays()) : 1;
         currentSoDem = soDem;
-        
+
         double lateFeeRate = 0;
         if (currentDatPhong.getNgayCheckOut() != null && now.isAfter(currentDatPhong.getNgayCheckOut())) {
             int hour = now.getHour();
@@ -505,27 +512,27 @@ public class CheckOutView extends BorderPane {
         currentTienPhong = 0;
         currentTienCoc = 0;
         currentLateFee = 0;
-        
+
         List<DichVuSuDung> listDV = new java.util.ArrayList<>();
-        
+
         for (Object[] room : currentRoomList) {
             String maCTDP = (String) room[0];
             double giaCoc = (double) room[2];
             double giaPhong = (double) room[3];
-            
+
             currentTienPhong += giaPhong * soDem;
             currentTienCoc += giaCoc;
             currentLateFee += giaPhong * lateFeeRate;
-            
+
             List<DichVuSuDung> dvRoom = dvsdDAO.findByMaCTDP(maCTDP);
             if (dvRoom != null) {
                 listDV.addAll(dvRoom);
             }
         }
-        
+
         serviceTable.setItems(FXCollections.observableArrayList(listDV));
         currentTienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
-        
+
         currentTongTien = Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV;
     }
 
@@ -546,11 +553,14 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)));
 
         HBox totalRow = new HBox();
+        totalRow.setMaxWidth(Double.MAX_VALUE);
         totalRow.setAlignment(Pos.CENTER_LEFT);
         Label lblTotal = new Label("TỔNG THANH TOÁN");
         lblTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        lblTotal.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(lblTotal, Priority.ALWAYS);
         Label valTotal = new Label(String.format("%,.0f đ", currentTongTien));
+        valTotal.setMinWidth(Region.USE_PREF_SIZE);
         valTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         valTotal.setTextFill(Color.web(C_BLUE));
         totalRow.getChildren().addAll(lblTotal, valTotal);
@@ -571,7 +581,8 @@ public class CheckOutView extends BorderPane {
 
         ScrollPane scrollPane = new ScrollPane(scrollContent);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrollPane.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
@@ -607,11 +618,14 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)));
 
         HBox totalRow = new HBox();
+        totalRow.setMaxWidth(Double.MAX_VALUE);
         totalRow.setAlignment(Pos.CENTER_LEFT);
         Label lblTotal = new Label("TỔNG THANH TOÁN TOÀN ĐƠN");
         lblTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblTotal.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(lblTotal, Priority.ALWAYS);
         Label valTotal = new Label(String.format("%,.0f đ", currentTongTien));
+        valTotal.setMinWidth(Region.USE_PREF_SIZE);
         valTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         valTotal.setTextFill(Color.web(C_BLUE));
         totalRow.getChildren().addAll(lblTotal, valTotal);
@@ -632,7 +646,8 @@ public class CheckOutView extends BorderPane {
 
         ScrollPane scrollPane = new ScrollPane(scrollContent);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrollPane.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
@@ -711,8 +726,8 @@ public class CheckOutView extends BorderPane {
                 }
             }
 
-            // 3. Update trạng thái phòng -> CONTRONG
-            if (!phongDAO.updateTrangThai(currentMaPhong, "CONTRONG"))
+            // 3. Update trạng thái phòng -> BAN
+            if (!phongDAO.updateTrangThai(currentMaPhong, "BAN"))
                 return false;
 
             // 4. Tính toán lại tổng tiền của HoaDon
@@ -808,7 +823,7 @@ public class CheckOutView extends BorderPane {
                 }
 
                 // 3. Update trạng thái phòng
-                phongDAO.updateTrangThai(maPhong, "CONTRONG");
+                phongDAO.updateTrangThai(maPhong, "BAN");
             }
 
             // 4. Update HD
@@ -919,12 +934,15 @@ public class CheckOutView extends BorderPane {
 
     private HBox createBillRow(String label, double value, Color valColor) {
         HBox hb = new HBox();
+        hb.setMaxWidth(Double.MAX_VALUE);
         hb.setAlignment(Pos.CENTER_LEFT);
         Label lbl = new Label(label);
         lbl.setTextFill(Color.web(C_TEXT_GRAY));
         lbl.setFont(Font.font("Segoe UI", 13));
+        lbl.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(lbl, Priority.ALWAYS);
         Label val = new Label(String.format("%,.0f đ", value));
+        val.setMinWidth(Region.USE_PREF_SIZE);
         val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         val.setTextFill(valColor);
         hb.getChildren().addAll(lbl, val);

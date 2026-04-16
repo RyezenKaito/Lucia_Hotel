@@ -38,7 +38,7 @@ import model.utils.DimOverlay;
  *
  * Thiết kế đồng bộ với KhachHangView & QuanLyPhongView.
  */
-public class NhanVienView extends BorderPane {
+public class QuanLyNhanVienView extends BorderPane {
 
     /* ── Bảng màu (đồng bộ KhachHangView & MainFrameView) ────────── */
     private static final String C_BG = "#f8f9fa";
@@ -70,7 +70,7 @@ public class NhanVienView extends BorderPane {
     private TextField txtSearch;
 
     /* ── Constructor ──────────────────────────────────────────────── */
-    public NhanVienView(NhanVien currentUser) {
+    public QuanLyNhanVienView(NhanVien currentUser) {
         this.currentUser = currentUser;
         this.isCurrentUserAdmin = (currentUser != null && currentUser.getRole() == ChucVu.ADMIN);
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -531,7 +531,8 @@ public class NhanVienView extends BorderPane {
             }
 
             java.util.List<NhanVien> subordinates = dao.getAll().stream()
-                    .filter(n -> nv.getMaNV().equals(n.getMaQL()) && n.getTrangThai() != model.enums.TrangThaiNV.DA_NGHI)
+                    .filter(n -> nv.getMaNV().equals(n.getMaQL())
+                            && n.getTrangThai() != model.enums.TrangThaiNV.DA_NGHI)
                     .toList();
 
             if (!subordinates.isEmpty()) {

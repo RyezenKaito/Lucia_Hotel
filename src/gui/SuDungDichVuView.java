@@ -28,7 +28,7 @@ import java.util.Map;
  * DichVuView – JavaFX
  * Thay thế ThemDichVuPanel (Swing).
  */
-public class DichVuView extends BorderPane {
+public class SuDungDichVuView extends BorderPane {
 
     /* ── Bảng màu ───────────────────────────────────────────────────── */
     /* ── Bảng màu chuẩn hệ thống ────────────────────────────────────── */
@@ -58,7 +58,7 @@ public class DichVuView extends BorderPane {
     private Label lblRoomTitle;
     private HBox tabBar;
 
-    public DichVuView() {
+    public SuDungDichVuView() {
         setStyle("-fx-background-color: " + C_BG + ";");
         setPadding(new Insets(32));
 
