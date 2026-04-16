@@ -525,11 +525,6 @@ public class ThemSuaDatPhongDialog extends Stage {
         return footerWrap;
     }
 
-    @Deprecated
-    private HBox buildFooter() {
-        return null;
-    }
-
     /* ── Validation ─────────────────────────────────────────────────── */
     private void setupValidation() {
         txtHoTen.focusedProperty().addListener((o, ov, nv) -> {
@@ -571,7 +566,14 @@ public class ThemSuaDatPhongDialog extends Stage {
             return false;
         }
         if (!ten.matches(ValidationUtils.REGEX_NAME)) {
-            showErrorField(txtHoTen, errTen, "⚠ Chỉ được chứa chữ cái và khoảng trắng.");
+            showErrorField(txtHoTen, errTen,
+                    "⚠ Chỉ được chứa chữ cái, khoảng trắng và dấu . - '");
+            return false;
+        }
+        // [MỚI] Không cho 2 ký tự đặc biệt liên tiếp: --, .., .-, -., '., ...
+        if (!ValidationUtils.isValidNameStructure(ten)) {
+            showErrorField(txtHoTen, errTen,
+                    "⚠ Không được có 2 ký tự đặc biệt liên tiếp (VD: --, .., .-)");
             return false;
         }
         clearErrorField(txtHoTen, errTen);
@@ -649,6 +651,9 @@ public class ThemSuaDatPhongDialog extends Stage {
 
     /** Reload danh sách phòng trống theo loại đã chọn + khoảng ngày */
     private void reloadPhongTrong() {
+        if (isReadOnly) 
+            return;
+
         if (phongSelectFlow == null)
             return;
 
@@ -730,6 +735,9 @@ public class ThemSuaDatPhongDialog extends Stage {
     }
 
     private void updateCapacityWarning() {
+        if (isReadOnly) 
+            return;
+
         if (lblCapacityWarning == null)
             return;
         List<Phong> selectedPhongs = getSelectedPhongs();
@@ -782,6 +790,9 @@ public class ThemSuaDatPhongDialog extends Stage {
 
     /* ── Tính tiền tự động ──────────────────────────────────────────── */
     private void updateTongTien() {
+        if (isReadOnly) 
+            return;
+
         if (lblTongTienPhong == null || txtTienCoc == null)
             return;
         try {
@@ -1083,44 +1094,128 @@ public class ThemSuaDatPhongDialog extends Stage {
         a.showAndWait();
     }
 
-    private void populateData(String maDat) {
+private void populateData(String maDat) {
         Object[] data = datPhongDAO.findEditDetail(maDat);
         if (data == null)
             return;
 
-        // data structure from DAO:
-        // [0]=tenKH, [1]=soDT, [2]=soCCCD, [3]=ngaySinh, [4]=ngayIn, [5]=ngayOut,
-        // [6]=maPhong, [7]=soNguoi, [8]=giaCoc, [9]=ghiChu, [10]=loaiPhong,
-        // [11]=trangThai
-
         txtHoTen.setText(nvl((String) data[0]));
         txtSoDT.setText(nvl((String) data[1]));
         txtCCCD.setText(nvl((String) data[2]));
+        
+        LocalDate dIn = (LocalDate) data[4];
+        LocalDate dOut = (LocalDate) data[5];
+
         if (data[3] instanceof LocalDate)
             dpNgaySinh.setValue((LocalDate) data[3]);
-        if (data[4] instanceof LocalDate)
-            dpCheckIn.setValue((LocalDate) data[4]);
-        if (data[5] instanceof LocalDate)
-            dpCheckOut.setValue((LocalDate) data[5]);
+        if (dIn != null)
+            dpCheckIn.setValue(dIn); // Nhờ có "if (isReadOnly) return;" nên lệnh này không làm mất list phòng nữa
+        if (dOut != null)
+            dpCheckOut.setValue(dOut);
 
         txtSoNguoi.setText(String.valueOf(data[7]));
         txtGhiChu.setText(nvl((String) data[9]));
 
         double cocValue = (double) data[8];
-        txtTienCoc.setText(DF.format(cocValue) + " đ");
+        txtTienCoc.setText(DF.format(cocValue)); 
 
-        // Rooms processing
-        String dsPhong = (String) data[6];
-        if (dsPhong != null) {
-            String[] phongs = dsPhong.split(",");
-            phongSelectFlow.getChildren().clear();
-            for (String p : phongs) {
-                CheckBox cb = new CheckBox(p.trim());
-                cb.setSelected(true);
-                cb.setDisable(true);
-                phongSelectFlow.getChildren().add(cb);
+        java.util.List<Phong> dsPhongCuaDon = loadPhongsOfDatPhong(maDat);
+
+        // [MỚI] Hiển thị tổng tiền và cần thanh toán từ dữ liệu quá khứ
+        long rawDays = (dIn != null && dOut != null) ? ChronoUnit.DAYS.between(dIn, dOut) : 1;
+        final long days = rawDays <= 0 ? 1 : rawDays;
+        double tongPhong = 0;
+        for (Phong p : dsPhongCuaDon) {
+            tongPhong += p.getLoaiPhong().getGia() * days;
+        }
+        lblTongTienPhong.setText(DF.format(tongPhong) + " đ");
+        lblCanThanhToan.setText(DF.format(Math.max(0, tongPhong - cocValue)) + " đ");
+
+        // Tick sẵn tất cả các loại phòng xuất hiện trong đơn
+        java.util.Set<String> loaiPhongDaChon = dsPhongCuaDon.stream()
+                .map(p -> p.getLoaiPhong().getMaLoaiPhong())
+                .collect(Collectors.toSet());
+        for (Map.Entry<String, CheckBox> entry : loaiPhongCheckBoxes.entrySet()) {
+            if (loaiPhongDaChon.contains(entry.getKey())) {
+                entry.getValue().setSelected(true);
             }
         }
+
+        // Render từng phòng cụ thể trong FlowPane
+        phongSelectFlow.getChildren().clear();
+        phongCheckBoxes.clear();
+        phongMap.clear();
+
+        if (dsPhongCuaDon.isEmpty()) {
+            Label lbl = new Label("— Không có dữ liệu phòng");
+            lbl.setFont(Font.font("Segoe UI", 13));
+            lbl.setTextFill(Color.web(C_TEXT_GRAY));
+            phongSelectFlow.getChildren().add(lbl);
+        } else {
+            for (Phong p : dsPhongCuaDon) {
+                VBox card = new VBox(4);
+                card.setPadding(new Insets(8, 12, 8, 12));
+                card.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 8;"
+                        + " -fx-border-color: " + C_ACTIVE + "; -fx-border-radius: 8; -fx-border-width: 1.5;");
+
+                CheckBox cb = new CheckBox(p.getMaPhong());
+                cb.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+                cb.setTextFill(Color.web("#1e3a8a"));
+                cb.setSelected(true);
+
+                Label lblLoai = new Label(p.getLoaiPhong() != null && p.getLoaiPhong().toString() != null
+                        ? p.getLoaiPhong().toString()
+                        : p.getLoaiPhong().getMaLoaiPhong());
+                lblLoai.setFont(Font.font("Segoe UI", 11));
+                lblLoai.setTextFill(Color.web(C_ACTIVE));
+                lblLoai.setStyle("-fx-background-color: white; -fx-padding: 1 6; -fx-background-radius: 4;");
+
+                Label lblGia = new Label(DF.format(p.getLoaiPhong().getGia()) + " đ/đêm");
+                lblGia.setFont(Font.font("Segoe UI", 11));
+                lblGia.setTextFill(Color.web(C_TEXT_GRAY));
+
+                card.getChildren().addAll(cb, lblLoai, lblGia);
+                phongCheckBoxes.put(p.getMaPhong(), cb);
+                phongMap.put(p.getMaPhong(), p);
+                phongSelectFlow.getChildren().add(card);
+            }
+        }
+    }
+
+    /**
+     * [MỚI] Lấy danh sách phòng cụ thể của 1 đơn đặt phòng
+     * (kèm loaiPhong thực — không chỉ loại đại diện).
+     */
+    private java.util.List<Phong> loadPhongsOfDatPhong(String maDat) {
+        java.util.List<Phong> ds = new ArrayList<>();
+        String sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.soPhong, p.soTang, " +
+                     "       lp.gia, lp.sucChua, lp.tenLoaiPhong " +
+                     "FROM ChiTietDatPhong ctdp " +
+                     "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                     "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
+                     "WHERE ctdp.maDat = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maDat);
+            java.sql.ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                LoaiPhong lp = new LoaiPhong();
+                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
+                lp.setGia(rs.getDouble("gia"));
+                lp.setSucChua(rs.getInt("sucChua"));
+
+                Phong p = new Phong();
+                p.setMaPhong(rs.getString("maPhong"));
+                p.setTenPhong(rs.getString("tenPhong"));
+                p.setLoaiPhong(lp);
+                p.setSoPhong(rs.getInt("soPhong"));
+                p.setSoTang(rs.getInt("soTang"));
+                ds.add(p);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
     }
 
     private void disableInputs() {
