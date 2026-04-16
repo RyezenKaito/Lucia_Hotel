@@ -55,9 +55,6 @@ public class PhongDAO {
         return ds;
     }
 
-    /**
-     * Helper để ánh xạ từ ResultSet sang đối tượng Phong
-     */
     private Phong mapRow(ResultSet rs) throws SQLException {
         LoaiPhong lp = new LoaiPhong();
         lp.setMaLoaiPhong(rs.getString("loaiPhong"));
@@ -121,17 +118,23 @@ public class PhongDAO {
     }
 
     /**
-     * Lấy danh sách phòng trống theo loại và khoảng thời gian
+     * [ĐÃ SỬA] Lấy danh sách phòng trống theo loại và khoảng thời gian.
+     * Loại trừ các phòng đã có đơn đặt trùng ngày ở các trạng thái ACTIVE
+     * (CHO_XACNHAN, DA_XACNHAN, DA_CHECKIN). Bỏ qua DA_HUY và DA_CHECKOUT
+     * vì các đơn này đã kết thúc -> phòng có thể được đặt lại.
      */
     public List<Phong> getDanhSachPhongTrong(String maLoaiPhong, java.sql.Date dIn, java.sql.Date dOut) {
         List<Phong> ds = new ArrayList<>();
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
-                "WHERE l.maLoaiPhong = ? AND p.maPhong NOT IN (" +
+                "WHERE l.maLoaiPhong = ? " +
+                "  AND p.tinhTrang <> N'BAN' " +   // Phòng đang bảo trì/cấm bán thì không hiện
+                "  AND p.maPhong NOT IN (" +
                 "    SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
                 "    JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
-                "    WHERE (dp.ngayCheckIn < ? AND dp.ngayCheckOut > ?)" +
-                ")";
+                "    WHERE dp.ngayCheckIn < ? AND dp.ngayCheckOut > ? " +
+                "      AND dp.trangThai NOT IN (N'DA_CHECKOUT', N'DA_HUY')" +
+                "  )";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -140,21 +143,8 @@ public class PhongDAO {
             pstmt.setDate(2, dOut);
             pstmt.setDate(3, dIn);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
-                LoaiPhong lp = new LoaiPhong();
-                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
-                lp.setGia(rs.getDouble("gia"));
-                lp.setSucChua(rs.getInt("sucChua"));
-
-                Phong p = new Phong();
-                p.setMaPhong(rs.getString("maPhong"));
-                p.setTenPhong(rs.getString("tenPhong"));
-                p.setLoaiPhong(lp);
-                p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
-                p.setSoPhong(rs.getInt("soPhong"));
-                p.setSoTang(rs.getInt("soTang"));
-                ds.add(p);
+                ds.add(mapRow(rs));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -210,12 +200,18 @@ public class PhongDAO {
     }
 
     /**
-     * Lấy tất cả Phong trống theo NHIỀU loại và khoảng thời gian check-in/out.
-     * Dùng cho ThemSuaDatPhongDialog multi-select loại phòng.
-     * 
-     * @param maLoaiPhongs Danh sách maLoaiPhong (VD: ["SINGLE","DOUBLE"])
-     * @param checkIn      Ngày nhận phòng
-     * @param checkOut     Ngày trả phòng
+     * [ĐÃ SỬA] Lấy tất cả Phong trống theo NHIỀU loại và khoảng thời gian check-in/out.
+     * QUY TẮC LỌC:
+     *   1) Phòng KHÔNG bị "BAN" (bảo trì).
+     *   2) Phòng KHÔNG nằm trong đơn đặt đang hoạt động có khoảng thời gian trùng lặp.
+     *      Đơn "hoạt động" = CHO_XACNHAN, DA_XACNHAN, DA_CHECKIN.
+     *      Đơn "không hoạt động" (DA_CHECKOUT, DA_HUY) -> được phép đặt lại.
+     *   3) Điều kiện trùng lặp: (existing.checkIn < newCheckOut) AND (existing.checkOut > newCheckIn)
+     *      => Đảm bảo: chỉ được đặt SAU ngày trả của đơn cũ.
+     *
+     * Chú ý: KHÔNG filter theo tinhTrang = 'CONTRONG' nữa vì một phòng đang có khách
+     * checkin hôm nay (tinhTrang='DANGSUDUNG') nhưng ngày trả là mai — hoàn toàn có thể
+     * được đặt cho ngày kia. Chỉ cần khoảng ngày không chồng lấn.
      */
     public List<Phong> getPhongTrongByMultiLoai(List<String> maLoaiPhongs,
             java.time.LocalDate checkIn,
@@ -224,20 +220,20 @@ public class PhongDAO {
         if (maLoaiPhongs == null || maLoaiPhongs.isEmpty())
             return ds;
 
-        // Tạo placeholder cho IN clause
         String placeholders = String.join(",", maLoaiPhongs.stream()
                 .map(x -> "?").collect(java.util.stream.Collectors.toList()));
 
         String sql = "SELECT p.*, l.gia, l.sucChua, l.tenLoaiPhong FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
                 "WHERE p.loaiPhong IN (" + placeholders + ") " +
-                "AND p.tinhTrang = N'CONTRONG' " +
-                "AND p.maPhong NOT IN (" +
-                "  SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
-                "  JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
-                "  WHERE dp.ngayCheckIn < ? AND dp.ngayCheckOut > ? " +
-                "  AND dp.trangThai NOT IN (N'DA_CHECKOUT', N'DA_HUY')" +
-                ") ORDER BY p.loaiPhong, p.maPhong";
+                "  AND p.tinhTrang <> N'BAN' " +
+                "  AND p.maPhong NOT IN (" +
+                "    SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
+                "    JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
+                "    WHERE dp.ngayCheckIn < ? AND dp.ngayCheckOut > ? " +
+                "      AND dp.trangThai NOT IN (N'DA_CHECKOUT', N'DA_HUY')" +
+                "  ) " +
+                "ORDER BY p.loaiPhong, p.maPhong";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -248,19 +244,7 @@ public class PhongDAO {
             ps.setDate(idx, java.sql.Date.valueOf(checkIn));
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                LoaiPhong lp = new LoaiPhong();
-                lp.setMaLoaiPhong(rs.getString("loaiPhong"));
-                lp.setGia(rs.getDouble("gia"));
-                lp.setSucChua(rs.getInt("sucChua"));
-
-                Phong p = new Phong();
-                p.setMaPhong(rs.getString("maPhong"));
-                p.setTenPhong(rs.getString("tenPhong"));
-                p.setLoaiPhong(lp);
-                p.setTinhTrang(findEnumByString(rs.getString("tinhTrang")));
-                p.setSoPhong(rs.getInt("soPhong"));
-                p.setSoTang(rs.getInt("soTang"));
-                ds.add(p);
+                ds.add(mapRow(rs));
             }
         } catch (Exception e) {
             e.printStackTrace();
