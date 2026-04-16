@@ -215,15 +215,44 @@ public class ThemSuaDatPhongDialog extends Stage {
         }
         errCCCD = errLabel();
         txtCCCD.focusedProperty().addListener((obs, o, n) -> {
-            if (!n && txtCCCD.getText().length() == 12) {
-                model.entities.KhachHang kh = khachHangDAO.findByCCCD(txtCCCD.getText());
+            if (!n) validateCCCD();
+        });
+        txtCCCD.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && newVal.length() == 12) {
+                model.entities.KhachHang kh = khachHangDAO.findByCCCD(newVal);
                 if (kh != null) {
-                    if (txtHoTen != null)
+                    if (txtHoTen != null) {
                         txtHoTen.setText(kh.getTenKH());
-                    if (txtSoDT != null)
+                        txtHoTen.setEditable(false);
+                        txtHoTen.setStyle(fieldStyle() + " -fx-background-color: #f3f4f6;");
+                    }
+                    if (txtSoDT != null) {
                         txtSoDT.setText(kh.getSoDT());
-                    if (dpNgaySinh != null && kh.getNgaySinh() != null)
+                    }
+                    if (dpNgaySinh != null && kh.getNgaySinh() != null) {
                         dpNgaySinh.setValue(kh.getNgaySinh());
+                        dpNgaySinh.setDisable(true);
+                        dpNgaySinh.setStyle("-fx-opacity: 0.8;");
+                    }
+                    clearErrorField(txtCCCD, errCCCD);
+                } else {
+                    if (txtHoTen != null) {
+                        txtHoTen.setEditable(true);
+                        txtHoTen.setStyle(fieldStyle());
+                    }
+                    if (dpNgaySinh != null) {
+                        dpNgaySinh.setDisable(false);
+                        dpNgaySinh.setStyle("");
+                    }
+                }
+            } else if (newVal != null && newVal.length() < 12) {
+                if (txtHoTen != null && !txtHoTen.isEditable()) {
+                    txtHoTen.setEditable(true);
+                    txtHoTen.setStyle(fieldStyle());
+                }
+                if (dpNgaySinh != null && dpNgaySinh.isDisabled()) {
+                    dpNgaySinh.setDisable(false);
+                    dpNgaySinh.setStyle("");
                 }
             }
         });
@@ -581,6 +610,12 @@ public class ThemSuaDatPhongDialog extends Stage {
     private void reloadPhongTrong() {
         if (phongSelectFlow == null)
             return;
+            
+        List<String> oldSelected = phongCheckBoxes.entrySet().stream()
+                .filter(e -> e.getValue().isSelected())
+                .map(java.util.Map.Entry::getKey)
+                .collect(Collectors.toList());
+                
         phongSelectFlow.getChildren().clear();
         phongCheckBoxes.clear();
         phongMap.clear();
@@ -631,6 +666,9 @@ public class ThemSuaDatPhongDialog extends Stage {
                 if (btnSave != null)
                     btnSave.setDisable(false);
             });
+            if (oldSelected.contains(p.getMaPhong())) {
+                cb.setSelected(true);
+            }
 
             Label lblLoai = new Label(p.getLoaiPhong().toString());
             lblLoai.setFont(Font.font("Segoe UI", 11));

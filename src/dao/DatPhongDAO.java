@@ -132,7 +132,7 @@ public class DatPhongDAO {
                 "JOIN DatPhong dp ON kh.maKH = dp.maKH " +
                 "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -155,7 +155,7 @@ public class DatPhongDAO {
                 "JOIN DatPhong dp ON h.maDat = dp.maDat " +
                 "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);
@@ -180,7 +180,7 @@ public class DatPhongDAO {
                 "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
                 "JOIN KH kh ON dp.maKH = kh.maKH " +
                 "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
-                "WHERE p.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "WHERE p.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -220,6 +220,24 @@ public class DatPhongDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public List<String> getDonDangSuDung() {
+        List<String> ds = new ArrayList<>();
+        String sql = "SELECT DISTINCT dp.maDat FROM DatPhong dp " +
+                "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "WHERE p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                Statement stmt = con.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                ds.add(rs.getString("maDat"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
     }
 
     public List<String> getPhongDangSuDung() {
@@ -287,7 +305,8 @@ public class DatPhongDAO {
     private String getMaCTDPDangSuDungByMaPhong(String maPhong) {
         String sql = "SELECT ctdp.maCTDP FROM ChiTietDatPhong ctdp " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);

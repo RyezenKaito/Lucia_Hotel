@@ -215,7 +215,7 @@ public class HoaDonDAO {
      */
     public List<HoaDon> getAllWithKhachHang() {
         List<HoaDon> dsHoaDon = new ArrayList<>();
-        String sql = "SELECT h.*, kh.tenKH FROM HoaDon h " +
+        String sql = "SELECT h.*, kh.tenKH, kh.soDT, kh.soCCCD FROM HoaDon h " +
                      "JOIN DatPhong dp ON h.maDat = dp.maDat " +
                      "JOIN KH kh ON dp.maKH = kh.maKH " +
                      "ORDER BY h.ngayTaoHD DESC";
@@ -226,6 +226,8 @@ public class HoaDonDAO {
                 HoaDon hd = mapRow(rs);
                 model.entities.KhachHang kh = new model.entities.KhachHang();
                 kh.setTenKH(rs.getString("tenKH"));
+                kh.setSoDT(rs.getString("soDT"));
+                kh.setSoCCCD(rs.getString("soCCCD"));
                 hd.getDatPhong().setKhachHang(kh);
                 dsHoaDon.add(hd);
             }
