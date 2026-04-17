@@ -190,7 +190,24 @@ public class TrangChuView extends BorderPane {
             lblOccupied.setText(String.valueOf(occupied));
             lblAvailable.setText(String.valueOf(available));
             dao.HoaDonDAO hdDAO = new dao.HoaDonDAO();
-            double tongDoanhThu = hdDAO.getAll().stream().mapToDouble(model.entities.HoaDon::getTongTien).sum();
+            dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
+            List<model.entities.HoaDon> listHD = hdDAO.getAll();
+
+            // Recalculate totals to ensure consistency with HoaDonView
+            for (model.entities.HoaDon hd : listHD) {
+                double currentSumPhong = hdDAO.getTongTienPhongCurrent(hd.getMaHD());
+                java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
+                double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
+                double tongTT = Math.max(0, currentSumPhong - hd.getTienCoc()) + totalTienDV;
+
+                hd.setTienPhong(currentSumPhong);
+                hd.setTienDV(totalTienDV);
+                hd.setTongTien(tongTT);
+            }
+
+            double tongDoanhThu = listHD.stream()
+                    .mapToDouble(model.utils.RevenueCalculator::calculateActualRevenue)
+                    .sum();
             lblRevenue.setText(String.format("%,.0f đ", tongDoanhThu));
         } catch (Exception ignored) {
         }

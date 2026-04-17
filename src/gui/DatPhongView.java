@@ -48,8 +48,14 @@ public class DatPhongView extends BorderPane {
     private TextField txtSearch;
 
     private final dao.DatPhongDAO datPhongDAO = new dao.DatPhongDAO();
+    private boolean canDelete = false;
 
     public DatPhongView() {
+        this(false);
+    }
+
+    public DatPhongView(boolean canDelete) {
+        this.canDelete = canDelete;
         setStyle("-fx-background-color: " + C_CONTENT_BG + ";");
         setPadding(new Insets(24, 32, 24, 32));
 
@@ -68,7 +74,7 @@ public class DatPhongView extends BorderPane {
         row1.setAlignment(Pos.CENTER_LEFT);
 
         VBox titleBox = new VBox(2);
-        Label lblTitle = new Label("📅  Quản lý Đặt phòng");
+        Label lblTitle = new Label("📅 Đặt phòng");
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 26));
         lblTitle.setTextFill(Color.web("#1f2937"));
 
@@ -147,22 +153,7 @@ public class DatPhongView extends BorderPane {
                 "; -fx-border-radius: 10; -fx-background-radius: 10;");
 
         table.setRowFactory(tv -> {
-            TableRow<Object[]> row = new TableRow<>() {
-                @Override
-                protected void updateItem(Object[] item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null)
-                        setStyle("-fx-background-color: white;");
-                }
-            };
-            row.setOnMouseEntered(e -> {
-                if (!row.isEmpty())
-                    row.setStyle("-fx-background-color: #f0f4ff;");
-            });
-            row.setOnMouseExited(e -> {
-                if (!row.isEmpty())
-                    row.setStyle("-fx-background-color: white;");
-            });
+            TableRow<Object[]> row = new TableRow<>();
 
             ContextMenu ctx = new ContextMenu();
             MenuItem miDetail = new MenuItem("Xem chi tiết");
@@ -199,12 +190,17 @@ public class DatPhongView extends BorderPane {
                     miCancel.setDisable(!canCancel);
 
                     // Chỉ cho xóa nếu không phải đang ở hoặc đã trả phòng
-                    boolean canDelete = !"DA_CHECKIN".equals(status) && !"DA_CHECKOUT".equals(status);
-                    miDelete.setDisable(!canDelete);
+                    boolean canDeleteBooking = !"DA_CHECKIN".equals(status) && !"DA_CHECKOUT".equals(status);
+                    miDelete.setDisable(!canDeleteBooking);
                 }
             });
 
-            ctx.getItems().addAll(miDetail, miCancel, new SeparatorMenuItem(), miDelete);
+            // [ĐÃ SỬA] Chỉ cho phép xóa nếu có quyền canDelete (thường là ADMIN)
+            if (canDelete) {
+                ctx.getItems().addAll(miDetail, miCancel, new SeparatorMenuItem(), miDelete);
+            } else {
+                ctx.getItems().addAll(miDetail, miCancel);
+            }
             row.setContextMenu(ctx);
 
             row.setOnMouseClicked(e -> {
@@ -262,14 +258,38 @@ public class DatPhongView extends BorderPane {
                 badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 String bg, fg;
                 switch (item) {
-                    case "DA_CHECKIN" -> { bg = "#d1fae5"; fg = "#065f46"; }
-                    case "DA_CHECKOUT" -> { bg = "#f3f4f6"; fg = "#6b7280"; }
-                    case "DA_HUY" -> { bg = "#fee2e2"; fg = "#b91c1c"; }
-                    case "DA_XACNHAN" -> { bg = "#ecfdf5"; fg = "#10b981"; }
-                    case "CHO_XACNHAN" -> { bg = "#fef3c7"; fg = "#d97706"; }
-                    case "HUY_HOAN_COC" -> { bg = "#e0e7ff"; fg = "#3730a3"; }
-                    case "HUY_MAT_COC" -> { bg = "#fce7f3"; fg = "#be185d"; }
-                    default -> { bg = "#dbeafe"; fg = "#1e40af"; }
+                    case "DA_CHECKIN" -> {
+                        bg = "#d1fae5";
+                        fg = "#065f46";
+                    }
+                    case "DA_CHECKOUT" -> {
+                        bg = "#f3f4f6";
+                        fg = "#6b7280";
+                    }
+                    case "DA_HUY" -> {
+                        bg = "#fee2e2";
+                        fg = "#b91c1c";
+                    }
+                    case "DA_XACNHAN" -> {
+                        bg = "#ecfdf5";
+                        fg = "#10b981";
+                    }
+                    case "CHO_XACNHAN" -> {
+                        bg = "#fef3c7";
+                        fg = "#d97706";
+                    }
+                    case "HUY_HOAN_COC" -> {
+                        bg = "#e0e7ff";
+                        fg = "#3730a3";
+                    }
+                    case "HUY_MAT_COC" -> {
+                        bg = "#fce7f3";
+                        fg = "#be185d";
+                    }
+                    default -> {
+                        bg = "#dbeafe";
+                        fg = "#1e40af";
+                    }
                 }
                 badge.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg +
                         "; -fx-padding: 3 10 3 10; -fx-background-radius: 12;");
@@ -407,7 +427,7 @@ public class DatPhongView extends BorderPane {
     /**
      * [ĐÃ REFACTOR] Xác nhận hủy đơn đặt phòng.
      * Logic: ngày đặt cách ngày check-in >= 3 ngày → HOÀN CỌC.
-     *        ngày đặt cách ngày check-in <  3 ngày → MẤT CỌC.
+     * ngày đặt cách ngày check-in < 3 ngày → MẤT CỌC.
      * Không hiện UI chọn trạng thái — hệ thống tự xác định.
      */
     private void confirmCancel(Object[] row) {
@@ -438,9 +458,9 @@ public class DatPhongView extends BorderPane {
 
         String msg = String.format(
                 "Xác nhận HỦY đơn %s của khách %s?%n%n" +
-                "📅 Ngày Check-in: %s%n" +
-                "⏳ Còn lại: %d ngày%n" +
-                "💰 Chế độ: %s",
+                        "📅 Ngày Check-in: %s%n" +
+                        "⏳ Còn lại: %d ngày%n" +
+                        "💰 Chế độ: %s",
                 maDat, tenKH, checkInStr, daysUntilCheckIn, trangThaiLabel);
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -449,7 +469,8 @@ public class DatPhongView extends BorderPane {
         alert.setContentText(msg);
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) return;
+        if (result.isEmpty() || result.get() != ButtonType.OK)
+            return;
 
         executeCancel(maDat, duocHoanCoc, daysUntilCheckIn);
     }
@@ -469,8 +490,8 @@ public class DatPhongView extends BorderPane {
                 }
 
                 // 2. [ĐÃ SỬA] Cập nhật hóa đơn gốc
-                //    - loaiHD:             HOA_DON_HOAN_TIEN (hoàn) hoặc HOA_DON_PHONG (mất cọc)
-                //    - trangThaiThanhToan: DA_HOAN_COC hoặc DA_MAT_COC (2 trạng thái mới)
+                // - loaiHD: HOA_DON_HOAN_TIEN (hoàn) hoặc HOA_DON_PHONG (mất cọc)
+                // - trangThaiThanhToan: DA_HOAN_COC hoặc DA_MAT_COC (2 trạng thái mới)
                 String loaiHD = duocHoanCoc ? "HOA_DON_HOAN_TIEN" : "HOA_DON_PHONG";
                 String trangThaiTT = duocHoanCoc ? "DA_HOAN_COC" : "DA_MAT_COC";
                 String ghiChu = duocHoanCoc
@@ -514,7 +535,8 @@ public class DatPhongView extends BorderPane {
         alert.setContentText("Bạn có chắc muốn xóa đơn " + maDat + " của " + tenKH + "?");
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) return;
+        if (result.isEmpty() || result.get() != ButtonType.OK)
+            return;
 
         try (Connection con = ConnectDatabase.getInstance().getConnection()) {
             con.setAutoCommit(false);
@@ -556,8 +578,10 @@ public class DatPhongView extends BorderPane {
 
     private String mapTrangThai(String key) {
         // Map các trạng thái đặc biệt (không có trong enum)
-        if ("HUY_HOAN_COC".equals(key)) return "Hủy – Hoàn cọc";
-        if ("HUY_MAT_COC".equals(key)) return "Hủy – Mất cọc";
+        if ("HUY_HOAN_COC".equals(key))
+            return "Hủy – Hoàn cọc";
+        if ("HUY_MAT_COC".equals(key))
+            return "Hủy – Mất cọc";
         try {
             return model.enums.TrangThaiDatPhong.valueOf(key).getThongTinTrangThai();
         } catch (Exception e) {

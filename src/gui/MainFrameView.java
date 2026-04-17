@@ -429,7 +429,7 @@ public class MainFrameView {
                     showFX(new QuanLyNhanVienView(staff));
                 }
             }
-            case "booking" -> showFX(new DatPhongView());
+            case "booking" -> showFX(new DatPhongView(staff != null && staff.getRole() == model.enums.ChucVu.ADMIN));
             // Phase 3 - đã migrate sang JavaFX
             case "checkin" -> showFX(new CheckInView());
             case "checkout" -> showFX(new CheckOutView(staff));
