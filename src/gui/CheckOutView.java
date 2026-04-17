@@ -191,9 +191,6 @@ public class CheckOutView extends BorderPane {
     private HBox buildMainLayout() {
         HBox main = new HBox(24);
 
-        VBox leftCol = new VBox(24);
-        HBox.setHgrow(leftCol, Priority.ALWAYS);
-
         guestInfoSection = new VBox(16);
         guestInfoSection.setPadding(new Insets(24));
         guestInfoSection.setStyle(
@@ -240,7 +237,15 @@ public class CheckOutView extends BorderPane {
         }
         VBox.setVgrow(serviceTable, Priority.ALWAYS);
         tableContainer.getChildren().addAll(lblTable, serviceTable);
-        leftCol.getChildren().addAll(guestInfoSection, tableContainer);
+
+        VBox leftContent = new VBox(24);
+        leftContent.getChildren().addAll(guestInfoSection, tableContainer);
+
+        ScrollPane scrollLeft = new ScrollPane(leftContent);
+        scrollLeft.setFitToWidth(true);
+        scrollLeft.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrollLeft.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        HBox.setHgrow(scrollLeft, Priority.ALWAYS);
 
         billingSection = new VBox(20);
         billingSection.setMinWidth(380);
@@ -249,7 +254,7 @@ public class CheckOutView extends BorderPane {
                 "-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + ";");
         billingSection.setEffect(new DropShadow(15, 0, 5, Color.web("#0000000A")));
 
-        main.getChildren().addAll(leftCol, billingSection);
+        main.getChildren().addAll(scrollLeft, billingSection);
         return main;
     }
 
@@ -383,10 +388,14 @@ public class CheckOutView extends BorderPane {
         grid.add(createLabel("Mã đặt phòng:"), 0, 0);
         grid.add(createValue(currentDatPhong.getMaDat()), 1, 0);
         grid.add(createLabel("Phòng:"), 2, 0);
-        grid.add(createValue(currentMaPhong + " — " + String.format("%,.0f đ/đêm", currentGiaPhong)), 3, 0);
+        Label lblRoomVal = createValue(currentMaPhong + " — " + String.format("%,.0f đ/đêm", currentGiaPhong));
+        lblRoomVal.setWrapText(true);
+        grid.add(lblRoomVal, 3, 0);
 
         grid.add(createLabel("Khách hàng:"), 0, 1);
-        grid.add(createValue(currentDatPhong.getKhachHang().getTenKH()), 1, 1);
+        Label lblKhVal = createValue(currentDatPhong.getKhachHang().getTenKH());
+        lblKhVal.setWrapText(true);
+        grid.add(lblKhVal, 1, 1);
         grid.add(createLabel("Số điện thoại:"), 2, 1);
         grid.add(createValue(currentDatPhong.getKhachHang().getSoDT() != null
                 ? currentDatPhong.getKhachHang().getSoDT()
@@ -422,7 +431,9 @@ public class CheckOutView extends BorderPane {
         grid.add(createLabel("Mã đặt phòng:"), 0, 0);
         grid.add(createValue(currentDatPhong.getMaDat()), 1, 0);
         grid.add(createLabel("Khách hàng:"), 0, 1);
-        grid.add(createValue(currentDatPhong.getKhachHang().getTenKH()), 1, 1);
+        Label lblKhValDon = createValue(currentDatPhong.getKhachHang().getTenKH());
+        lblKhValDon.setWrapText(true);
+        grid.add(lblKhValDon, 1, 1);
         grid.add(createLabel("Ngày check-in:"), 0, 2);
         grid.add(createValue(currentDatPhong.getNgayCheckIn() != null
                 ? currentDatPhong.getNgayCheckIn().format(fmt)

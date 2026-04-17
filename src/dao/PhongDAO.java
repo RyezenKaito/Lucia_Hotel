@@ -40,7 +40,8 @@ public class PhongDAO {
     public List<Phong> getAll() {
         List<Phong> ds = new ArrayList<>();
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
-                "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong";
+                "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
+                "ORDER BY p.soTang, p.soPhong";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();

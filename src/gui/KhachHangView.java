@@ -253,7 +253,8 @@ public class KhachHangView extends BorderPane {
                 ctxMenu.show(table, e.getScreenX(), e.getScreenY());
             } else if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 2) {
                 KhachHang kh = table.getSelectionModel().getSelectedItem();
-                if (kh != null) openDialog(kh);
+                if (kh != null)
+                    openDialog(kh);
             } else {
                 ctxMenu.hide();
             }
@@ -437,7 +438,7 @@ public class KhachHangView extends BorderPane {
                                 setText(null);
                                 setStyle("-fx-alignment: CENTER;");
                             } else if (item == null || item.isBlank()) {
-                                setText("Chưa đặt phòng");
+                                setText("Chưa nhận phòng");
                                 setStyle("-fx-alignment: CENTER; -fx-text-fill: #9ca3af;");
                             } else {
                                 setText(item);

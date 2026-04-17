@@ -179,27 +179,33 @@ public class HoaDonView extends BorderPane {
                 switch (trangThai) {
                     case "DA_THANH_TOAN" -> {
                         text = "Đã thanh toán";
-                        bg = "#d1fae5"; fg = "#065f46";
+                        bg = "#d1fae5";
+                        fg = "#065f46";
                     }
                     case "DA_THANH_TOAN_COC" -> {
                         text = "Đã đặt cọc";
-                        bg = "#fef3c7"; fg = "#92400e";
+                        bg = "#fef3c7";
+                        fg = "#92400e";
                     }
                     case "CHUA_THANH_TOAN" -> {
                         text = "Chưa thanh toán";
-                        bg = "#fee2e2"; fg = "#b91c1c";
+                        bg = "#fee2e2";
+                        fg = "#b91c1c";
                     }
                     case "DA_HOAN_COC" -> {
                         text = "Hủy – Hoàn cọc";
-                        bg = "#e0e7ff"; fg = "#3730a3";
+                        bg = "#e0e7ff";
+                        fg = "#3730a3";
                     }
                     case "DA_MAT_COC" -> {
                         text = "Hủy – Mất cọc";
-                        bg = "#fce7f3"; fg = "#be185d";
+                        bg = "#fce7f3";
+                        fg = "#be185d";
                     }
                     default -> {
                         text = trangThai;
-                        bg = "#f3f4f6"; fg = "#6b7280";
+                        bg = "#f3f4f6";
+                        fg = "#6b7280";
                     }
                 }
 
@@ -317,6 +323,7 @@ public class HoaDonView extends BorderPane {
                 Label lblP = new Label("🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
                         + "  •  " + (int) sodem + " đêm  ▼");
                 lblP.setFont(Font.font("Segoe UI", 13));
+                lblP.setWrapText(true);
                 HBox.setHgrow(lblP, Priority.ALWAYS);
                 Label lblAmt = new Label(String.format("%,.0f đ", thanhTien));
                 lblAmt.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
@@ -341,6 +348,7 @@ public class HoaDonView extends BorderPane {
                         Label dvName = new Label("🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
                         dvName.setTextFill(Color.web(C_TEXT_GRAY));
                         dvName.setFont(Font.font("Segoe UI", 12));
+                        dvName.setWrapText(true);
                         HBox.setHgrow(dvName, Priority.ALWAYS);
                         Label dvPrice = new Label(String.format("%,.0f đ", dv.getThanhTien()));
                         dvPrice.setTextFill(Color.web(C_TEXT_DARK));
@@ -364,10 +372,11 @@ public class HoaDonView extends BorderPane {
 
         ScrollPane scrollPhong = new ScrollPane(phongBox);
         scrollPhong.setFitToWidth(true);
-        scrollPhong.setMaxHeight(300);
+        scrollPhong.setMinHeight(200);
         scrollPhong
                 .setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
         scrollPhong.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        VBox.setVgrow(scrollPhong, Priority.ALWAYS);
 
         Separator sep = new Separator();
         VBox sumBox = new VBox(10);
@@ -456,7 +465,15 @@ public class HoaDonView extends BorderPane {
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
 
-        double tongDoanhThu = list.stream().mapToDouble(HoaDon::getTongTien).sum();
+        double tongDoanhThu = list.stream().mapToDouble(hd -> {
+            String status = hd.getTrangThaiThanhToan();
+            // Nếu trạng thái là Hủy mất cọc (DA_MAT_COC) hoặc Hủy hoàn cọc (DA_HOAN_COC),
+            // thì không tính vào doanh thu hoặc trừ lại phần đã cọc.
+            if ("DA_MAT_COC".equals(status) || "DA_HOAN_COC".equals(status) || "DA_HUY".equals(status)) {
+                return 0;
+            }
+            return hd.getTongTien() + hd.getTienCoc();
+        }).sum();
         lblTongDoanhThu.setText(String.format("%,.0f đ", tongDoanhThu));
         lblSoHoaDon.setText(String.valueOf(list.size()));
     }

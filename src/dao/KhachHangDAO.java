@@ -248,7 +248,7 @@ public class KhachHangDAO {
         for (String maKH : custMap.keySet()) {
             String[] data = custMap.get(maKH);
             List<String> rooms = roomMap.get(maKH);
-            String roomStr = rooms.isEmpty() ? "Chưa đặt phòng"
+            String roomStr = rooms.isEmpty() ? "Chưa nhận phòng"
                     : String.join(", ", rooms);
             result.add(new String[] { data[0], data[1], data[2], data[3], roomStr });
         }
