@@ -1,18 +1,8 @@
 USE LuciaHT;
 GO
 
--- KH
-INSERT INTO KH (maKH, tenKH, soDT, ngaySinh, soCCCD, email) VALUES
-('KH001', N'Nguyễn Minh Tuấn',   '0909030001', '1990-01-01', '079190456781', 'tuan.nguyen@email.com'),
-('KH002', N'Trần Thị Ngọc Anh',  '0919230002', '1992-02-02', '079192456782', 'anh.tran@email.com'),
-('KH003', N'Lê Văn Đạt',         '0909530003', '1995-10-15', '079095456783', 'dat.le@email.com'),
-('KH004', N'Phạm Thu Thủy',      '0919330004', '1993-05-20', '079193456784', 'thuy.pham@email.com'),
-('KH005', N'Hoàng Lương Khang',  '0908830005', '1988-12-05', '079088456785', 'khang.hoang@email.com'),
-('KH006', N'Đặng Thanh Mai',     '0919930006', '1999-08-30', '079199456786', 'mai.dang@email.com'),
-('KH007', N'Vũ Hải Yến',         '0918530007', '1985-03-12', '079185456787', 'yen.vu@email.com'),
-('KH008', N'Bùi Quốc Anh',       '0909130008', '1991-11-25', '079090456788', 'anh.bui@email.com'),
-('KH009', N'Đỗ Hữu Thiện',       '0909430009', '1994-07-07', '079094456789', 'thien.do@email.com'),
-('KH010', N'Ngô Gia Bảo',        '0909730010', '1997-09-09', '079097456780', 'bao.ngo@email.com');
+-- KH (Dữ liệu khách hàng) - Đã xóa dữ liệu rác để chuẩn bị tạo dữ liệu thực tế.
+-- Cấu trúc: INSERT INTO KH (maKH, tenKH, soDT, ngaySinh, soCCCD, email) VALUES ...
 
 -- NV
 -- Thứ tự cột: maNV, hoTen, soDT, soCCCD, diaChi, ngaySinh, ngayVaoLam, trinhDo, mk, role, trangThai, maQL
@@ -68,16 +58,11 @@ INSERT INTO Phong (maPhong, tenPhong, loaiPhong, tinhTrang, soPhong, soTang) VAL
 ('P504', N'Phòng 504', 'TRIPLE', N'CONTRONG',   504, 5),
 ('P505', N'Phòng 505', 'FAMILY', N'CONTRONG',   505, 5);
 
--- DatPhong (thêm trangThai)
--- Thứ tự cột: maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai
-INSERT INTO DatPhong (maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES
-('DP001', '2026-03-20 14:00', 'KH001', '2026-03-20 14:00', '2026-03-22 12:00', N'DA_CHECKOUT'),
-('DP002', '2026-03-21 15:00', 'KH002', '2026-03-21 15:00', '2026-03-23 12:00', N'DA_CHECKOUT');
+-- DatPhong (Đặt phòng) - Đã xóa dữ liệu rác để chuẩn bị tạo dữ liệu thực tế.
+-- Cấu trúc: INSERT INTO DatPhong (maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES ...
 
--- ChiTietDatPhong
-INSERT INTO ChiTietDatPhong (maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES
-('CTDP001', 'P101', 'DP001', 300000, 1, N'Không hút thuốc'),
-('CTDP002', 'P102', 'DP002', 500000, 2, N'Trẻ em đi kèm');
+-- ChiTietDatPhong - Đã xóa dữ liệu rác.
+-- Cấu trúc: INSERT INTO ChiTietDatPhong (maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES ...
 
 -- DV (loaiDV đổi sang ASCII key)
 -- Thứ tự cột: maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai
@@ -95,43 +80,18 @@ INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES
 ('DV011', N'Spa thư giãn', NULL, N'SUC_KHOE', N'Gói massage 60 phút', N'Lượt', 0),
 ('DV012', N'Karaoke VIP',  NULL, N'GIAI_TRI', N'Phòng 2 giờ kèm nước', N'Phòng', 0);
 
--- HoaDon
--- BUG CŨ: INSERT không khai báo tên cột mà chỉ có 5 giá trị → sẽ lỗi vì bảng có nhiều cột hơn.
--- Sửa: khai báo rõ tên cột và bổ sung đủ loaiHD, trangThaiThanhToan, ngayThanhToan
-INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien,
-                    loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan) VALUES
-('HD001', 'DP001', 'LUCIA002', '2026-03-22 12:30', 600000, 120000, 300000, 0, 620000,
- N'HOA_DON_PHONG', N'DA_THANH_TOAN', N'TIEN_MAT', '2026-03-22 12:45'),
-('HD002', 'DP002', 'ADMIN',    '2026-03-23 11:00', 1000000, 100000, 500000, 0, 950000,
- N'HOA_DON_PHONG', N'DA_THANH_TOAN', N'TIEN_MAT', '2026-03-23 13:45');
+-- HoaDon - Đã xóa dữ liệu rác.
+-- Cấu trúc: INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan) VALUES ...
 
--- ChiTietHoaDon (bỏ soLuongPhong vì đã xóa cột ra khỏi bảng)
--- Thứ tự cột: maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien
-INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien) VALUES
-('CTHD001', 'HD001', 'CTDP001', 2, 600000),
-('CTHD002', 'HD002', 'CTDP002', 2, 1000000);
+-- ChiTietHoaDon - Đã xóa dữ liệu rác.
+-- Cấu trúc: INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien) VALUES ...
 
--- DichVuSuDung
--- Thứ tự cột: maDV, maCTDP, ngaySuDung, soLuong, giaDV, trangThai
-INSERT INTO DichVuSuDung (maDV, maCTDP, ngaySuDung, soLuong, giaDV, trangThai) VALUES
-('DV001', 'CTDP001', '2026-03-21', 2,  20000, 1),
-('DV002', 'CTDP001', '2026-03-21', 1,  80000, 1),
-('DV003', 'CTDP002', '2026-03-22', 1, 100000, 1);
+-- DichVuSuDung - Đã xóa dữ liệu rác.
+-- Cấu trúc: INSERT INTO DichVuSuDung (maDV, maCTDP, ngaySuDung, soLuong, giaDV, trangThai) VALUES ...
 
--- BangGiaDV_Header
-INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES
-('BG001', N'Bảng giá tiêu chuẩn 2026', '2026-01-01', '2026-12-31', 1);
+-- BangGiaDV_Header - Đã xóa dữ liệu rác.
+-- Cấu trúc: INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES ...
 
--- BangGiaDV_Detail
-INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV, ghiChu) VALUES
-('BG001', 'DV001',  20000, N'Giá tiêu chuẩn'),
-('BG001', 'DV002',  80000, N'Giá tiêu chuẩn'),
-('BG001', 'DV003', 100000, N'Giá tiêu chuẩn'),
-('BG001', 'DV004',  25000, N'Giá tiêu chuẩn'),
-('BG001', 'DV005',  35000, N'Giá tiêu chuẩn'),
-('BG001', 'DV006',  20000, N'Giá tiêu chuẩn'),
-('BG001', 'DV007', 150000, N'Giá tiêu chuẩn'),
-('BG001', 'DV008', 300000, N'Giá tiêu chuẩn'),
-('BG001', 'DV009', 150000, N'Giá tiêu chuẩn'),
-('BG001', 'DV010', 250000, N'Giá tiêu chuẩn');
+-- BangGiaDV_Detail - Đã xóa dữ liệu rác.
+-- Cấu trúc: INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV, ghiChu) VALUES ...
 GO
