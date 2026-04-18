@@ -294,11 +294,15 @@ public class HoaDonView extends BorderPane {
                         : "—")
                 : "—";
         String maDat = hd.getDatPhong() != null ? hd.getDatPhong().getMaDat() : "—";
+        String maNV = hd.getNhanVien() != null ? hd.getNhanVien().getMaNV() : "—";
+        String tenNV = hd.getNhanVien() != null ? hd.getNhanVien().getHoTen() : "—";
         khachBox.getChildren().addAll(
                 makeBillInfoRow("👤 Khách hàng:", tenKH),
                 makeBillInfoRow("📞 Số điện thoại:", soDT),
                 makeBillInfoRow("🆔 Số CCCD:", cccd),
-                makeBillInfoRow("🏠 Mã đặt phòng:", maDat));
+                makeBillInfoRow("🏠 Mã đặt phòng:", maDat),
+                makeBillInfoRow("👔 Mã nhân viên lập:", maNV),
+                makeBillInfoRow("📝 Tên nhân viên:", tenNV));
 
         dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
 

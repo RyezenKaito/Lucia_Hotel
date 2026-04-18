@@ -66,7 +66,7 @@ public class QuanLyNhanVienView extends BorderPane {
     private ObservableList<NhanVien> masterData = FXCollections.observableArrayList();
     private FilteredList<NhanVien> filteredData;
 
-    private Label lblTotal, lblStaff, lblManager, lblAdmin;
+    private Label lblTotal, lblStaff, lblManager;
     private TextField txtSearch;
 
     /* ── Constructor ──────────────────────────────────────────────── */
@@ -121,18 +121,15 @@ public class QuanLyNhanVienView extends BorderPane {
         lblTotal = new Label("0");
         lblStaff = new Label("0");
         lblManager = new Label("0");
-        lblAdmin = new Label("0");
 
         VBox c1 = createStatCard("👥", "TỔNG NHÂN VIÊN", lblTotal, C_NAVY);
         VBox c2 = createStatCard("👔", "NHÂN VIÊN", lblStaff, C_BLUE);
         VBox c3 = createStatCard("⭐", "QUẢN LÝ", lblManager, C_GOLD);
-        VBox c4 = createStatCard("🛡", "ADMIN", lblAdmin, C_PURPLE);
 
         HBox.setHgrow(c1, Priority.ALWAYS);
         HBox.setHgrow(c2, Priority.ALWAYS);
         HBox.setHgrow(c3, Priority.ALWAYS);
-        HBox.setHgrow(c4, Priority.ALWAYS);
-        statsRow.getChildren().addAll(c1, c2, c3, c4);
+        statsRow.getChildren().addAll(c1, c2, c3);
 
         /* ── Dòng 3: Thanh tìm kiếm ──────────────────────────────── */
         txtSearch = new TextField();
@@ -221,8 +218,6 @@ public class QuanLyNhanVienView extends BorderPane {
         colChucVu.setStyle("-fx-alignment: CENTER;");
         colChucVu.setCellValueFactory(c -> {
             ChucVu role = c.getValue().getRole();
-            if (role == ChucVu.ADMIN)
-                return new SimpleStringProperty("ADMIN");
             if (role == ChucVu.QUAN_LY)
                 return new SimpleStringProperty("QUẢN LÝ");
             return new SimpleStringProperty("NHÂN VIÊN");
@@ -239,10 +234,6 @@ public class QuanLyNhanVienView extends BorderPane {
 
                 String bg, text;
                 switch (item) {
-                    case "ADMIN" -> {
-                        bg = "#ede9fe";
-                        text = "#5b21b6";
-                    }
                     case "QUẢN LÝ" -> {
                         bg = "#fef3c7";
                         text = "#92400e";
@@ -437,13 +428,14 @@ public class QuanLyNhanVienView extends BorderPane {
         List<NhanVien> all = dao.getAll();
         masterData.clear();
 
-        long totalStaff = 0, totalManager = 0, totalAdmin = 0;
+        long totalStaff = 0, totalManager = 0;
 
         for (NhanVien nv : all) {
-            // ── TÍNH THỐNG KÊ TOÀN BỘ ──
             if (nv.getRole() == ChucVu.ADMIN)
-                totalAdmin++;
-            else if (nv.getRole() == ChucVu.QUAN_LY)
+                continue;
+
+            // ── TÍNH THỐNG KÊ TOÀN BỘ ──
+            if (nv.getRole() == ChucVu.QUAN_LY)
                 totalManager++;
             else
                 totalStaff++;
@@ -459,10 +451,9 @@ public class QuanLyNhanVienView extends BorderPane {
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
 
-        lblTotal.setText(String.valueOf(totalStaff + totalManager + totalAdmin));
+        lblTotal.setText(String.valueOf(totalStaff + totalManager));
         lblStaff.setText(String.valueOf(totalStaff));
         lblManager.setText(String.valueOf(totalManager));
-        lblAdmin.setText(String.valueOf(totalAdmin));
     }
 
     private void applyFilter(String keyword) {
