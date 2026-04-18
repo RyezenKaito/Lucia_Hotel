@@ -17,8 +17,7 @@ CREATE TABLE KH (
     tenKH    NVARCHAR(100)  NOT NULL,
     soDT     VARCHAR(10),
     ngaySinh DATE,
-    soCCCD   VARCHAR(12),
-    email    NVARCHAR(100)  NULL   -- DÃ¹ng Ä‘á»ƒ gá»­i xÃ¡c nháº­n Ä‘áº·t phÃ²ng / hÃ³a Ä‘Æ¡n
+    soCCCD   VARCHAR(12)
 );
 
 CREATE TABLE NV (
@@ -40,9 +39,8 @@ CREATE TABLE NV (
 
 CREATE TABLE LoaiPhong (
     maLoaiPhong VARCHAR(20)    PRIMARY KEY,   -- SINGLE, DOUBLE, TWIN, TRIPLE, FAMILY
-    tenLoaiPhong NVARCHAR(50)  NOT NULL,       -- TÃªn hiá»ƒn thá»‹ tiáº¿ng Viá»‡t (VD: "PhÃ²ng Ä‘Æ¡n")
     gia         DECIMAL(18,2)  NOT NULL,
-    sucChua     INT            NOT NULL        -- Sá»©c chá»©a tá»‘i Ä‘a (ngÆ°á»i)
+    sucChua     INT            NOT NULL        -- Sá»©c chá»©a tá»‘i Ä‘a (ngÆ°á» i)
 );
 
 CREATE TABLE DV (
@@ -111,8 +109,9 @@ CREATE TABLE HoaDon (
     tienPhong            DECIMAL(18,2) DEFAULT 0,
     tienDV               DECIMAL(18,2) DEFAULT 0,
     tienCoc              DECIMAL(18,2) DEFAULT 0,          -- Tá»•ng tiá»n cá»c Ä‘Ã£ thu (tá»« ChiTietDatPhong)
-    thueVAT              DECIMAL(18,2) DEFAULT 0,
-    tongTien             DECIMAL(18,2) DEFAULT 0,          -- = tienPhong + tienDV + thueVAT - tienCoc
+    thueVAT              DECIMAL(18,2) DEFAULT 0.1,
+    tongTien             DECIMAL(18,2) DEFAULT 0,          -- = (tienPhong + tienDV)*(1 + thueVAT) - tienCoc
+    doanhThu             DECIMAL(18,2) DEFAULT 0,          -- = (tienPhong + tienDV)*(1 + thueVAT)
 
     -- PhÃ¢n loáº¡i hÃ³a Ä‘Æ¡n
     loaiHD               NVARCHAR(30)  NOT NULL DEFAULT N'HOA_DON_PHONG'
@@ -182,7 +181,6 @@ CREATE TABLE BangGiaDV_Detail (
     maBangGia VARCHAR(20),
     maDV      VARCHAR(20),
     giaDV     DECIMAL(18,2),
-    ghiChu    NVARCHAR(255),
     CONSTRAINT PK_BGDV_Detail  PRIMARY KEY (maBangGia, maDV),
     CONSTRAINT FK_BGDV_Header  FOREIGN KEY (maBangGia) REFERENCES BangGiaDV_Header(maBangGia),
     CONSTRAINT FK_BGDV_DV      FOREIGN KEY (maDV)      REFERENCES DV(maDV)

@@ -452,10 +452,7 @@ public class QuanLyNhanVienView extends BorderPane {
             if (!isCurrentUserAdmin && nv.getRole() != ChucVu.NHAN_VIEN)
                 continue;
 
-            // Ẩn chính mình khỏi danh sách hiển thị
-            if (currentUser != null && nv.getMaNV().equals(currentUser.getMaNV()))
-                continue;
-
+            // Thêm vào danh sách hiển thị
             masterData.add(nv);
         }
 
@@ -530,12 +527,10 @@ public class QuanLyNhanVienView extends BorderPane {
                 return;
             }
 
-            java.util.List<NhanVien> subordinates = dao.getAll().stream()
-                    .filter(n -> nv.getMaNV().equals(n.getMaQL())
-                            && n.getTrangThai() != model.enums.TrangThaiNV.DA_NGHI)
-                    .toList();
+            // Kiểm tra số lượng cấp dưới
+            int subCount = dao.countSubordinates(nv.getMaNV());
 
-            if (!subordinates.isEmpty()) {
+            if (subCount > 0) {
                 java.util.List<NhanVien> otherManagers = dao.getAll().stream()
                         .filter(n -> n.getRole() == ChucVu.QUAN_LY
                                 && n.getTrangThai() == model.enums.TrangThaiNV.CON_LAM
@@ -543,31 +538,17 @@ public class QuanLyNhanVienView extends BorderPane {
                         .toList();
 
                 if (otherManagers.isEmpty()) {
-                    showAlert("Không thể cập nhật", "Nhân sự này đang quản lý " + subordinates.size()
-                            + " cá nhân khác!\nKhông tìm thấy quản lý cấp trên khả dụng nào để bàn giao.");
+                    showAlert("Không thể cập nhật", "Nhân sự này đang quản lý " + subCount
+                            + " cá nhân khác!\nKhông tìm thấy quản lý thay thế khả dụng nào để bàn giao.");
                     return;
                 }
 
-                ChoiceDialog<NhanVien> dialog = new ChoiceDialog<>(otherManagers.get(0), otherManagers);
-                Window owner = getScene().getWindow();
-                dialog.initOwner(owner);
-                dialog.setTitle("Bàn giao quyền quản lý");
-                dialog.setHeaderText("Quản lý [" + nv.getHoTen() + "] đang trực tiếp quản lý " + subordinates.size()
-                        + " nhân viên.\nVui lòng chọn Quản lý thay thế để bàn giao:");
-                dialog.setContentText("Quản lý mới:");
-
-                Region dim = model.utils.DimOverlay.show(owner);
-                java.util.Optional<NhanVien> result = dialog.showAndWait();
-                model.utils.DimOverlay.hide(owner, dim);
+                java.util.Optional<NhanVien> result = showHandoverDialog(nv, otherManagers, subCount);
 
                 if (result.isPresent()) {
-                    NhanVien newManager = result.get();
-                    for (NhanVien sub : subordinates) {
-                        sub.setMaQL(newManager.getMaNV());
-                        dao.update(sub);
-                    }
+                    dao.updateManagerForSubordinates(nv.getMaNV(), result.get().getMaNV());
                 } else {
-                    return; // Người dùng nhấn Hủy, dừng luôn việc cập nhật trạng thái
+                    return; // Người dùng nhấn Hủy
                 }
             }
         }
@@ -587,25 +568,56 @@ public class QuanLyNhanVienView extends BorderPane {
             return;
         }
 
+        // 1. Kiểm tra ràng buộc nhân sự (Quản lý)
+        int subordinatesCount = dao.countSubordinates(nv.getMaNV());
+        String replacementMaNV = null;
+
+        if (subordinatesCount > 0) {
+            List<NhanVien> otherManagers = dao.getAll().stream()
+                    .filter(n -> n.getRole() == ChucVu.QUAN_LY
+                            && !n.getMaNV().equals(nv.getMaNV())
+                            && n.getTrangThai() == model.enums.TrangThaiNV.CON_LAM)
+                    .toList();
+
+            if (otherManagers.isEmpty()) {
+                showAlert("Không thể xóa", "Nhân sự này đang quản lý " + subordinatesCount
+                        + " nhân viên khác.\nKhông tìm thấy Quản lý thay thế khả dụng để bàn giao công việc!");
+                return;
+            }
+
+            Optional<NhanVien> result = showHandoverDialog(nv, otherManagers, subordinatesCount);
+
+            if (result.isPresent()) {
+                replacementMaNV = result.get().getMaNV();
+            } else {
+                return; // Hủy xóa
+            }
+        }
+
+        // 2. Xác nhận xóa cuối cùng
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Xác nhận xóa");
         alert.setHeaderText(null);
-        alert.setContentText("Bạn có chắc muốn xóa: " + nv.getHoTen() + " (" + nv.getRole() + ") ?");
+        alert.setContentText("Bạn có chắc chắn muốn xóa vĩnh viễn: " + nv.getHoTen() + " ?");
 
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Ràng buộc ít nhất 1 quản lý (tổng số)
-            if (nv.getRole() == ChucVu.QUAN_LY) {
-                long managerCount = dao.getAll().stream()
-                        .filter(n -> n.getRole() == ChucVu.QUAN_LY)
-                        .count();
-                if (managerCount <= 1) {
-                    showAlert("Không thể xóa", "Hệ thống phải có ít nhất 1 Quản lý!");
-                    return;
-                }
+        if (replacementMaNV != null) {
+            alert.setContentText(
+                    alert.getContentText() + "\n(Mọi cấp dưới sẽ được chuyển giao cho " + replacementMaNV + ")");
+        }
+
+        Optional<ButtonType> confirmResult = alert.showAndWait();
+        if (confirmResult.isPresent() && confirmResult.get() == ButtonType.OK) {
+            // Nếu có bàn giao, thực hiện update trước
+            if (replacementMaNV != null) {
+                dao.updateManagerForSubordinates(nv.getMaNV(), replacementMaNV);
             }
-            dao.delete(nv.getMaNV());
-            loadData();
+
+            if (dao.delete(nv.getMaNV())) {
+                loadData();
+            } else {
+                showAlert("Lỗi hệ thống",
+                        "Không thể xóa nhân sự này.\nCó thể do ràng buộc dữ liệu khác (như Hóa đơn, Đơn đặt phòng).");
+            }
         }
     }
 
@@ -625,6 +637,70 @@ public class QuanLyNhanVienView extends BorderPane {
         btn.setStyle(base);
         btn.setOnMouseEntered(e -> btn.setStyle(hover));
         btn.setOnMouseExited(e -> btn.setStyle(base));
+    }
+
+    private Optional<NhanVien> showHandoverDialog(NhanVien nv, List<NhanVien> managers, int subCount) {
+        Dialog<NhanVien> dialog = new Dialog<>();
+        dialog.setTitle("Bàn giao quyền quản lý");
+        Window owner = getScene().getWindow();
+        dialog.initOwner(owner);
+
+        // Header Section
+        VBox header = new VBox(8);
+        header.setPadding(new Insets(24));
+        header.setStyle("-fx-background-color: " + C_NAVY + ";");
+        Label title = new Label("Bàn giao nhân sự");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        title.setTextFill(Color.WHITE);
+        Label subtitle = new Label(
+                "Quản lý [" + nv.getHoTen() + "] đang trực tiếp quản lý " + subCount + " nhân viên.");
+        subtitle.setFont(Font.font("Segoe UI", 13));
+        subtitle.setTextFill(Color.web("#bfdbfe"));
+        header.getChildren().addAll(title, subtitle);
+
+        // Content Section
+        VBox content = new VBox(16);
+        content.setPadding(new Insets(24));
+        Label prompt = new Label("Vui lòng chọn Quản lý thay thế để tiếp nhận bàn giao công việc:");
+        prompt.setFont(Font.font("Segoe UI", 14));
+        prompt.setTextFill(Color.web(C_TEXT_DARK));
+
+        ComboBox<NhanVien> cb = new ComboBox<>(FXCollections.observableArrayList(managers));
+        cb.setMaxWidth(Double.MAX_VALUE);
+        cb.setPrefHeight(42);
+        cb.setPromptText("Chọn quản lý thay thế...");
+        cb.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(NhanVien item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item.getHoTen() + " (" + item.getMaNV() + ")");
+            }
+        });
+        cb.setButtonCell(cb.getCellFactory().call(null));
+        if (!managers.isEmpty())
+            cb.getSelectionModel().select(0);
+
+        content.getChildren().addAll(prompt, cb);
+
+        VBox layout = new VBox(0, header, content);
+        layout.setPrefWidth(480);
+        dialog.getDialogPane().setContent(layout);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        // Style buttons
+        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        btnOk.setText("Xác nhận bàn giao");
+
+        Button btnCancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        btnCancel.setText("Hủy bỏ");
+
+        dialog.setResultConverter(bt -> bt == ButtonType.OK ? cb.getValue() : null);
+
+        Region dim = model.utils.DimOverlay.show(owner);
+        Optional<NhanVien> result = dialog.showAndWait();
+        DimOverlay.hide(owner, dim);
+
+        return result;
     }
 
     private void showAlert(String title, String msg) {

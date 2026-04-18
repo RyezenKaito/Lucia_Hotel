@@ -162,22 +162,27 @@ public class ChiTietHoaDonDAO {
     public List<Object[]> getDanhSachPhongDaTra(String maHD) {
         List<Object[]> list = new ArrayList<>();
         String sql =
-            "SELECT p.maPhong, p.tenPhong, lp.tenLoaiPhong, " +
+            "SELECT p.maPhong, p.tenPhong, p.loaiPhong, " +
             "       cthd.thoiGianLuuTru, cthd.thanhTien, ctdp.giaCoc, ctdp.maCTDP " +
             "FROM ChiTietHoaDon cthd " +
             "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
             "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-            "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
             "WHERE cthd.maHD = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maHD);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
+                String maLoai = rs.getString("loaiPhong");
+                String displayLoai = maLoai;
+                try {
+                    displayLoai = model.enums.TenLoaiPhong.valueOf(maLoai).getDisplayName();
+                } catch (Exception ignored) {}
+
                 list.add(new Object[]{
                     rs.getString("maPhong"),
                     rs.getString("tenPhong"),
-                    rs.getString("tenLoaiPhong"),
+                    displayLoai,
                     rs.getDouble("thoiGianLuuTru"),
                     rs.getDouble("thanhTien"),
                     rs.getDouble("giaCoc"),

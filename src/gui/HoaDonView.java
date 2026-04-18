@@ -3,7 +3,8 @@ package gui;
 import dao.HoaDonDAO;
 import dao.ChiTietHoaDonDAO;
 import model.entities.HoaDon;
-
+import model.utils.RevenueCalculator;
+import model.utils.InvoiceExporter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -202,12 +203,12 @@ public class HoaDonView extends BorderPane {
                         fg = "#b91c1c";
                     }
                     case "DA_HOAN_COC" -> {
-                        text = "Hủy – Hoàn cọc";
+                        text = "Đã hủy - hoàn cọc";
                         bg = "#e0e7ff";
                         fg = "#3730a3";
                     }
                     case "DA_MAT_COC" -> {
-                        text = "Hủy – Mất cọc";
+                        text = "Đã hủy - mất cọc";
                         bg = "#fce7f3";
                         fg = "#be185d";
                     }
@@ -239,6 +240,8 @@ public class HoaDonView extends BorderPane {
         for (TableColumn<HoaDon, ?> c : table.getColumns()) {
             c.setReorderable(false);
         }
+        table.getSortOrder().add(colMa);
+        colMa.setSortType(TableColumn.SortType.ASCENDING);
         VBox.setVgrow(table, Priority.ALWAYS);
 
         table.setRowFactory(tv -> {
@@ -393,12 +396,19 @@ public class HoaDonView extends BorderPane {
 
         double tienDV = dynamicTienDV > 0 ? dynamicTienDV : hd.getTienDV();
         double tienCoc = tongCoc > 0 ? tongCoc : hd.getTienCoc();
-        double tongTT = Math.max(0, tongTienPhong - tienCoc) + tienDV;
+
+        // VAT calculation
+        double subtotal_base = tongTienPhong + tienDV;
+        double vatRate = hd.getThueVAT();
+        double vatAmount = subtotal_base * vatRate;
+        double tongTT = (subtotal_base + vatAmount) - tienCoc;
 
         sumBox.getChildren().addAll(
                 makeSumRow("Tiền phòng:", String.format("%,.0f đ", tongTienPhong), Color.web(C_TEXT_DARK)),
                 makeSumRow("Tiền dịch vụ:", String.format("%,.0f đ", tienDV), Color.web(C_TEXT_DARK)),
-                makeSumRow("Tiền cọc (đã khấu trừ):", String.format("- %,.0f đ", tienCoc), Color.web(C_GREEN)));
+                makeSumRow("Tiền cọc (đã khấu trừ):", String.format("- %,.0f đ", tienCoc), Color.web(C_GREEN)),
+                makeSumRow(String.format("Thuế VAT (%.0f%%):", vatRate * 100), String.format("%,.0f đ", vatAmount),
+                        Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
         Label lblTotalText = new Label("⭐ TỔNG THANH TOÁN:");
@@ -411,12 +421,28 @@ public class HoaDonView extends BorderPane {
         totalRow.setAlignment(Pos.CENTER_LEFT);
         sumBox.getChildren().addAll(sep, totalRow);
 
+        Button btnExport = new Button("📄  Xuất hóa đơn (HTML)");
+        btnExport.setPrefHeight(38);
+        btnExport.setStyle("-fx-background-color: " + C_BLUE
+                + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-weight: bold; -fx-padding: 8 20;");
+        btnExport.setOnAction(e -> {
+            String path = InvoiceExporter.exportToHTML(hd, dsPhong);
+            if (path != null) {
+                Alert ok = new Alert(Alert.AlertType.INFORMATION, "Đã xuất hóa đơn tại: " + path);
+                ok.setHeaderText("Xuất thành công!");
+                ok.showAndWait();
+            } else {
+                new Alert(Alert.AlertType.ERROR, "Lỗi khi xuất hóa đơn!").showAndWait();
+            }
+        });
+
         Button btnClose = new Button("✕  Đóng");
         btnClose.setPrefHeight(38);
         btnClose.setStyle("-fx-background-color: " + C_NAVY
                 + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-weight: bold; -fx-padding: 8 20;");
         btnClose.setOnAction(e -> detailStage.close());
-        HBox btnRow = new HBox(btnClose);
+
+        HBox btnRow = new HBox(12, btnExport, btnClose);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
         root.getChildren().addAll(lblTitle, khachBox, lblPhongHeader, scrollPhong, sumBox, btnRow);
@@ -463,7 +489,9 @@ public class HoaDonView extends BorderPane {
             double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
             java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
-            double tongTT = Math.max(0, currentSumPhong - hd.getTienCoc()) + totalTienDV;
+
+            double subtotal = Math.max(0, currentSumPhong - hd.getTienCoc()) + totalTienDV;
+            double tongTT = subtotal * (1 + hd.getThueVAT());
 
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(totalTienDV);
@@ -475,10 +503,11 @@ public class HoaDonView extends BorderPane {
         table.setItems(filteredData);
 
         double tongDoanhThu = list.stream()
-                .mapToDouble(model.utils.RevenueCalculator::calculateActualRevenue)
+                .mapToDouble(RevenueCalculator::calculateActualRevenue)
                 .sum();
         lblTongDoanhThu.setText(String.format("%,.0f đ", tongDoanhThu));
         lblSoHoaDon.setText(String.valueOf(list.size()));
+        table.sort();
     }
 
     private void applyFilter(String kw) {

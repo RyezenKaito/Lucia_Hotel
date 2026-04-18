@@ -12,6 +12,7 @@ public class HoaDon {
     private double tienCoc;
     private double thueVAT;
     private double tongTien;
+    private double doanhThu;
     
     // New fields
     private String loaiHD;
@@ -23,7 +24,8 @@ public class HoaDon {
     public HoaDon() {
     }
 
-    public HoaDon(String maHD) {
+
+	public HoaDon(String maHD) {
         this.maHD = maHD;
     }
 
@@ -69,8 +71,20 @@ public class HoaDon {
     public LocalDateTime getNgayThanhToan() { return ngayThanhToan; }
     public void setNgayThanhToan(LocalDateTime ngayThanhToan) { this.ngayThanhToan = ngayThanhToan; }
 
-    public String getGhiChuThanhToan() { return ghiChuThanhToan; }
-    public void setGhiChuThanhToan(String ghiChuThanhToan) { this.ghiChuThanhToan = ghiChuThanhToan; }
+    public String getGhiChuThanhToan() {
+    	return ghiChuThanhToan;
+    }
+    
+    public void setGhiChuThanhToan(String ghiChuThanhToan) {
+    	this.ghiChuThanhToan = ghiChuThanhToan;
+    }
+    public double getDoanhThu() {
+        return doanhThu;
+    }
+    public void setDoanhThu(double doanhThu) {
+        this.doanhThu = doanhThu;
+    }
+    
 
     @Override
     public String toString() { return maHD; }

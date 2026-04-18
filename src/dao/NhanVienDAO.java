@@ -216,6 +216,40 @@ public class NhanVienDAO {
         return false;
     }
 
+    /**
+     * Đếm số lượng nhân viên đang được quản lý bởi maNV này.
+     */
+    public int countSubordinates(String maQL) {
+        String sql = "SELECT COUNT(*) FROM NV WHERE maQL = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maQL);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next())
+                    return rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Chuyển tất cả nhân viên đang thuộc quản lý của oldQL sang newQL.
+     */
+    public boolean updateManagerForSubordinates(String oldQL, String newQL) {
+        String sql = "UPDATE NV SET maQL = ? WHERE maQL = ?";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, newQL);
+            ps.setString(2, oldQL);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // ── AUTHENTICATE ──────────────────────────────────────────────────────────
     public boolean authenticate(String staffID, String password) {
         String sql = "SELECT mk FROM NV WHERE maNV=?";

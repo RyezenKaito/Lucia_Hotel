@@ -46,6 +46,7 @@ public class CheckOutView extends BorderPane {
     private static final String C_BLUE = "#1d4ed8";
     private static final String C_BLUE_HOVER = "#1e40af";
     private static final String C_GREEN = "#16a34a";
+    private static final double VAT_RATE = 0.1; // Default 10%
     private static final String C_RED = "#dc2626";
     private static final String C_GOLD = "#d97706";
 
@@ -496,8 +497,9 @@ public class CheckOutView extends BorderPane {
             else if (hour >= 12)
                 currentLateFee = currentGiaPhong * 0.3;
         }
-
-        currentTongTien = Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV;
+        
+        double base = currentTienPhong + currentLateFee + currentTienDV;
+        currentTongTien = base * (1 + VAT_RATE) - currentTienCoc;
     }
 
     private void calculateBilling_Don() {
@@ -544,7 +546,8 @@ public class CheckOutView extends BorderPane {
         serviceTable.setItems(FXCollections.observableArrayList(listDV));
         currentTienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
 
-        currentTongTien = Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV;
+        double base = currentTienPhong + currentLateFee + currentTienDV;
+        currentTongTien = base * (1 + VAT_RATE) - currentTienCoc;
     }
 
     /* ── Billing UI (mode theo phòng) ──────────────────────────────── */
@@ -561,7 +564,10 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Tiền dịch vụ", currentTienDV, Color.web(C_TEXT_DARK)),
                 createBillRow("Phụ phí trả muộn", currentLateFee,
                         currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
-                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)));
+                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)),
+                createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100), 
+                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE, 
+                        Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
         totalRow.setMaxWidth(Double.MAX_VALUE);
@@ -626,7 +632,10 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Tiền dịch vụ", currentTienDV, Color.web(C_TEXT_DARK)),
                 createBillRow("Phụ phí trả muộn", currentLateFee,
                         currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
-                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)));
+                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)),
+                createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100), 
+                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE, 
+                        Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
         totalRow.setMaxWidth(Double.MAX_VALUE);
@@ -721,6 +730,7 @@ public class CheckOutView extends BorderPane {
                 hd.setTienPhong(0);
                 hd.setTienDV(0);
                 hd.setTienCoc(currentTienCoc);
+                hd.setThueVAT(VAT_RATE);
                 hd.setTongTien(0);
                 hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
                 hoaDonDAO.insert(hd);
@@ -747,12 +757,13 @@ public class CheckOutView extends BorderPane {
             List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
 
-            double newTongTien = Math.max(0, currentSumPhong - hd.getTienCoc()) + totalTienDV;
-
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(totalTienDV);
-            hd.setTongTien(newTongTien);
             hd.setNgayTaoHD(LocalDateTime.now());
+            
+            // Sử dụng logic trung tâm từ DAO
+            hoaDonDAO.tinhTongTien(hd);
+            hoaDonDAO.tinhDoanhThu(hd);
 
             // 5. Nếu hết phòng trong đơn -> hoàn tất đơn & hóa đơn
             if (datPhongDAO.isAllRoomsCheckedOut(currentDatPhong.getMaDat())) {
@@ -808,13 +819,14 @@ public class CheckOutView extends BorderPane {
                 hd = new HoaDon();
                 hd.setMaHD(hoaDonDAO.generateMaHD());
                 hd.setDatPhong(currentDatPhong);
-                hd.setNhanVien(staff != null ? staff : new NhanVien("ADMIN"));
+                hd.setNhanVien(staff != null ? staff : new NhanVien("LUCIA001")); // Use a default staff ID if null, not ADMIN
                 hd.setNgayTaoHD(now);
                 hd.setTienPhong(0);
                 hd.setTienDV(0);
                 hd.setTienCoc(ctdpDAO.getTongCocByMaDat(currentDatPhong.getMaDat()));
-                hd.setTongTien(0);
-                hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
+                hd.setThueVAT(VAT_RATE);
+                hoaDonDAO.tinhTongTien(hd);
+                hoaDonDAO.tinhDoanhThu(hd);
                 hoaDonDAO.insert(hd);
             }
 
@@ -844,7 +856,8 @@ public class CheckOutView extends BorderPane {
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
 
-            double newTongTien = Math.max(0, currentSumPhong - hd.getTienCoc()) + tienDV;
+            double subtotal = Math.max(0, currentSumPhong - hd.getTienCoc()) + tienDV;
+            double newTongTien = subtotal * (1 + hd.getThueVAT());
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(tienDV);
             hd.setTongTien(newTongTien);

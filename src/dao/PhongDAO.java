@@ -224,7 +224,7 @@ public class PhongDAO {
         String placeholders = String.join(",", maLoaiPhongs.stream()
                 .map(x -> "?").collect(java.util.stream.Collectors.toList()));
 
-        String sql = "SELECT p.*, l.gia, l.sucChua, l.tenLoaiPhong FROM Phong p " +
+        String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
                 "WHERE p.loaiPhong IN (" + placeholders + ") " +
                 "  AND p.tinhTrang <> N'BAN' " +

@@ -302,6 +302,9 @@ public class DatPhongView extends BorderPane {
         table.getColumns().addAll(colSTT, colMaDat, colTenKH, colSDT, colPhong, colIn, colOut, colNguoi, colCoc,
                 colStatus);
 
+        table.getSortOrder().add(colMaDat);
+        colMaDat.setSortType(TableColumn.SortType.ASCENDING);
+
         Label placeholder = new Label("Không có dữ liệu đặt phòng");
         placeholder.setFont(Font.font("Segoe UI", 14));
         placeholder.setTextFill(Color.web("#9ca3af"));
@@ -315,8 +318,24 @@ public class DatPhongView extends BorderPane {
 
     private TableColumn<Object[], String> col(String title, int idx, double minW) {
         TableColumn<Object[], String> c = new TableColumn<>(title);
-        c.setCellValueFactory(cd -> new SimpleStringProperty(
-                cd.getValue()[idx] != null ? cd.getValue()[idx].toString() : ""));
+        c.setCellValueFactory(cd -> {
+            Object val = cd.getValue()[idx];
+            if (val == null)
+                return new SimpleStringProperty("");
+            if (val instanceof java.sql.Timestamp ts) {
+                return new SimpleStringProperty(
+                        ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            }
+            if (val instanceof java.time.LocalDateTime ldt) {
+                return new SimpleStringProperty(ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            }
+            if (val instanceof Number n) {
+                if (title.toLowerCase().contains("tiền") || title.toLowerCase().contains("cọc")) {
+                    return new SimpleStringProperty(String.format("%,.0f đ", n.doubleValue()));
+                }
+            }
+            return new SimpleStringProperty(val.toString());
+        });
         c.setMinWidth(minW);
         c.setReorderable(false);
         return c;
@@ -334,12 +353,7 @@ public class DatPhongView extends BorderPane {
                        SUM(ctdp.soNguoi) as soNguoi,
                        SUM(ctdp.giaCoc) as giaCoc,
 
-                       -- [ĐÃ SỬA] Dùng trangThaiThanhToan của HoaDon để phân biệt HỦY HOÀN CỌC / HỦY MẤT CỌC
-                       CASE
-                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND trangThaiThanhToan = 'DA_HOAN_COC') THEN 'HUY_HOAN_COC'
-                           WHEN dp.trangThai = 'DA_HUY' AND EXISTS (SELECT 1 FROM HoaDon WHERE maDat = dp.maDat AND trangThaiThanhToan = 'DA_MAT_COC') THEN 'HUY_MAT_COC'
-                           ELSE dp.trangThai
-                       END AS trangThai,
+                       dp.trangThai,
 
                        dp.ngayDat
                 FROM DatPhong dp
@@ -347,7 +361,7 @@ public class DatPhongView extends BorderPane {
                 LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat
                 LEFT JOIN Phong p ON ctdp.maPhong = p.maPhong
                 GROUP BY dp.maDat, kh.tenKH, kh.soDT, dp.ngayCheckIn, dp.ngayCheckOut, dp.ngayDat, dp.trangThai
-                ORDER BY dp.ngayDat DESC
+                ORDER BY dp.maDat ASC
                 """;
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -394,6 +408,8 @@ public class DatPhongView extends BorderPane {
         lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
         lblDangO.setText(String.valueOf(cntDangO));
         lblDaTra.setText(String.valueOf(cntDaTra));
+
+        table.sort();
     }
 
     private void applyFilter(String keyword) {
@@ -577,11 +593,9 @@ public class DatPhongView extends BorderPane {
     }
 
     private String mapTrangThai(String key) {
-        // Map các trạng thái đặc biệt (không có trong enum)
-        if ("HUY_HOAN_COC".equals(key))
-            return "Hủy – Hoàn cọc";
-        if ("HUY_MAT_COC".equals(key))
-            return "Hủy – Mất cọc";
+        if ("HUY_HOAN_COC".equals(key) || "HUY_MAT_COC".equals(key)) {
+            return "Đã hủy";
+        }
         try {
             return model.enums.TrangThaiDatPhong.valueOf(key).getThongTinTrangThai();
         } catch (Exception e) {

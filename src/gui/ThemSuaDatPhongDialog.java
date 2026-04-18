@@ -651,7 +651,7 @@ public class ThemSuaDatPhongDialog extends Stage {
 
     /** Reload danh sách phòng trống theo loại đã chọn + khoảng ngày */
     private void reloadPhongTrong() {
-        if (isReadOnly) 
+        if (isReadOnly)
             return;
 
         if (phongSelectFlow == null)
@@ -735,7 +735,7 @@ public class ThemSuaDatPhongDialog extends Stage {
     }
 
     private void updateCapacityWarning() {
-        if (isReadOnly) 
+        if (isReadOnly)
             return;
 
         if (lblCapacityWarning == null)
@@ -790,7 +790,7 @@ public class ThemSuaDatPhongDialog extends Stage {
 
     /* ── Tính tiền tự động ──────────────────────────────────────────── */
     private void updateTongTien() {
-        if (isReadOnly) 
+        if (isReadOnly)
             return;
 
         if (lblTongTienPhong == null || txtTienCoc == null)
@@ -1094,7 +1094,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         a.showAndWait();
     }
 
-private void populateData(String maDat) {
+    private void populateData(String maDat) {
         Object[] data = datPhongDAO.findEditDetail(maDat);
         if (data == null)
             return;
@@ -1102,7 +1102,7 @@ private void populateData(String maDat) {
         txtHoTen.setText(nvl((String) data[0]));
         txtSoDT.setText(nvl((String) data[1]));
         txtCCCD.setText(nvl((String) data[2]));
-        
+
         LocalDate dIn = (LocalDate) data[4];
         LocalDate dOut = (LocalDate) data[5];
 
@@ -1117,7 +1117,7 @@ private void populateData(String maDat) {
         txtGhiChu.setText(nvl((String) data[9]));
 
         double cocValue = (double) data[8];
-        txtTienCoc.setText(DF.format(cocValue)); 
+        txtTienCoc.setText(DF.format(cocValue));
 
         java.util.List<Phong> dsPhongCuaDon = loadPhongsOfDatPhong(maDat);
 
@@ -1189,13 +1189,13 @@ private void populateData(String maDat) {
     private java.util.List<Phong> loadPhongsOfDatPhong(String maDat) {
         java.util.List<Phong> ds = new ArrayList<>();
         String sql = "SELECT p.maPhong, p.tenPhong, p.loaiPhong, p.soPhong, p.soTang, " +
-                     "       lp.gia, lp.sucChua, lp.tenLoaiPhong " +
-                     "FROM ChiTietDatPhong ctdp " +
-                     "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                     "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
-                     "WHERE ctdp.maDat = ?";
+                "       lp.gia, lp.sucChua " +
+                "FROM ChiTietDatPhong ctdp " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
+                "WHERE ctdp.maDat = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDat);
             java.sql.ResultSet rs = ps.executeQuery();
             while (rs.next()) {
