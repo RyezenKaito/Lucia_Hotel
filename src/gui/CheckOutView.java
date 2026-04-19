@@ -11,7 +11,10 @@ import model.entities.DichVuSuDung;
 import model.entities.HoaDon;
 import model.entities.NhanVien;
 import model.enums.PhuongThucThanhToan;
+import model.utils.InvoiceExporter;
 
+import java.awt.Desktop;
+import java.io.File;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -697,14 +700,26 @@ public class CheckOutView extends BorderPane {
 
         confirm.showAndWait().ifPresent(type -> {
             if (type == ButtonType.OK) {
-                boolean ok = performCheckOut_Phong();
-                if (ok) {
+                HoaDon hd = performCheckOut_Phong();
+                if (hd != null) {
+                    // Xuất hóa đơn HTML
+                    List<Object[]> dsPhong = cthdDAO.getDanhSachPhongDaTra(hd.getMaHD());
+                    String path = InvoiceExporter.exportToHTML(hd, dsPhong);
+                    if (path != null) {
+                        try {
+                            Desktop.getDesktop().browse(new File(path).toURI());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                     Alert s = new Alert(Alert.AlertType.INFORMATION);
                     s.setTitle("Thành công");
                     s.setHeaderText("Đã thanh toán và trả phòng " + currentMaPhong);
                     s.setContentText(
                             "Phòng: " + currentMaPhong + "\nKhách: " + currentDatPhong.getKhachHang().getTenKH()
-                                    + "\nTổng: " + String.format("%,.0f đ", currentTongTien));
+                                    + "\nTổng: " + String.format("%,.0f đ", currentTongTien)
+                                    + "\n\nHóa đơn đã được tự động mở.");
                     s.showAndWait();
                     resetView();
                     loadQuickSuggestions();
@@ -716,7 +731,7 @@ public class CheckOutView extends BorderPane {
         });
     }
 
-    private boolean performCheckOut_Phong() {
+    private HoaDon performCheckOut_Phong() {
         try {
             double finalTienPhong = currentTienPhong + currentLateFee;
 
@@ -751,7 +766,7 @@ public class CheckOutView extends BorderPane {
 
             // 3. Update trạng thái phòng -> BAN
             if (!phongDAO.updateTrangThai(currentMaPhong, "BAN"))
-                return false;
+                return null;
 
             // 4. Tính toán lại tổng tiền của HoaDon
             double currentSumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
@@ -773,10 +788,13 @@ public class CheckOutView extends BorderPane {
                 hd.setTrangThaiThanhToan("DA_THANH_TOAN");
             }
 
-            return hoaDonDAO.updateTongTien(hd);
+            if (hoaDonDAO.updateTongTien(hd)) {
+                return hd;
+            }
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
@@ -794,11 +812,23 @@ public class CheckOutView extends BorderPane {
         confirm.setContentText("Tổng tiền thanh toán đợt này: " + String.format("%,.0f đ", currentTongTien));
         confirm.showAndWait().ifPresent(type -> {
             if (type == ButtonType.OK) {
-                boolean ok = performCheckOut_Don(selected);
-                if (ok) {
+                HoaDon hd = performCheckOut_Don(selected);
+                if (hd != null) {
+                    // Xuất hóa đơn HTML
+                    List<Object[]> dsPhong = cthdDAO.getDanhSachPhongDaTra(hd.getMaHD());
+                    String path = InvoiceExporter.exportToHTML(hd, dsPhong);
+                    if (path != null) {
+                        try {
+                            Desktop.getDesktop().browse(new File(path).toURI());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                     Alert s = new Alert(Alert.AlertType.INFORMATION);
                     s.setTitle("Thành công");
                     s.setHeaderText("✅ Đã checkout " + selected.size() + " phòng.");
+                    s.setContentText("Hóa đơn đã được tự động mở.");
                     s.showAndWait();
                     resetView();
                     loadQuickSuggestions();
@@ -809,7 +839,7 @@ public class CheckOutView extends BorderPane {
         });
     }
 
-    private boolean performCheckOut_Don(java.util.List<Object[]> selected) {
+    private HoaDon performCheckOut_Don(java.util.List<Object[]> selected) {
         try {
             LocalDateTime checkIn = currentDatPhong.getNgayCheckIn();
             LocalDateTime now = LocalDateTime.now();
@@ -871,10 +901,13 @@ public class CheckOutView extends BorderPane {
                 datPhongDAO.updateTrangThai(currentDatPhong.getMaDat(), "DA_CHECKOUT");
                 hd.setTrangThaiThanhToan("DA_THANH_TOAN");
             }
-            return hoaDonDAO.updateTongTien(hd);
+            if (hoaDonDAO.updateTongTien(hd)) {
+                return hd;
+            }
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
