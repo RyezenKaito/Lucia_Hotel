@@ -159,7 +159,7 @@ public class BangGiaDichVuView extends BorderPane {
                         "-fx-border-color: transparent;" +
                         "-fx-table-cell-border-color: " + C_BORDER + ";");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Không có dữ liệu bảng giá"));
+        table.setPlaceholder(new Label("Không có dữ liệu"));
 
         // ── Cột STT ──
         TableColumn<Object[], String> colSTT = new TableColumn<>("STT");

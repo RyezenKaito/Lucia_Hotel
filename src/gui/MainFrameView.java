@@ -1,4 +1,4 @@
-package gui;
+package gui; // Force re-index check 2026-04-18 05:58 AM
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -16,6 +16,8 @@ import javafx.stage.Stage;
 import model.entities.NhanVien;
 import model.enums.ChucVu;
 import model.utils.DimOverlay;
+import gui.QuanLyNhanVienView;
+import gui.SuDungDichVuView;
 
 import gui.QuanLyNhanVienView;
 import gui.DatPhongView;
@@ -430,7 +432,7 @@ public class MainFrameView {
                 if (!isAdmin) {
                     showFX(buildAccessDenied());
                 } else {
-                    showFX(new QuanLyNhanVienView(staff));
+                    showFX(new gui.QuanLyNhanVienView(staff));
                 }
             }
             case "booking" -> showFX(new DatPhongView(staff != null && staff.getRole() == model.enums.ChucVu.ADMIN));
@@ -439,7 +441,7 @@ public class MainFrameView {
             case "checkout" -> showFX(new CheckOutView(staff));
             case "invoices" -> showFX(new HoaDonView());
             // Phase 2 - đã migrate sang JavaFX
-            case "service" -> showFX(new SuDungDichVuView());
+            case "service" -> showFX(new gui.SuDungDichVuView());
             case "serviceManager" -> showFX(new QuanLyDichVuView(isAdmin));
             case "servicePrice" -> showFX(new BangGiaDichVuView());
             case "rooms" -> showFX(new QuanLyPhongView(isAdmin));

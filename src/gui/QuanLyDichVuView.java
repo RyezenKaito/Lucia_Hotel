@@ -147,7 +147,7 @@ public class QuanLyDichVuView extends BorderPane {
         table.setFixedCellSize(52);
         table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-selection-bar: #f3f6ff;");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("Không tìm thấy dịch vụ nào phù hợp."));
+        table.setPlaceholder(new Label("Không có dữ liệu"));
 
         // 1. Cột STT
         TableColumn<DichVu, String> colSTT = new TableColumn<>("STT");

@@ -102,7 +102,7 @@ public class DatPhongDAO {
      * Insert đơn đặt phòng mới
      */
     public boolean insert(DatPhong dp) {
-        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut) VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES (?,?,?,?,?,?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
 
@@ -116,6 +116,9 @@ public class DatPhongDAO {
                     dp.getNgayCheckIn() != null ? Timestamp.valueOf(dp.getNgayCheckIn()) : null);
             pstmt.setTimestamp(5,
                     dp.getNgayCheckOut() != null ? Timestamp.valueOf(dp.getNgayCheckOut()) : null);
+            
+            pstmt.setString(6, (dp.getTrangThai() != null && !dp.getTrangThai().isEmpty()) 
+                               ? dp.getTrangThai() : "CHO_XACNHAN");
 
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {

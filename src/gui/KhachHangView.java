@@ -172,17 +172,25 @@ public class KhachHangView extends BorderPane {
                         "-fx-border-color: transparent;" +
                         "-fx-table-cell-border-color: " + C_BORDER + ";");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Không có dữ liệu khách hàng"));
+        table.setPlaceholder(new Label("Không có dữ liệu"));
 
         // ── Định nghĩa các cột ──────────────────────────────────────
 
-        TableColumn<KhachHang, String> colSTT = new TableColumn<>("STT");
-        colSTT.setMinWidth(50);
+        TableColumn<KhachHang, Void> colSTT = new TableColumn<>("STT");
+        colSTT.setMinWidth(60);
         colSTT.setMaxWidth(60);
+        colSTT.setResizable(false);
         colSTT.setStyle("-fx-alignment: CENTER;");
-        colSTT.setCellValueFactory(p -> {
-            int idx = table.getItems().indexOf(p.getValue()) + 1;
-            return new SimpleStringProperty(String.valueOf(idx));
+        colSTT.setCellFactory(col -> new TableCell<>() {
+            @Override
+            public void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
+                }
+            }
         });
 
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã KH");
@@ -191,7 +199,8 @@ public class KhachHangView extends BorderPane {
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaKH())));
 
         TableColumn<KhachHang, String> colTen = new TableColumn<>("Họ và tên");
-        colTen.setMinWidth(180);
+        colTen.setMinWidth(220);
+        colTen.setStyle("-fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 20;");
         colTen.setCellValueFactory(p -> {
             String ten = nvl(p.getValue().getTenKH());
             return new SimpleStringProperty(toTitleCaseLocal(ten));
@@ -208,12 +217,27 @@ public class KhachHangView extends BorderPane {
         colSDT.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getSoDT())));
 
         TableColumn<KhachHang, String> colNS = new TableColumn<>("Ngày sinh");
-        colNS.setMinWidth(110);
+        colNS.setMinWidth(130);
         colNS.setStyle("-fx-alignment: CENTER;");
         colNS.setCellValueFactory(p -> {
             LocalDate ns = p.getValue().getNgaySinh();
             return new SimpleStringProperty(ns != null ? ns.format(DATE_FMT) : "");
         });
+
+        // ── Custom Header Labels (Bold & Aligned) ──────────────────
+        for (TableColumn<KhachHang, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS)) {
+            Label lblHeader = new Label(c.getText());
+            lblHeader.setStyle("-fx-font-weight: bold; -fx-text-fill: " + C_TEXT_DARK + ";");
+            if (c == colTen) {
+                lblHeader.setPadding(new Insets(0, 0, 0, 15));
+                c.setGraphic(new StackPane(lblHeader));
+                ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER_LEFT);
+            } else {
+                c.setGraphic(new StackPane(lblHeader));
+                ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER);
+            }
+            c.setText(""); // Xóa text gốc để hiển thị Graphic
+        }
 
         // Khóa cứng tất cả cột – không cho kéo thả
         for (TableColumn<KhachHang, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS)) {

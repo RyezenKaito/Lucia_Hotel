@@ -1,4 +1,4 @@
-package gui;
+package gui; // Re-index 2026-04-18 05:58 AM
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -169,17 +169,25 @@ public class QuanLyNhanVienView extends BorderPane {
                         "-fx-border-color: transparent;" +
                         "-fx-table-cell-border-color: " + C_BORDER + ";");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Không có dữ liệu nhân viên"));
+        table.setPlaceholder(new Label("Không có dữ liệu"));
 
         // ── Định nghĩa các cột ──────────────────────────────────────
 
-        TableColumn<NhanVien, String> colSTT = new TableColumn<>("STT");
-        colSTT.setMinWidth(50);
+        TableColumn<NhanVien, Void> colSTT = new TableColumn<>("STT");
+        colSTT.setMinWidth(60);
         colSTT.setMaxWidth(60);
+        colSTT.setResizable(false);
         colSTT.setStyle("-fx-alignment: CENTER;");
-        colSTT.setCellValueFactory(c -> {
-            int idx = table.getItems().indexOf(c.getValue()) + 1;
-            return new SimpleStringProperty(String.valueOf(idx));
+        colSTT.setCellFactory(col -> new TableCell<>() {
+            @Override
+            public void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
+                }
+            }
         });
 
         TableColumn<NhanVien, String> colMa = new TableColumn<>("Mã NV");
@@ -188,7 +196,8 @@ public class QuanLyNhanVienView extends BorderPane {
         colMa.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getMaNV())));
 
         TableColumn<NhanVien, String> colTen = new TableColumn<>("Họ và tên");
-        colTen.setMinWidth(160);
+        colTen.setMinWidth(200);
+        colTen.setStyle("-fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 20;");
         colTen.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getHoTen())));
 
         TableColumn<NhanVien, String> colCCCD = new TableColumn<>("Số CCCD");
@@ -258,6 +267,21 @@ public class QuanLyNhanVienView extends BorderPane {
             model.enums.TrangThaiNV tt = c.getValue().getTrangThai();
             return new SimpleStringProperty(tt == model.enums.TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
         });
+
+        // ── Custom Header Labels (Bold & Aligned) ──────────────────
+        for (TableColumn<NhanVien, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS, colNgayVao, colChucVu, colTrangThai)) {
+            Label lblHeader = new Label(c.getText());
+            lblHeader.setStyle("-fx-font-weight: bold; -fx-text-fill: " + C_TEXT_DARK + ";");
+            if (c == colTen) {
+                lblHeader.setPadding(new Insets(0, 0, 0, 15));
+                c.setGraphic(new StackPane(lblHeader));
+                ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER_LEFT);
+            } else {
+                c.setGraphic(new StackPane(lblHeader));
+                ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER);
+            }
+            c.setText(""); // Xóa text gốc để hiển thị Graphic
+        }
         colTrangThai.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {

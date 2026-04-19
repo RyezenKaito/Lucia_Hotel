@@ -98,7 +98,7 @@ public class CheckInView extends BorderPane {
                 + "; -fx-font-size: 14px; -fx-padding: 0 16;");
         txtSearch.setOnAction(e -> handleSearch());
 
-        Button btnSearch = new Button("Tim kiem");
+        Button btnSearch = new Button("🔍  Tìm kiếm");
         btnSearch.setPrefHeight(48);
         btnSearch.setMinWidth(140);
         btnSearch.setCursor(Cursor.HAND);
@@ -184,7 +184,7 @@ public class CheckInView extends BorderPane {
         btnConfirm.setPrefHeight(44);
         btnConfirm.setMinWidth(220);
         btnConfirm.setCursor(Cursor.HAND);
-        styleButton(btnConfirm, C_GREEN, "white", "#15803d");
+        styleButton(btnConfirm, "#1e3a8aEE", "white", "#1e3a8aEE");
         btnConfirm.setDisable(true);
         btnConfirm.setOnAction(e -> handleConfirm());
 
@@ -243,7 +243,7 @@ public class CheckInView extends BorderPane {
         detailSection.getChildren().clear();
         detailSection.setAlignment(Pos.TOP_LEFT);
 
-        Label lblHeader = new Label("Chi tiet don dat");
+        Label lblHeader = new Label("Chi tiết đơn đặt");
         lblHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         lblHeader.setTextFill(Color.web(C_NAVY));
         lblHeader.setPadding(new Insets(0, 0, 8, 0));
@@ -252,10 +252,10 @@ public class CheckInView extends BorderPane {
         VBox infoBox = new VBox(12);
         infoBox.getChildren().addAll(
                 lblHeader,
-                createDetailItem("Ma don", dp.getMaDat()),
-                createDetailItem("Khach hang", dp.getKhachHang().getTenKH()),
-                createDetailItem("So dien thoai", safe(dp.getKhachHang().getSoDT())),
-                createDetailItem("So CCCD", safe(dp.getKhachHang().getSoCCCD())));
+                createDetailItem("Mã đơn", dp.getMaDat()),
+                createDetailItem("Khách hàng", dp.getKhachHang().getTenKH()),
+                createDetailItem("Số điện thoại", safe(dp.getKhachHang().getSoDT())),
+                createDetailItem("Số CCCD", safe(dp.getKhachHang().getSoCCCD())));
 
         Separator sep = new Separator();
         sep.setPadding(new Insets(8, 0, 8, 0));
@@ -309,7 +309,7 @@ public class CheckInView extends BorderPane {
      * 1. Update phong -> DANGSUDUNG (tung phong)
      * 2. Update don -> DA_CHECKIN (trong transaction)
      */
-/**
+    /**
      * Xac nhan check-in:
      * 1. Tao Hoa Don (neu chua co)
      * 2. Update phong -> DANGSUDUNG (tung phong) & Tao ChiTietHoaDon
@@ -320,13 +320,13 @@ public class CheckInView extends BorderPane {
             return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Ban giao phong: " + String.join(", ", currentMaPhongs)
-                        + "\n\nHe thong se:\n - Cap nhat trang thai phong -> Dang su dung"
-                        + "\n - Cap nhat don dat phong -> Da nhan phong\n - Tao hoa don moi cho don dat phong",
+                "Bàn giao phòng: " + String.join(", ", currentMaPhongs)
+                        + "\nHệ thống sẽ:\n - Cập nhật trạng thái phòng -> Đang sử dụng"
+                        + "\n - Cập nhật đơn đặt phòng -> Đã nhận phòng\n - Tạo hóa đơn mới cho đơn đặt phòng",
                 ButtonType.OK, ButtonType.CANCEL);
-        confirm.setTitle("Xac nhan Check-in");
-        confirm.setHeaderText("Xac nhan cho khach " + currentDatPhong.getKhachHang().getTenKH()
-                + " nhan " + currentMaPhongs.size() + " phong?");
+        confirm.setTitle("Xác nhận Check-in");
+        confirm.setHeaderText("Xác nhận cho khách " + currentDatPhong.getKhachHang().getTenKH()
+                + " nhận " + currentMaPhongs.size() + " phòng?");
 
         confirm.showAndWait().ifPresent(btn -> {
             if (btn != ButtonType.OK)
@@ -341,7 +341,7 @@ public class CheckInView extends BorderPane {
                     // 1. TÌM HOẶC TẠO HÓA ĐƠN MỚI
                     // ==========================================
                     HoaDon hd = hoaDonDAO.getByMaDat(currentDatPhong.getMaDat());
-                    
+
                     if (hd == null) {
                         hd = new HoaDon();
                         hd.setMaHD(hoaDonDAO.generateMaHD()); // Tự sinh mã HD0xx
@@ -349,12 +349,12 @@ public class CheckInView extends BorderPane {
                         hd.setNhanVien(staff); // staff lấy từ constructor CheckInView
                         hd.setTienPhong(0.0);
                         hd.setTienDV(0.0);
-                        hd.setTienCoc(0.0); 
+                        hd.setTienCoc(0.0);
                         hd.setThueVAT(0.0);
                         hd.setTongTien(0.0);
                         hd.setLoaiHD("HOA_DON_PHONG");
                         hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
-                        
+
                         // Insert hóa đơn vào DB
                         hoaDonDAO.insertWithConnection(con, hd);
                     }
@@ -377,7 +377,7 @@ public class CheckInView extends BorderPane {
                     for (String maPhong : currentMaPhongs) {
                         phongDAO.updateTrangThaiWithCon(con, maPhong, "DANGSUDUNG");
                         String maCTDP = datPhongDAO.findMaCTDPByMaPhong(currentDatPhong.getMaDat(), maPhong);
-                        
+
                         if (maCTDP != null && hd != null) {
                             String maCTHD = String.format("CTHD%03d", lastNum++);
                             // Tạo liên kết giữa Hóa Đơn và Chi tiết đặt phòng

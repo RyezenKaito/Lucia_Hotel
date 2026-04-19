@@ -1,4 +1,4 @@
-package gui;
+package gui; // Re-index 2026-04-18 05:58 AM
 
 import dao.BangGiaDichVuDAO;
 import dao.DatPhongDAO;
@@ -144,6 +144,7 @@ public class SuDungDichVuView extends BorderPane {
         servicePane = new FlowPane(12, 12);
         ScrollPane serviceScroll = new ScrollPane(servicePane);
         serviceScroll.setFitToWidth(true);
+        servicePane.prefWrapLengthProperty().bind(serviceScroll.widthProperty().subtract(20));
         serviceScroll.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(serviceScroll, Priority.ALWAYS);
 

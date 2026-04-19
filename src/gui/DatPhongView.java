@@ -305,10 +305,7 @@ public class DatPhongView extends BorderPane {
         table.getSortOrder().add(colMaDat);
         colMaDat.setSortType(TableColumn.SortType.ASCENDING);
 
-        Label placeholder = new Label("Không có dữ liệu đặt phòng");
-        placeholder.setFont(Font.font("Segoe UI", 14));
-        placeholder.setTextFill(Color.web("#9ca3af"));
-        table.setPlaceholder(placeholder);
+        table.setPlaceholder(new Label("Không có dữ liệu"));
 
         VBox wrapper = new VBox(table);
         VBox.setVgrow(table, Priority.ALWAYS);

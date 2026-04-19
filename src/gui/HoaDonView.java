@@ -105,6 +105,7 @@ public class HoaDonView extends BorderPane {
         table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        table.setPlaceholder(new Label("Không có dữ liệu"));
 
         TableColumn<HoaDon, Void> colStt = new TableColumn<>("STT");
         colStt.setPrefWidth(50);

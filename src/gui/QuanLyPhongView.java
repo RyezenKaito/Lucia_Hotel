@@ -252,7 +252,7 @@ public class QuanLyPhongView extends BorderPane {
         // ContextMenu (Nhấn phải chuột)
         if (isAdmin) {
             ContextMenu ctxMenu = new ContextMenu();
-            MenuItem miEdit = new MenuItem("✏  Chỉnh sửa phòng");
+            MenuItem miEdit = new MenuItem("✏  Cập nhật phòng");
             miEdit.setStyle("-fx-font-size: 13px;");
             miEdit.setOnAction(e -> {
                 Phong p = table.getSelectionModel().getSelectedItem();

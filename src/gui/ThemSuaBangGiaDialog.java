@@ -312,6 +312,7 @@ public class ThemSuaBangGiaDialog {
         loadAllServices();
         filteredData = new FilteredList<>(tableData, p -> true);
         table = new TableView<>(filteredData);
+        table.setPlaceholder(new Label("Không có dữ liệu"));
         table.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8;");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -734,6 +735,7 @@ public class ThemSuaBangGiaDialog {
         });
 
         TableView<DichVuSelection> pickerTable = new TableView<>(filteredPicker);
+        pickerTable.setPlaceholder(new Label("Không có dữ liệu"));
         pickerTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         pickerTable.setPrefHeight(400);
 

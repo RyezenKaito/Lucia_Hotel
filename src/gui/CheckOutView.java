@@ -209,6 +209,7 @@ public class CheckOutView extends BorderPane {
 
         serviceTable = new TableView<>();
         serviceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        serviceTable.setPlaceholder(new Label("Không có dữ liệu"));
 
         TableColumn<DichVuSuDung, String> colNgay = new TableColumn<>("Ngày");
         colNgay.setCellValueFactory(p -> new SimpleStringProperty(
@@ -244,7 +245,8 @@ public class CheckOutView extends BorderPane {
 
         ScrollPane scrollLeft = new ScrollPane(leftContent);
         scrollLeft.setFitToWidth(true);
-        scrollLeft.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+        scrollLeft.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
         scrollLeft.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         HBox.setHgrow(scrollLeft, Priority.ALWAYS);
 
@@ -497,7 +499,7 @@ public class CheckOutView extends BorderPane {
             else if (hour >= 12)
                 currentLateFee = currentGiaPhong * 0.3;
         }
-        
+
         double base = currentTienPhong + currentLateFee + currentTienDV;
         currentTongTien = base * (1 + VAT_RATE) - currentTienCoc;
     }
@@ -565,8 +567,8 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Phụ phí trả muộn", currentLateFee,
                         currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
                 createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)),
-                createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100), 
-                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE, 
+                createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100),
+                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE,
                         Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
@@ -633,8 +635,8 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Phụ phí trả muộn", currentLateFee,
                         currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
                 createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)),
-                createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100), 
-                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE, 
+                createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100),
+                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE,
                         Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
@@ -760,7 +762,7 @@ public class CheckOutView extends BorderPane {
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(totalTienDV);
             hd.setNgayTaoHD(LocalDateTime.now());
-            
+
             // Sử dụng logic trung tâm từ DAO
             hoaDonDAO.tinhTongTien(hd);
             hoaDonDAO.tinhDoanhThu(hd);
@@ -819,7 +821,8 @@ public class CheckOutView extends BorderPane {
                 hd = new HoaDon();
                 hd.setMaHD(hoaDonDAO.generateMaHD());
                 hd.setDatPhong(currentDatPhong);
-                hd.setNhanVien(staff != null ? staff : new NhanVien("LUCIA001")); // Use a default staff ID if null, not ADMIN
+                hd.setNhanVien(staff != null ? staff : new NhanVien("LUCIA001")); // Use a default staff ID if null, not
+                                                                                  // ADMIN
                 hd.setNgayTaoHD(now);
                 hd.setTienPhong(0);
                 hd.setTienDV(0);
