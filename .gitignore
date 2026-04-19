@@ -1,0 +1,44 @@
+# Compiled class files
+bin/
+*.class
+
+# Log files
+*.log
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# VS Code settings
+.vscode/
+!.vscode/launch.json
+!.vscode/settings.json
+
+# Eclipse settings
+.settings/
+.classpath
+.project
+
+# Local configuration files
+src/connectDatabase/ConnectDatabase.java
+
+# Binaries in lib (often OS specific)
+lib/*.dll
+lib/*.so
+lib/*.dylib
+
+# Temporary files
+Hoa_Don/
+*.tmp
+*.bak

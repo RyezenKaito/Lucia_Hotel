@@ -244,7 +244,7 @@ public class QuanLyNhanVienView extends BorderPane {
                     }
                 }
 
-                HBox badge = BadgeUtils.createStatusBadge(item, bg, text, false);
+                HBox badge = model.utils.BadgeUtils.createStatusBadge(item, bg, text, false);
                 setGraphic(badge);
                 setText(null);
                 setAlignment(Pos.CENTER);
@@ -271,7 +271,7 @@ public class QuanLyNhanVienView extends BorderPane {
                 String bg = "Còn làm".equals(item) ? "#d1fae5" : "#fee2e2";
                 String text = "Còn làm".equals(item) ? "#065f46" : "#b91c1c";
 
-                HBox badge = BadgeUtils.createStatusBadge(item, bg, text, true);
+                HBox badge = model.utils.BadgeUtils.createStatusBadge(item, bg, text, true);
 
                 // Click để đổi trạng thái
                 ContextMenu statusMenu = new ContextMenu();

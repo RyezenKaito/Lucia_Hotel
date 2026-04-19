@@ -135,7 +135,7 @@ public class InvoiceExporter {
                                 "<div class='footer'>\n<p>Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ tại Lucia Hotel!</p>\n<p>Hẹn gặp lại quý khách lần sau.</p>\n</div>\n");
                 html.append("</div>\n</body>\n</html>");
 
-                String folderPath = "G:\\Code\\OOP\\Lucia_Hotel\\Hoa_Don";
+                String folderPath = "Hoa_Don";
                 File folder = new File(folderPath);
                 if (!folder.exists()) {
                         folder.mkdirs();

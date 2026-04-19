@@ -17,6 +17,10 @@ import model.entities.NhanVien;
 import model.enums.ChucVu;
 import model.utils.DimOverlay;
 
+import gui.QuanLyNhanVienView;
+import gui.DatPhongView;
+import gui.SuDungDichVuView;
+
 /**
  * MainFrameView – JavaFX
  * Sidebar xanh navy + content area.
