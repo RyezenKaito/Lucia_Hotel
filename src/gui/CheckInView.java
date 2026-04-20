@@ -350,7 +350,7 @@ public class CheckInView extends BorderPane {
                         hd.setTienPhong(0.0);
                         hd.setTienDV(0.0);
                         hd.setTienCoc(0.0);
-                        hd.setThueVAT(0.0);
+                        hd.setThueVAT(0.1);
                         hd.setTongTien(0.0);
                         hd.setLoaiHD("HOA_DON_PHONG");
                         hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");

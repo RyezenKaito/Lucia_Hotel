@@ -318,11 +318,10 @@ public class HoaDonDAO {
     }
 
     public double tinhTongTien(HoaDon hd) {
-        // giaVAT = (tienPhong + tienDV) * thueVAT
-        // tongTien = (tienPhong + tienDV) - tienCoc + giaVAT
+        // Tiền cọc = trả trước đêm đầu, trừ thẳng vào tổng
         double subtotal = hd.getTienPhong() + hd.getTienDV();
         double giaVAT = subtotal * hd.getThueVAT();
-        double tongTien = subtotal - hd.getTienCoc() + giaVAT;
+        double tongTien = Math.max(0, subtotal + giaVAT - hd.getTienCoc());
         hd.setTongTien(tongTien);
         return tongTien;
     }

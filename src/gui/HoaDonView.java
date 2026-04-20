@@ -402,11 +402,10 @@ public class HoaDonView extends BorderPane {
         double tienDV = dynamicTienDV > 0 ? dynamicTienDV : hd.getTienDV();
         double tienCoc = tongCoc > 0 ? tongCoc : hd.getTienCoc();
 
-        // VAT calculation
-        double subtotal_base = tongTienPhong + tienDV;
+        // VAT tính trên tổng tiền phòng + DV, sau đó trừ cọc
         double vatRate = hd.getThueVAT();
-        double vatAmount = subtotal_base * vatRate;
-        double tongTT = (subtotal_base + vatAmount) - tienCoc;
+        double vatAmount = (tongTienPhong + tienDV) * vatRate;
+        double tongTT = Math.max(0, (tongTienPhong + tienDV + vatAmount) - tienCoc);
 
         sumBox.getChildren().addAll(
                 makeSumRow("Tiền phòng:", String.format("%,.0f đ", tongTienPhong), Color.web(C_TEXT_DARK)),
@@ -433,9 +432,15 @@ public class HoaDonView extends BorderPane {
         btnExport.setOnAction(e -> {
             String path = InvoiceExporter.exportToHTML(hd, dsPhong);
             if (path != null) {
-                Alert ok = new Alert(Alert.AlertType.INFORMATION, "Đã xuất hóa đơn tại: " + path);
-                ok.setHeaderText("Xuất thành công!");
-                ok.showAndWait();
+                // Tự động mở file HTML trong trình duyệt mặc định
+                try {
+                    java.awt.Desktop.getDesktop().browse(new java.io.File(path).toURI());
+                } catch (Exception ex) {
+                    // Nếu không mở được trình duyệt, hiện thông báo đường dẫn
+                    Alert ok = new Alert(Alert.AlertType.INFORMATION, "Đã xuất hóa đơn tại:\n" + path);
+                    ok.setHeaderText("Xuất thành công!");
+                    ok.showAndWait();
+                }
             } else {
                 new Alert(Alert.AlertType.ERROR, "Lỗi khi xuất hóa đơn!").showAndWait();
             }

@@ -504,7 +504,7 @@ public class CheckOutView extends BorderPane {
         }
 
         double base = currentTienPhong + currentLateFee + currentTienDV;
-        currentTongTien = base * (1 + VAT_RATE) - currentTienCoc;
+        currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
     }
 
     private void calculateBilling_Don() {
@@ -552,7 +552,7 @@ public class CheckOutView extends BorderPane {
         currentTienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
 
         double base = currentTienPhong + currentLateFee + currentTienDV;
-        currentTongTien = base * (1 + VAT_RATE) - currentTienCoc;
+        currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
     }
 
     /* ── Billing UI (mode theo phòng) ──────────────────────────────── */
@@ -569,9 +569,9 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Tiền dịch vụ", currentTienDV, Color.web(C_TEXT_DARK)),
                 createBillRow("Phụ phí trả muộn", currentLateFee,
                         currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
-                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)),
+                createBillRow("Tiền cọc (đã khấu trừ)", -currentTienCoc, Color.web(C_GREEN)),
                 createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100),
-                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE,
+                        (currentTienPhong + currentLateFee + currentTienDV) * VAT_RATE,
                         Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
@@ -637,9 +637,9 @@ public class CheckOutView extends BorderPane {
                 createBillRow("Tiền dịch vụ", currentTienDV, Color.web(C_TEXT_DARK)),
                 createBillRow("Phụ phí trả muộn", currentLateFee,
                         currentLateFee > 0 ? Color.web(C_RED) : Color.web(C_TEXT_GRAY)),
-                createBillRow("Tiền đã cọc (trừ)", -currentTienCoc, Color.web(C_GREEN)),
+                createBillRow("Tiền cọc (đã khấu trừ)", -currentTienCoc, Color.web(C_GREEN)),
                 createBillRow(String.format("Thuế VAT (%.0f%%)", VAT_RATE * 100),
-                        (Math.max(0, currentTienPhong + currentLateFee - currentTienCoc) + currentTienDV) * VAT_RATE,
+                        (currentTienPhong + currentLateFee + currentTienDV) * VAT_RATE,
                         Color.web(C_TEXT_DARK)));
 
         HBox totalRow = new HBox();
@@ -776,6 +776,7 @@ public class CheckOutView extends BorderPane {
 
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(totalTienDV);
+            hd.setThueVAT(VAT_RATE);
             hd.setNgayTaoHD(LocalDateTime.now());
 
             // Sử dụng logic trung tâm từ DAO
@@ -889,10 +890,11 @@ public class CheckOutView extends BorderPane {
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
 
-            double subtotal = Math.max(0, currentSumPhong - hd.getTienCoc()) + tienDV;
-            double newTongTien = subtotal * (1 + hd.getThueVAT());
+            double subtotal = currentSumPhong + tienDV;
             hd.setTienPhong(currentSumPhong);
             hd.setTienDV(tienDV);
+            hd.setThueVAT(VAT_RATE);
+            double newTongTien = Math.max(0, subtotal * (1 + VAT_RATE) - hd.getTienCoc());
             hd.setTongTien(newTongTien);
             hd.setNgayTaoHD(now);
 
