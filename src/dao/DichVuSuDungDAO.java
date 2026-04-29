@@ -11,7 +11,7 @@ public class DichVuSuDungDAO {
      */
     public List<DichVuSuDung> findByMaHD(String maHD) {
         List<DichVuSuDung> ds = new ArrayList<>();
-        String sql = "SELECT dv.maDV, dv.soLuong, dv.giaDV, dv.ngaySuDung, d.tenDV " +
+        String sql = "SELECT dv.maDV, dv.soLuong, dv.giaDV, dv.ngaySuDung, d.tenDV, d.donVi " +
                 "FROM DichVuSuDung dv " +
                 "JOIN DV d ON dv.maDV = d.maDV " +
                 "JOIN ChiTietDatPhong ctdp ON dv.maCTDP = ctdp.maCTDP " +
@@ -27,6 +27,7 @@ public class DichVuSuDungDAO {
                 d.setMaDV(rs.getString("maDV"));
                 d.setTenDV(rs.getString("tenDV"));
                 d.setGia(rs.getObject("giaDV") != null ? rs.getDouble("giaDV") : null);
+                d.setDonVi(rs.getString("donVi"));
 
                 DichVuSuDung dvsd = new DichVuSuDung();
                 dvsd.setDichVu(d);
@@ -47,7 +48,7 @@ public class DichVuSuDungDAO {
      */
     public List<DichVuSuDung> findByMaCTDP(String maCTDP) {
         List<DichVuSuDung> ds = new ArrayList<>();
-        String sql = "SELECT dv.maDV, dv.soLuong, dv.giaDV, dv.ngaySuDung, d.tenDV " +
+        String sql = "SELECT dv.maDV, dv.soLuong, dv.giaDV, dv.ngaySuDung, d.tenDV, d.donVi " +
                 "FROM DichVuSuDung dv " +
                 "JOIN DV d ON dv.maDV = d.maDV " +
                 "WHERE dv.maCTDP = ?";
@@ -61,6 +62,7 @@ public class DichVuSuDungDAO {
                 d.setMaDV(rs.getString("maDV"));
                 d.setTenDV(rs.getString("tenDV"));
                 d.setGia(rs.getObject("giaDV") != null ? rs.getDouble("giaDV") : null);
+                d.setDonVi(rs.getString("donVi"));
 
                 DichVuSuDung dvsd = new DichVuSuDung();
                 dvsd.setDichVu(d);

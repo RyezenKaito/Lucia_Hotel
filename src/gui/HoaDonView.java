@@ -49,6 +49,8 @@ public class HoaDonView extends BorderPane {
     private TableView<HoaDon> table;
     private TextField txtSearch;
     private Label lblTongDoanhThu, lblSoHoaDon;
+    private DatePicker dpFilter;
+    private CheckBox chkFilterDate;
 
     public HoaDonView() {
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -90,10 +92,50 @@ public class HoaDonView extends BorderPane {
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
         txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER
                 + "; -fx-padding: 0 16;");
-        txtSearch.textProperty().addListener((obs, o, n) -> applyFilter(n));
+        txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
         filterRow.getChildren().add(txtSearch);
 
-        header.getChildren().addAll(titleBox, statsRow, filterRow);
+        // Date filter row
+        HBox dateFilterRow = new HBox(12);
+        dateFilterRow.setAlignment(Pos.CENTER_LEFT);
+
+        chkFilterDate = new CheckBox("Lọc theo ngày:");
+        chkFilterDate.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        chkFilterDate.setTextFill(Color.web(C_TEXT_GRAY));
+        chkFilterDate.setOnAction(e -> applyFilter());
+
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        dpFilter = new DatePicker(java.time.LocalDate.now());
+        dpFilter.setPrefHeight(38);
+        dpFilter.setPrefWidth(160);
+        dpFilter.setStyle("-fx-font-size: 13px;");
+        dpFilter.setConverter(new javafx.util.StringConverter<java.time.LocalDate>() {
+            @Override public String toString(java.time.LocalDate d) { return d != null ? d.format(fmt) : ""; }
+            @Override public java.time.LocalDate fromString(String s) {
+                try { return java.time.LocalDate.parse(s, fmt); } catch (Exception e) { return null; }
+            }
+        });
+        dpFilter.setOnAction(e -> { if (chkFilterDate.isSelected()) applyFilter(); });
+
+        String navBtnStyle = "-fx-background-color: #f3f4f6; -fx-text-fill: #374151;"
+                + " -fx-background-radius: 8; -fx-padding: 6 14; -fx-font-weight: bold;"
+                + " -fx-border-color: #d1d5db; -fx-border-radius: 8;";
+        Button btnPrev = new Button("◀");
+        btnPrev.setPrefHeight(38); btnPrev.setStyle(navBtnStyle);
+        btnPrev.setOnAction(e -> { dpFilter.setValue(dpFilter.getValue().minusDays(1)); if (chkFilterDate.isSelected()) applyFilter(); });
+        Button btnToday = new Button("Hôm nay");
+        btnToday.setPrefHeight(38);
+        btnToday.setStyle("-fx-background-color: #eef2ff; -fx-text-fill: " + C_BLUE
+                + "; -fx-background-radius: 8; -fx-padding: 6 16; -fx-font-weight: bold; -fx-border-color: "
+                + C_BLUE + "; -fx-border-radius: 8;");
+        btnToday.setOnAction(e -> { dpFilter.setValue(java.time.LocalDate.now()); if (chkFilterDate.isSelected()) applyFilter(); });
+        Button btnNext = new Button("▶");
+        btnNext.setPrefHeight(38); btnNext.setStyle(navBtnStyle);
+        btnNext.setOnAction(e -> { dpFilter.setValue(dpFilter.getValue().plusDays(1)); if (chkFilterDate.isSelected()) applyFilter(); });
+
+        dateFilterRow.getChildren().addAll(chkFilterDate, dpFilter, btnPrev, btnToday, btnNext);
+
+        header.getChildren().addAll(titleBox, statsRow, filterRow, dateFilterRow);
         return header;
     }
 
@@ -265,7 +307,8 @@ public class HoaDonView extends BorderPane {
         return card;
     }
 
-    private void showHoaDonDetail(HoaDon hd) {
+    public static void showHoaDonDetail(HoaDon hd) {
+        ChiTietHoaDonDAO cthdDAO = new ChiTietHoaDonDAO();
         java.util.List<Object[]> dsPhong = cthdDAO.getDanhSachPhongDaTra(hd.getMaHD());
 
         Stage detailStage = new Stage();
@@ -463,7 +506,7 @@ public class HoaDonView extends BorderPane {
         detailStage.showAndWait();
     }
 
-    private HBox makeBillInfoRow(String label, String value) {
+    private static HBox makeBillInfoRow(String label, String value) {
         HBox hb = new HBox(8);
         hb.setAlignment(Pos.CENTER_LEFT);
         Label l = new Label(label);
@@ -477,7 +520,7 @@ public class HoaDonView extends BorderPane {
         return hb;
     }
 
-    private HBox makeSumRow(String label, String value, Color valColor) {
+    private static HBox makeSumRow(String label, String value, Color valColor) {
         HBox hb = new HBox();
         hb.setAlignment(Pos.CENTER_LEFT);
         Label l = new Label(label);
@@ -520,22 +563,33 @@ public class HoaDonView extends BorderPane {
         table.sort();
     }
 
-    private void applyFilter(String kw) {
-        String filter = kw == null ? "" : kw.toLowerCase().trim();
+    private void applyFilter() {
+        String kw = txtSearch != null ? (txtSearch.getText() == null ? "" : txtSearch.getText().toLowerCase().trim()) : "";
+        boolean filterByDate = chkFilterDate != null && chkFilterDate.isSelected();
+        java.time.LocalDate filterDate = dpFilter != null ? dpFilter.getValue() : null;
+
         filteredData.setPredicate(hd -> {
-            if (filter.isEmpty())
-                return true;
-            if (hd.getMaHD().toLowerCase().contains(filter))
-                return true;
-            if (hd.getDatPhong().getMaDat().toLowerCase().contains(filter))
-                return true;
-            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen().toLowerCase().contains(filter))
-                return true;
-            if (hd.getDatPhong().getKhachHang() != null
-                    && hd.getDatPhong().getKhachHang().getTenKH() != null
-                    && hd.getDatPhong().getKhachHang().getTenKH().toLowerCase().contains(filter))
-                return true;
-            return false;
+            // Date filter
+            if (filterByDate && filterDate != null && hd.getNgayTaoHD() != null) {
+                if (!hd.getNgayTaoHD().toLocalDate().equals(filterDate))
+                    return false;
+            }
+            // Text filter
+            if (!kw.isEmpty()) {
+                if (hd.getMaHD().toLowerCase().contains(kw))
+                    return true;
+                if (hd.getDatPhong() != null && hd.getDatPhong().getMaDat().toLowerCase().contains(kw))
+                    return true;
+                if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen() != null
+                        && hd.getNhanVien().getHoTen().toLowerCase().contains(kw))
+                    return true;
+                if (hd.getDatPhong() != null && hd.getDatPhong().getKhachHang() != null
+                        && hd.getDatPhong().getKhachHang().getTenKH() != null
+                        && hd.getDatPhong().getKhachHang().getTenKH().toLowerCase().contains(kw))
+                    return true;
+                return false;
+            }
+            return true;
         });
     }
 
