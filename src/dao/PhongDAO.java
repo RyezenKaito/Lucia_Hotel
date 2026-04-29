@@ -252,4 +252,17 @@ public class PhongDAO {
         }
         return ds;
     }
+    public java.util.Map<String, String> getTrangThaiMapByMaPhongs(List<String> maPhongs) {
+        java.util.Map<String, String> map = new java.util.HashMap<>();
+        if (maPhongs == null || maPhongs.isEmpty()) return map;
+        String placeholders = String.join(",", maPhongs.stream().map(x -> "?").collect(java.util.stream.Collectors.toList()));
+        String sql = "SELECT maPhong, tinhTrang FROM Phong WHERE maPhong IN (" + placeholders + ")";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            for (int i = 0; i < maPhongs.size(); i++) ps.setString(i + 1, maPhongs.get(i));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) map.put(rs.getString("maPhong"), rs.getString("tinhTrang"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
 }

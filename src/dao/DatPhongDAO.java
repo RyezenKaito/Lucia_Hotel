@@ -52,6 +52,84 @@ public class DatPhongDAO {
     }
 
     /**
+     * Lấy danh sách đơn đặt phòng cần Check-in theo ngày cụ thể.
+     * Mỗi Object[]: {maDat, tenKH, dsPhong (comma-separated), tongSoNguoi}
+     * @param includeLate true = hiện cả đơn trễ (ngayCheckIn < date), false = chỉ đúng ngày
+     */
+    public List<Object[]> getDonCheckInByDate(LocalDate date, boolean includeLate) {
+        List<Object[]> ds = new ArrayList<>();
+        String dateCondition = includeLate
+                ? "CAST(dp.ngayCheckIn AS DATE) < ?"
+                : "CAST(dp.ngayCheckIn AS DATE) = ?";
+        String sql = "SELECT dp.maDat, kh.tenKH, " +
+                "STRING_AGG(ctdp.maPhong, ', ') AS dsPhong, " +
+                "SUM(ctdp.soNguoi) AS tongSoNguoi " +
+                "FROM DatPhong dp " +
+                "JOIN KH kh ON dp.maKH = kh.maKH " +
+                "LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
+                "WHERE " + dateCondition + " " +
+                "AND dp.ngayCheckIn IS NOT NULL " +
+                "AND dp.trangThai = N'DA_XACNHAN' " +
+                "GROUP BY dp.maDat, kh.tenKH " +
+                "ORDER BY dp.maDat";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setDate(1, java.sql.Date.valueOf(date));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                ds.add(new Object[]{
+                        rs.getString("maDat"),
+                        rs.getString("tenKH"),
+                        rs.getString("dsPhong") != null ? rs.getString("dsPhong") : "---",
+                        rs.getObject("tongSoNguoi") != null ? rs.getInt("tongSoNguoi") : 0
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Tìm thông tin đơn đặt phòng bất kể trạng thái (Dùng để kiểm tra khi tìm kiếm)
+     */
+    public DatPhong findDatPhongAllStatus(String keyword) {
+        String sql = "SELECT dp.*, kh.tenKH, kh.soDT, kh.soCCCD " +
+                "FROM DatPhong dp JOIN KH kh ON dp.maKH = kh.maKH " +
+                "WHERE (dp.maDat = ? OR kh.soDT = ? OR kh.soCCCD = ?)";
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement pstmt = con.prepareStatement(sql)) {
+
+            pstmt.setString(1, keyword);
+            pstmt.setString(2, keyword);
+            pstmt.setString(3, keyword);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                KhachHang kh = new KhachHang(
+                        rs.getString("maKH"),
+                        rs.getString("tenKH"),
+                        rs.getString("soCCCD"),
+                        rs.getString("soDT"));
+
+                DatPhong dp = new DatPhong();
+                dp.setMaDat(rs.getString("maDat"));
+                dp.setNgayDat(rs.getTimestamp("ngayDat") != null ? rs.getTimestamp("ngayDat").toLocalDateTime() : null);
+                dp.setKhachHang(kh);
+                dp.setTrangThai(rs.getString("trangThai"));
+                dp.setNgayCheckIn(rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime() : null);
+                dp.setNgayCheckOut(rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime() : null);
+
+                return dp;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Tìm thông tin tổng hợp để hiển thị lên giao diện CheckInPanel.
      * Hỗ trợ tìm theo: mã đặt phòng, số điện thoại, hoặc số CCCD.
      * Chỉ trả về đơn còn chờ check-in.
