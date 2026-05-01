@@ -61,7 +61,7 @@ public class DatPhongDAO {
         String dateCondition = includeLate
                 ? "CAST(dp.ngayCheckIn AS DATE) < ?"
                 : "CAST(dp.ngayCheckIn AS DATE) = ?";
-        String sql = "SELECT dp.maDat, kh.tenKH, " +
+        String sql = "SELECT dp.maDat, kh.tenKH, kh.soDT, kh.soCCCD, " +
                 "STRING_AGG(ctdp.maPhong, ', ') AS dsPhong, " +
                 "SUM(ctdp.soNguoi) AS tongSoNguoi " +
                 "FROM DatPhong dp " +
@@ -70,11 +70,52 @@ public class DatPhongDAO {
                 "WHERE " + dateCondition + " " +
                 "AND dp.ngayCheckIn IS NOT NULL " +
                 "AND dp.trangThai = N'DA_XACNHAN' " +
-                "GROUP BY dp.maDat, kh.tenKH " +
+                "GROUP BY dp.maDat, kh.tenKH, kh.soDT, kh.soCCCD " +
                 "ORDER BY dp.maDat";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(date));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                ds.add(new Object[]{
+                        rs.getString("maDat"),
+                        rs.getString("tenKH"),
+                        rs.getString("dsPhong") != null ? rs.getString("dsPhong") : "---",
+                        rs.getObject("tongSoNguoi") != null ? rs.getInt("tongSoNguoi") : 0,
+                        rs.getString("soDT") != null ? rs.getString("soDT") : "",
+                        rs.getString("soCCCD") != null ? rs.getString("soCCCD") : ""
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ds;
+    }
+
+    /**
+     * Tìm kiếm tương đối đơn đặt phòng cần Check-in theo từ khóa.
+     * Mỗi Object[]: {maDat, tenKH, dsPhong (comma-separated), tongSoNguoi}
+     */
+    public List<Object[]> searchDonCheckIn(String keyword) {
+        List<Object[]> ds = new ArrayList<>();
+        String sql = "SELECT dp.maDat, kh.tenKH, " +
+                "STRING_AGG(ctdp.maPhong, ', ') AS dsPhong, " +
+                "SUM(ctdp.soNguoi) AS tongSoNguoi " +
+                "FROM DatPhong dp " +
+                "JOIN KH kh ON dp.maKH = kh.maKH " +
+                "LEFT JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
+                "WHERE (dp.maDat LIKE ? OR kh.soDT LIKE ? OR kh.soCCCD LIKE ? OR kh.tenKH LIKE ?) " +
+                "AND dp.ngayCheckIn IS NOT NULL " +
+                "AND dp.trangThai = N'DA_XACNHAN' " +
+                "GROUP BY dp.maDat, kh.tenKH " +
+                "ORDER BY dp.maDat";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            String kw = "%" + keyword + "%";
+            ps.setString(1, kw);
+            ps.setString(2, kw);
+            ps.setString(3, kw);
+            ps.setString(4, kw);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 ds.add(new Object[]{

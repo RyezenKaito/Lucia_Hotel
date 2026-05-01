@@ -12,6 +12,8 @@ import java.sql.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -55,10 +57,9 @@ public class CheckInView extends BorderPane {
 
     /* -- Controls -- */
     private TextField txtSearch;
-    private DatePicker dpFilter;
-    private CheckBox chkLate;
     private TableView<Object[]> tableOrders;
     private ObservableList<Object[]> orderData;
+    private FilteredList<Object[]> filteredData;
     private VBox detailSection;
     private VBox roomListSection;
     private Button btnConfirm;
@@ -67,6 +68,7 @@ public class CheckInView extends BorderPane {
     private DatPhong currentDatPhong;
     private List<Object[]> currentRoomDetails; // {maPhong, tenLoaiPhong}
     private NhanVien staff;
+    private boolean isTableSelecting = false;
 
     public CheckInView() {
         this(null);
@@ -91,7 +93,7 @@ public class CheckInView extends BorderPane {
         Label lblTitle = new Label("Thủ tục nhận phòng");
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
         lblTitle.setTextFill(Color.web(C_TEXT_DARK));
-        Label lblSub = new Label("Tìm đơn đặt phòng theo mã đặt, số điện thoại hoặc CCCD");
+        Label lblSub = new Label("Tìm đơn đặt phòng theo mã đặt, họ tên ,số điện thoại hoặc CCCD");
         lblSub.setFont(Font.font("Segoe UI", 14));
         lblSub.setTextFill(Color.web(C_TEXT_GRAY));
         titleBox.getChildren().addAll(lblTitle, lblSub);
@@ -100,19 +102,56 @@ public class CheckInView extends BorderPane {
         searchRow.setAlignment(Pos.CENTER_LEFT);
 
         txtSearch = new TextField();
-        txtSearch.setPromptText("Nhập mã đặt phòng, số điện thoại hoặc CCCD");
+        txtSearch.setPromptText("Nhập mã đặt phòng, họ tên,số điện thoại hoặc CCCD");
         txtSearch.setPrefHeight(40);
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
         txtSearch.setStyle("-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: " + C_BORDER
                 + "; -fx-font-size: 14px; -fx-padding: 0 16;");
-        txtSearch.setOnAction(e -> handleSearch());
+
+        txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (filteredData != null) {
+                filteredData.setPredicate(order -> {
+                    if (newValue == null || newValue.isEmpty()) {
+                        return true;
+                    }
+                    String filter = removeAccents(newValue.toLowerCase());
+                    String maDat = removeAccents(order[0].toString().toLowerCase());
+                    String tenKH = removeAccents(order[1].toString().toLowerCase());
+                    String soDT = order.length > 4 ? removeAccents(order[4].toString().toLowerCase()) : "";
+                    String soCCCD = order.length > 5 ? removeAccents(order[5].toString().toLowerCase()) : "";
+
+                    return maDat.contains(filter)
+                            || tenKH.contains(filter)
+                            || soDT.contains(filter)
+                            || soCCCD.contains(filter);
+                });
+
+                if (filteredData.isEmpty()) {
+                    resetDetailView();
+                } else if (filteredData.size() == 1) {
+                    isTableSelecting = true;
+                    tableOrders.getSelectionModel().select(0);
+                    isTableSelecting = false;
+                    loadOrderDetail((String) filteredData.get(0)[0]);
+                } else {
+                    resetDetailView();
+                }
+            }
+        });
 
         Button btnSearch = new Button("\uD83D\uDD0D  Tìm kiếm");
         btnSearch.setPrefHeight(35);
         btnSearch.setMinWidth(140);
         btnSearch.setCursor(Cursor.HAND);
         styleButton(btnSearch, C_BLUE, "white", C_BLUE_HOVER);
-        btnSearch.setOnAction(e -> handleSearch());
+
+        btnSearch.setOnAction(e -> txtSearch.requestFocus());
+        txtSearch.setOnAction(e -> {
+            if (filteredData != null && filteredData.size() == 1) {
+                tableOrders.getSelectionModel().select(0);
+                loadOrderDetail((String) filteredData.get(0)[0]);
+            }
+        });
 
         searchRow.getChildren().addAll(txtSearch, btnSearch);
 
@@ -213,86 +252,13 @@ public class CheckInView extends BorderPane {
         lblOrderTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         lblOrderTitle.setTextFill(Color.web(C_TEXT_DARK));
 
-        // Date filter
-        HBox filterRow = new HBox(12);
-        filterRow.setAlignment(Pos.CENTER_LEFT);
-        filterRow.setPadding(new Insets(0, 0, 4, 0));
-
-        Label lblDate = new Label("Lọc theo ngày:");
-        lblDate.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        lblDate.setTextFill(Color.web(C_TEXT_GRAY));
-
-        dpFilter = new DatePicker(LocalDate.now());
-        dpFilter.setPrefHeight(38);
-        dpFilter.setPrefWidth(180);
-        dpFilter.setStyle("-fx-font-size: 13px;");
-        // Format dd/MM/yyyy
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        dpFilter.setConverter(new StringConverter<LocalDate>() {
-            @Override
-            public String toString(LocalDate d) {
-                return d != null ? d.format(fmt) : "";
-            }
-
-            @Override
-            public LocalDate fromString(String s) {
-                try {
-                    return LocalDate.parse(s, fmt);
-                } catch (Exception e) {
-                    return null;
-                }
-            }
-        });
-        dpFilter.setOnAction(e -> {
-            if (dpFilter.getValue() != null) {
-                refreshTable();
-            }
-        });
-
-        String navBtnStyle = "-fx-background-color: #f3f4f6; -fx-text-fill: #374151;"
-                + " -fx-background-radius: 8; -fx-padding: 6 14; -fx-font-weight: bold;"
-                + " -fx-border-color: #d1d5db; -fx-border-radius: 8;";
-
-        Button btnPrev = new Button("◀  Trở về");
-        btnPrev.setPrefHeight(38);
-        btnPrev.setCursor(Cursor.HAND);
-        btnPrev.setStyle(navBtnStyle);
-        btnPrev.setOnAction(e -> {
-            dpFilter.setValue(dpFilter.getValue().minusDays(1));
-            refreshTable();
-        });
-
-        Button btnToday = new Button("Hôm nay");
-        btnToday.setPrefHeight(38);
-        btnToday.setCursor(Cursor.HAND);
-        btnToday.setStyle("-fx-background-color: #eef2ff; -fx-text-fill: " + C_BLUE
-                + "; -fx-background-radius: 8; -fx-padding: 6 16; -fx-font-weight: bold; -fx-border-color: "
-                + C_BLUE + "; -fx-border-radius: 8;");
-        btnToday.setOnAction(e -> {
-            dpFilter.setValue(LocalDate.now());
-            refreshTable();
-        });
-
-        Button btnNext = new Button("Tiếp  ▶");
-        btnNext.setPrefHeight(38);
-        btnNext.setCursor(Cursor.HAND);
-        btnNext.setStyle(navBtnStyle);
-        btnNext.setOnAction(e -> {
-            dpFilter.setValue(dpFilter.getValue().plusDays(1));
-            refreshTable();
-        });
-
-        chkLate = new CheckBox("Hiện đơn nhận trễ");
-        chkLate.setFont(Font.font("Segoe UI", 13));
-        chkLate.setTextFill(Color.web(C_TEXT_GRAY));
-        chkLate.setCursor(Cursor.HAND);
-        chkLate.setOnAction(e -> refreshTable());
-
-        filterRow.getChildren().addAll(lblDate, dpFilter, btnPrev, btnToday, btnNext, chkLate);
-
         // Table
         orderData = FXCollections.observableArrayList();
-        tableOrders = new TableView<>(orderData);
+        filteredData = new FilteredList<>(orderData, p -> true);
+        SortedList<Object[]> sortedData = new SortedList<>(filteredData);
+
+        tableOrders = new TableView<>(sortedData);
+        sortedData.comparatorProperty().bind(tableOrders.comparatorProperty());
         tableOrders.setPlaceholder(new Label("Không có đơn đặt phòng nào"));
         tableOrders.setStyle("-fx-font-size: 13px;");
         VBox.setVgrow(tableOrders, Priority.ALWAYS);
@@ -323,14 +289,13 @@ public class CheckInView extends BorderPane {
 
         // When selecting a row in table, load detail
         tableOrders.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
+            if (newVal != null && !isTableSelecting) {
                 String maDat = (String) newVal[0];
-                txtSearch.setText(maDat);
-                handleSearch();
+                loadOrderDetail(maDat);
             }
         });
 
-        orderListContainer.getChildren().addAll(lblOrderTitle, filterRow, tableOrders);
+        orderListContainer.getChildren().addAll(lblOrderTitle, tableOrders);
         rightCol.getChildren().add(orderListContainer);
 
         main.getChildren().addAll(leftCol, rightCol);
@@ -339,41 +304,18 @@ public class CheckInView extends BorderPane {
 
     /* ===== LOGIC ===== */
     private void refreshTable() {
-        LocalDate date = dpFilter.getValue() != null ? dpFilter.getValue() : LocalDate.now();
-        boolean late = chkLate != null && chkLate.isSelected();
         orderData.clear();
-        List<Object[]> list = datPhongDAO.getDonCheckInByDate(date, late);
+        List<Object[]> list = datPhongDAO.getDonCheckInByDate(LocalDate.now(), false);
         orderData.addAll(list);
     }
 
-    private void handleSearch() {
-        String key = txtSearch.getText().trim();
-        if (key.isEmpty())
+    private void loadOrderDetail(String key) {
+        if (key == null || key.isEmpty())
             return;
 
-        // Tìm đơn bất kể trạng thái để kiểm tra chi tiết
         DatPhong dp = datPhongDAO.findDatPhongAllStatus(key);
-
-        if (dp == null) {
-            new Alert(Alert.AlertType.WARNING, "Không tìm thấy đơn đặt phòng.\nKiểm tra lại mã đặt / SĐT / CCCD.",
-                    ButtonType.OK).showAndWait();
+        if (dp == null)
             return;
-        }
-
-        // Kiểm tra trạng thái đơn
-        String status = dp.getTrangThai();
-        if ("DA_CHECKIN".equals(status)) {
-            new Alert(Alert.AlertType.INFORMATION, "Đơn này đã được nhận phòng rồi!", ButtonType.OK).showAndWait();
-            return;
-        } else if ("DA_HUY".equals(status)) {
-            new Alert(Alert.AlertType.ERROR, "Đơn đặt phòng này đã bị HỦY.", ButtonType.OK).showAndWait();
-            return;
-        } else if (!"DA_XACNHAN".equals(status)) {
-            new Alert(Alert.AlertType.WARNING,
-                    "Đơn đặt phòng này đã hoàn thành thủ tục trả phòng.\nKhông thể làm thủ tục nhận phòng.",
-                    ButtonType.OK).showAndWait();
-            return;
-        }
 
         // Nếu là DA_XACNHAN, tiến hành load dữ liệu
         currentDatPhong = dp;
@@ -384,6 +326,28 @@ public class CheckInView extends BorderPane {
         boolean hasRooms = currentRoomDetails != null && !currentRoomDetails.isEmpty();
         btnConfirm.setVisible(hasRooms);
         btnConfirm.setManaged(hasRooms);
+    }
+
+    private void resetDetailView() {
+        currentDatPhong = null;
+        currentRoomDetails = null;
+        if (btnConfirm != null) {
+            btnConfirm.setVisible(false);
+            btnConfirm.setManaged(false);
+        }
+        if (detailSection != null) {
+            detailSection.getChildren().clear();
+            detailSection.setAlignment(Pos.CENTER);
+            Label lbl = new Label("Chưa có thông tin đơn đặt phòng");
+            lbl.setTextFill(Color.web(C_TEXT_GRAY));
+            detailSection.getChildren().add(lbl);
+        }
+        if (roomListSection != null) {
+            roomListSection.getChildren().clear();
+            Label lbl = new Label("Chọn đơn để xem danh sách phòng");
+            lbl.setTextFill(Color.web(C_TEXT_GRAY));
+            roomListSection.getChildren().add(lbl);
+        }
     }
 
     private void updateDetailUI(DatPhong dp) {
@@ -486,8 +450,6 @@ public class CheckInView extends BorderPane {
             lblStatus.setFont(Font.font("Segoe UI", 12));
             lblStatus.setTextFill(Color.web(isReady ? C_GREEN : (isOccupied ? "#ef4444" : "#ea580c")));
             lblStatus.setStyle("-fx-background-color: " + (isReady ? "#f0fdf4" : "#fff2f2")
-                    + "; -fx-padding: 2 10; -fx-background-radius: 10;");
-            lblStatus.setStyle("-fx-background-color: " + (isReady ? "#f0df4" : "#fff2f2")
                     + "; -fx-padding: 2 10; -fx-background-radius: 10;");
 
             Region spacer = new Region();
@@ -695,5 +657,13 @@ public class CheckInView extends BorderPane {
         btn.setStyle(base);
         btn.setOnMouseEntered(e -> btn.setStyle(hover));
         btn.setOnMouseExited(e -> btn.setStyle(base));
+    }
+
+    private String removeAccents(String s) {
+        if (s == null)
+            return "";
+        String temp = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD);
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return pattern.matcher(temp).replaceAll("").replace('Đ', 'D').replace('đ', 'd');
     }
 }
