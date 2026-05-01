@@ -49,8 +49,6 @@ public class CheckOutView extends BorderPane {
     private final ChiTietDatPhongDAO ctdpDAO=new ChiTietDatPhongDAO();
 
     private TextField txtSearch, txtLateFee;
-    private DatePicker dpFilter;
-    private CheckBox chkLate;
     private TableView<Object[]> tableOrders;
     private ObservableList<Object[]> orderData;
     private TableView<DichVuSuDung> serviceTable;
@@ -205,30 +203,7 @@ public class CheckOutView extends BorderPane {
         Label lblOT=new Label("Danh sách đơn trả phòng");
         lblOT.setFont(Font.font("Segoe UI",FontWeight.BOLD,18));lblOT.setTextFill(Color.web(C_TEXT_DARK));
 
-        // Date filter
-        HBox filterRow=new HBox(12);filterRow.setAlignment(Pos.CENTER_LEFT);filterRow.setPadding(new Insets(0,0,4,0));
 
-        chkLate=new CheckBox("Lọc theo ngày trả dự kiến");chkLate.setFont(Font.font("Segoe UI",FontWeight.BOLD,13));chkLate.setTextFill(Color.web(C_TEXT_GRAY));
-        chkLate.setCursor(Cursor.HAND);chkLate.setOnAction(e->refreshTable());
-
-        dpFilter=new DatePicker(LocalDate.now());dpFilter.setPrefHeight(38);dpFilter.setPrefWidth(160);dpFilter.setStyle("-fx-font-size:13px;");
-        DateTimeFormatter fmt=DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        dpFilter.setConverter(new StringConverter<LocalDate>(){
-            public String toString(LocalDate d){return d!=null?d.format(fmt):"";}
-            public LocalDate fromString(String s){try{return LocalDate.parse(s,fmt);}catch(Exception e){return null;}}
-        });
-        dpFilter.setOnAction(e->{if(chkLate.isSelected()&&dpFilter.getValue()!=null)refreshTable();});
-
-        String navS="-fx-background-color:#f3f4f6;-fx-text-fill:#374151;-fx-background-radius:8;-fx-padding:6 12;-fx-font-weight:bold;-fx-border-color:#d1d5db;-fx-border-radius:8;";
-        Button btnPrev=new Button("◀");btnPrev.setPrefHeight(38);btnPrev.setCursor(Cursor.HAND);btnPrev.setStyle(navS);
-        btnPrev.setOnAction(e->{dpFilter.setValue(dpFilter.getValue().minusDays(1));if(chkLate.isSelected())refreshTable();});
-        Button btnToday=new Button("Hôm nay");btnToday.setPrefHeight(38);btnToday.setCursor(Cursor.HAND);
-        btnToday.setStyle("-fx-background-color:#eef2ff;-fx-text-fill:"+C_BLUE+";-fx-background-radius:8;-fx-padding:6 16;-fx-font-weight:bold;-fx-border-color:"+C_BLUE+";-fx-border-radius:8;");
-        btnToday.setOnAction(e->{dpFilter.setValue(LocalDate.now());if(chkLate.isSelected())refreshTable();});
-        Button btnNext=new Button("▶");btnNext.setPrefHeight(38);btnNext.setCursor(Cursor.HAND);btnNext.setStyle(navS);
-        btnNext.setOnAction(e->{dpFilter.setValue(dpFilter.getValue().plusDays(1));if(chkLate.isSelected())refreshTable();});
-
-        filterRow.getChildren().addAll(chkLate,dpFilter,btnPrev,btnToday,btnNext);
 
         // Table – giới hạn chiều cao để dành chỗ cho DV bên trái
         orderData=FXCollections.observableArrayList();
@@ -250,7 +225,7 @@ public class CheckOutView extends BorderPane {
                 handleSearch();
             }
         });
-        orderContainer.getChildren().addAll(lblOT,filterRow,tableOrders);
+        orderContainer.getChildren().addAll(lblOT,tableOrders);
         rightCol.getChildren().add(orderContainer);
         main.getChildren().addAll(leftCol,rightCol);
         return main;
@@ -261,30 +236,21 @@ public class CheckOutView extends BorderPane {
         orderData.clear();
         if(isModeDon){
             // Mode: Trả phòng theo đơn đặt
-            if(chkLate.isSelected()&&dpFilter.getValue()!=null){
-                List<Object[]> list=datPhongDAO.getDonCheckOutByDate(dpFilter.getValue(),false);
-                for(Object[] row:list){
-                    DatPhong dp=datPhongDAO.findDatPhongForCheckOut((String)row[0]);
-                    String sdt=dp!=null&&dp.getKhachHang()!=null&&dp.getKhachHang().getSoDT()!=null?dp.getKhachHang().getSoDT():"---";
-                    orderData.add(new Object[]{row[0],row[1],sdt,row[2],row[3]});
-                }
-            } else {
-                List<String> dsDon=datPhongDAO.getDonDangSuDung();
-                for(String maDat:dsDon){
-                    DatPhong dp=datPhongDAO.findDatPhongForCheckOut(maDat);
-                    if(dp!=null){
-                        String tenKH=dp.getKhachHang()!=null?dp.getKhachHang().getTenKH():"---";
-                        String sdt=dp.getKhachHang()!=null&&dp.getKhachHang().getSoDT()!=null?dp.getKhachHang().getSoDT():"---";
-                        Object[] info=datPhongDAO.findCheckOutInfoByMaDat(maDat);
-                        String dsPhong="---";int soPhong=0;
-                        if(info!=null){
-                            @SuppressWarnings("unchecked") List<Object[]> rooms=(List<Object[]>)info[1];
-                            StringBuilder sb=new StringBuilder();
-                            for(Object[] r:rooms){if(sb.length()>0)sb.append(", ");sb.append((String)r[1]);}
-                            dsPhong=sb.toString();soPhong=rooms.size();
-                        }
-                        orderData.add(new Object[]{maDat,tenKH,sdt,dsPhong,soPhong});
+            List<String> dsDon=datPhongDAO.getDonDangSuDung();
+            for(String maDat:dsDon){
+                DatPhong dp=datPhongDAO.findDatPhongForCheckOut(maDat);
+                if(dp!=null){
+                    String tenKH=dp.getKhachHang()!=null?dp.getKhachHang().getTenKH():"---";
+                    String sdt=dp.getKhachHang()!=null&&dp.getKhachHang().getSoDT()!=null?dp.getKhachHang().getSoDT():"---";
+                    Object[] info=datPhongDAO.findCheckOutInfoByMaDat(maDat);
+                    String dsPhong="---";int soPhong=0;
+                    if(info!=null){
+                        @SuppressWarnings("unchecked") List<Object[]> rooms=(List<Object[]>)info[1];
+                        StringBuilder sb=new StringBuilder();
+                        for(Object[] r:rooms){if(sb.length()>0)sb.append(", ");sb.append((String)r[1]);}
+                        dsPhong=sb.toString();soPhong=rooms.size();
                     }
+                    orderData.add(new Object[]{maDat,tenKH,sdt,dsPhong,soPhong});
                 }
             }
         } else {
@@ -294,12 +260,6 @@ public class CheckOutView extends BorderPane {
                 Object[] info=datPhongDAO.findCheckOutInfoByMaPhong(maPhong);
                 if(info==null)continue;
                 DatPhong dp=(DatPhong)info[0];
-                // Filter by date if checkbox is checked
-                if(chkLate.isSelected()&&dpFilter.getValue()!=null){
-                    if(dp.getNgayCheckOut()==null)continue;
-                    LocalDate coDate=dp.getNgayCheckOut().toLocalDate();
-                    if(!coDate.equals(dpFilter.getValue()))continue;
-                }
                 String tenKH=dp.getKhachHang()!=null?dp.getKhachHang().getTenKH():"---";
                 String sdt=dp.getKhachHang()!=null&&dp.getKhachHang().getSoDT()!=null?dp.getKhachHang().getSoDT():"---";
                 String maDat=dp.getMaDat();
