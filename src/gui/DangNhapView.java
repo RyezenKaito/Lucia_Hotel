@@ -98,19 +98,36 @@ public class DangNhapView extends Application {
 
         // ===== ICON =====
         StackPane iconCircle = new StackPane();
-        Circle circle = new Circle(36);
-        circle.setFill(Color.web(BLUE_600, 0.75));
-        DropShadow iconShadow = new DropShadow(12, Color.web(BLUE_700, 0.5));
-        iconShadow.setOffsetY(4);
-        circle.setEffect(iconShadow);
-        Label lblIcon = new Label("H");
-        lblIcon.setFont(Font.font("Georgia", FontWeight.BOLD, 26));
-        lblIcon.setTextFill(Color.WHITE);
-        iconCircle.getChildren().addAll(circle, lblIcon);
+        try {
+            ImageView logoView = new ImageView(new Image("file:src/icon/logo.png"));
+            logoView.setFitWidth(96);
+            logoView.setFitHeight(96);
+            logoView.setPreserveRatio(true);
+            // Bo tròn logo (clip thành hình tròn)
+            javafx.scene.shape.Circle clip = new javafx.scene.shape.Circle(48, 48, 48);
+            logoView.setClip(clip);
+
+            DropShadow logoShadow = new DropShadow(12, Color.web(BLUE_700, 0.5));
+            logoShadow.setOffsetY(4);
+            logoView.setEffect(logoShadow);
+
+            iconCircle.getChildren().add(logoView);
+        } catch (Exception ex) {
+            // Fallback: dùng circle + chữ H như cũ nếu không tìm thấy file logo
+            Circle circle = new Circle(36);
+            circle.setFill(Color.web(BLUE_600, 0.75));
+            DropShadow iconShadow = new DropShadow(12, Color.web(BLUE_700, 0.5));
+            iconShadow.setOffsetY(4);
+            circle.setEffect(iconShadow);
+            Label lblIcon = new Label("H");
+            lblIcon.setFont(Font.font("Georgia", FontWeight.BOLD, 26));
+            lblIcon.setTextFill(Color.WHITE);
+            iconCircle.getChildren().addAll(circle, lblIcon);
+        }
         VBox.setMargin(iconCircle, new Insets(0, 0, 20, 0));
 
         // ===== TIÊU ĐỀ =====
-        Label lblTitle = new Label("LUCIA STAR HOTEL");
+        Label lblTitle = new Label("LUCIA HOTEL");
         lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
         lblTitle.setTextFill(Color.WHITE);
         lblTitle.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 4, 0, 0, 2);");
@@ -222,8 +239,12 @@ public class DangNhapView extends Application {
 
         // ===== SCENE & STAGE =====
         Scene scene = new Scene(root, 850, 600);
-        scene.setUserData(this);
+         scene.setUserData(this);
         stage.setTitle("Lucia Star Hotel - Đăng nhập");
+        // Set icon cửa sổ
+        Image logoImg = new Image("file:src/icon/logo.png");
+        System.out.println("Logo loaded? error=" + logoImg.isError() + " w=" + logoImg.getWidth());
+        stage.getIcons().add(logoImg);
         stage.setScene(scene);
         stage.setOnCloseRequest(e -> {
         	javafx.application.Platform.exit();
