@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -12,6 +13,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture; // FIX: import trực tiếp, bỏ inner class
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import model.entities.NhanVien;
 import model.enums.ChucVu;
@@ -230,13 +233,27 @@ public class MainFrameView {
         StackPane iconBox = new StackPane();
         iconBox.setMinSize(44, 44);
         iconBox.setPrefSize(44, 44);
-        Rectangle iconBg = new Rectangle(44, 44);
-        iconBg.setArcWidth(10);
-        iconBg.setArcHeight(10);
-        iconBg.setFill(Color.web(C_ACTIVE));
-        Label iconLbl = new Label("🏨");
-        iconLbl.setFont(Font.font(20));
-        iconBox.getChildren().addAll(iconBg, iconLbl);
+        try {
+            ImageView logoView = new ImageView(new Image("file:src/icon/logo.png"));
+            logoView.setFitWidth(44);
+            logoView.setFitHeight(44);
+            logoView.setPreserveRatio(true);
+            // Bo góc logo cho khớp với layout cũ (radius 5px = arc 10/2)
+            javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(44, 44);
+            clip.setArcWidth(10);
+            clip.setArcHeight(10);
+            logoView.setClip(clip);
+            iconBox.getChildren().add(logoView);
+        } catch (Exception ex) {
+            // Fallback: icon cũ nếu không tìm thấy file logo
+            Rectangle iconBg = new Rectangle(44, 44);
+            iconBg.setArcWidth(10);
+            iconBg.setArcHeight(10);
+            iconBg.setFill(Color.web(C_ACTIVE));
+            Label iconLbl = new Label("🏨");
+            iconLbl.setFont(Font.font(20));
+            iconBox.getChildren().addAll(iconBg, iconLbl);
+        }
 
         VBox text = new VBox(2);
         Label appName = new Label("Lucia Hotel");
