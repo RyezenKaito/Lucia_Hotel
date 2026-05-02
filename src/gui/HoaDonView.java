@@ -11,9 +11,12 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -49,8 +52,14 @@ public class HoaDonView extends BorderPane {
     private TableView<HoaDon> table;
     private TextField txtSearch;
     private Label lblTongDoanhThu, lblSoHoaDon;
-    private DatePicker dpFilter;
+    private model.utils.DatePicker dpFrom, dpTo;
     private CheckBox chkFilterDate;
+    private Button btnFilterTT;
+    private ContextMenu menuTrangThai;
+
+    /* ── Column filter state ────────────────────────────────────────── */
+    private String filterTrangThai = null;  // null = tất cả
+    private TableColumn<HoaDon, String> colTrangThai;
 
     public HoaDonView() {
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -95,45 +104,38 @@ public class HoaDonView extends BorderPane {
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
         filterRow.getChildren().add(txtSearch);
 
-        // Date filter row
-        HBox dateFilterRow = new HBox(12);
+        // Date filter row: Từ ngày – Đến ngày
+        HBox dateFilterRow = new HBox(10);
         dateFilterRow.setAlignment(Pos.CENTER_LEFT);
 
-        chkFilterDate = new CheckBox("Lọc theo ngày:");
+        chkFilterDate = new CheckBox("Lọc theo ngày lập:");
         chkFilterDate.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         chkFilterDate.setTextFill(Color.web(C_TEXT_GRAY));
         chkFilterDate.setOnAction(e -> applyFilter());
 
-        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        dpFilter = new DatePicker(java.time.LocalDate.now());
-        dpFilter.setPrefHeight(38);
-        dpFilter.setPrefWidth(160);
-        dpFilter.setStyle("-fx-font-size: 13px;");
-        dpFilter.setConverter(new javafx.util.StringConverter<java.time.LocalDate>() {
-            @Override public String toString(java.time.LocalDate d) { return d != null ? d.format(fmt) : ""; }
-            @Override public java.time.LocalDate fromString(String s) {
-                try { return java.time.LocalDate.parse(s, fmt); } catch (Exception e) { return null; }
-            }
-        });
-        dpFilter.setOnAction(e -> { if (chkFilterDate.isSelected()) applyFilter(); });
+        int curYear = java.time.LocalDate.now().getYear();
 
-        String navBtnStyle = "-fx-background-color: #f3f4f6; -fx-text-fill: #374151;"
-                + " -fx-background-radius: 8; -fx-padding: 6 14; -fx-font-weight: bold;"
-                + " -fx-border-color: #d1d5db; -fx-border-radius: 8;";
-        Button btnPrev = new Button("◀");
-        btnPrev.setPrefHeight(38); btnPrev.setStyle(navBtnStyle);
-        btnPrev.setOnAction(e -> { dpFilter.setValue(dpFilter.getValue().minusDays(1)); if (chkFilterDate.isSelected()) applyFilter(); });
-        Button btnToday = new Button("Hôm nay");
-        btnToday.setPrefHeight(38);
-        btnToday.setStyle("-fx-background-color: #eef2ff; -fx-text-fill: " + C_BLUE
-                + "; -fx-background-radius: 8; -fx-padding: 6 16; -fx-font-weight: bold; -fx-border-color: "
-                + C_BLUE + "; -fx-border-radius: 8;");
-        btnToday.setOnAction(e -> { dpFilter.setValue(java.time.LocalDate.now()); if (chkFilterDate.isSelected()) applyFilter(); });
-        Button btnNext = new Button("▶");
-        btnNext.setPrefHeight(38); btnNext.setStyle(navBtnStyle);
-        btnNext.setOnAction(e -> { dpFilter.setValue(dpFilter.getValue().plusDays(1)); if (chkFilterDate.isSelected()) applyFilter(); });
+        Label lblFrom = new Label("Từ:");
+        lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblFrom.setTextFill(Color.web(C_TEXT_GRAY));
+        dpFrom = new model.utils.DatePicker(curYear - 5, curYear + 2);
+        dpFrom.setValue(java.time.LocalDate.now().withDayOfMonth(1));
+        dpFrom.setPromptText("Từ ngày");
+        dpFrom.setPrefHeight(40);
+        dpFrom.setMaxWidth(200);
+        dpFrom.valueProperty().addListener((obs, o, n) -> { if (chkFilterDate.isSelected()) applyFilter(); });
 
-        dateFilterRow.getChildren().addAll(chkFilterDate, dpFilter, btnPrev, btnToday, btnNext);
+        Label lblTo = new Label("Đến:");
+        lblTo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblTo.setTextFill(Color.web(C_TEXT_GRAY));
+        dpTo = new model.utils.DatePicker(curYear - 5, curYear + 2);
+        dpTo.setValue(java.time.LocalDate.now());
+        dpTo.setPromptText("Đến ngày");
+        dpTo.setPrefHeight(40);
+        dpTo.setMaxWidth(200);
+        dpTo.valueProperty().addListener((obs, o, n) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+
+        dateFilterRow.getChildren().addAll(chkFilterDate, lblFrom, dpFrom, lblTo, dpTo);
 
         header.getChildren().addAll(titleBox, statsRow, filterRow, dateFilterRow);
         return header;
@@ -145,7 +147,7 @@ public class HoaDonView extends BorderPane {
         card.setEffect(new DropShadow(10, 0, 4, Color.web("#00000008")));
 
         table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         table.setPlaceholder(new Label("Không có dữ liệu"));
 
@@ -210,8 +212,8 @@ public class HoaDonView extends BorderPane {
         colTong.setPrefWidth(160);
         colTong.setMinWidth(140);
 
-        // ── [ĐÃ SỬA] Cột Trạng thái TT có BADGE MÀU ────────────────
-        TableColumn<HoaDon, String> colTrangThai = new TableColumn<>("Trạng thái TT");
+        // ── Cột Trạng thái TT (có bộ lọc trong header) ──────────────
+        colTrangThai = new TableColumn<>();
         colTrangThai.setPrefWidth(160);
         colTrangThai.setMinWidth(140);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
@@ -282,7 +284,14 @@ public class HoaDonView extends BorderPane {
         table.getColumns().add(colTrangThai);
         for (TableColumn<HoaDon, ?> c : table.getColumns()) {
             c.setReorderable(false);
+            c.setSortable(false);
         }
+        // Re-enable sort on Mã HD only
+        colMa.setSortable(true);
+
+        // Install dropdown filter on Trạng thái TT column header using MenuButton
+        installColumnFilter(colTrangThai, "Trạng thái TT");
+
         table.getSortOrder().add(colMa);
         colMa.setSortType(TableColumn.SortType.ASCENDING);
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -566,13 +575,20 @@ public class HoaDonView extends BorderPane {
     private void applyFilter() {
         String kw = txtSearch != null ? (txtSearch.getText() == null ? "" : txtSearch.getText().toLowerCase().trim()) : "";
         boolean filterByDate = chkFilterDate != null && chkFilterDate.isSelected();
-        java.time.LocalDate filterDate = dpFilter != null ? dpFilter.getValue() : null;
+        java.time.LocalDate fromDate = dpFrom != null ? dpFrom.getValue() : null;
+        java.time.LocalDate toDate = dpTo != null ? dpTo.getValue() : null;
 
         filteredData.setPredicate(hd -> {
-            // Date filter
-            if (filterByDate && filterDate != null && hd.getNgayTaoHD() != null) {
-                if (!hd.getNgayTaoHD().toLocalDate().equals(filterDate))
-                    return false;
+            // Date range filter (theo ngày lập)
+            if (filterByDate && hd.getNgayTaoHD() != null) {
+                java.time.LocalDate hdDate = hd.getNgayTaoHD().toLocalDate();
+                if (fromDate != null && hdDate.isBefore(fromDate)) return false;
+                if (toDate != null && hdDate.isAfter(toDate)) return false;
+            }
+            // Trạng thái filter
+            if (filterTrangThai != null) {
+                String tt = hd.getTrangThaiThanhToan();
+                if (tt == null || !tt.equals(filterTrangThai)) return false;
             }
             // Text filter
             if (!kw.isEmpty()) {
@@ -591,6 +607,43 @@ public class HoaDonView extends BorderPane {
             }
             return true;
         });
+    }
+
+
+    /* ── Column-header filter helpers ──────────────────────────────── */
+
+    /**
+     * Dùng Button + ContextMenu làm header cột – không có mũi tên thừa.
+     */
+    private void installColumnFilter(TableColumn<HoaDon, String> col, String baseName) {
+        menuTrangThai = new ContextMenu();
+
+        MenuItem all = new MenuItem("Tất cả trạng thái");
+        all.setOnAction(e -> { filterTrangThai = null; btnFilterTT.setText(baseName + " ▼"); applyFilter(); });
+        menuTrangThai.getItems().add(all);
+        menuTrangThai.getItems().add(new SeparatorMenuItem());
+
+        String[][] statuses = {
+            {"DA_THANH_TOAN", "Đã thanh toán"},
+            {"DA_THANH_TOAN_COC", "Đã đặt cọc"},
+            {"CHUA_THANH_TOAN", "Chưa thanh toán"},
+            {"DA_HOAN_COC", "Đã hủy - hoàn cọc"},
+            {"DA_MAT_COC", "Đã hủy - mất cọc"}
+        };
+        for (String[] st : statuses) {
+            MenuItem mi = new MenuItem(st[1]);
+            mi.setOnAction(e -> { filterTrangThai = st[0]; btnFilterTT.setText(st[1] + " ▼"); applyFilter(); });
+            menuTrangThai.getItems().add(mi);
+        }
+
+        btnFilterTT = new Button(baseName + " ▼");
+        btnFilterTT.setStyle("-fx-font-size: 12px; -fx-background-color: transparent;"
+                + " -fx-padding: 4 8; -fx-cursor: hand;");
+        btnFilterTT.setMaxWidth(Double.MAX_VALUE);
+        btnFilterTT.setOnAction(e -> menuTrangThai.show(btnFilterTT, Side.BOTTOM, 0, 0));
+
+        col.setGraphic(btnFilterTT);
+        col.setText("");
     }
 
     private VBox createStatCard(String icon, String title, Label valueLbl, String accentHex) {

@@ -6,6 +6,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
@@ -68,6 +69,11 @@ public class QuanLyNhanVienView extends BorderPane {
 
     private Label lblTotal, lblStaff, lblManager;
     private TextField txtSearch;
+
+    /* ── Column filter state ────────────────────────────────────────── */
+    private String filterChucVu = null;     // null = tất cả
+    private String filterTrangThai = null;  // null = tất cả
+    private TableColumn<NhanVien, String> colChucVu, colTrangThai;
 
     /* ── Constructor ──────────────────────────────────────────────── */
     public QuanLyNhanVienView(NhanVien currentUser) {
@@ -222,7 +228,7 @@ public class QuanLyNhanVienView extends BorderPane {
         colNgayVao.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getNgayVaoLamDate() != null ? c.getValue().getNgayVaoLamDate().format(FMT) : ""));
 
-        TableColumn<NhanVien, String> colChucVu = new TableColumn<>("Chức vụ");
+        colChucVu = new TableColumn<>("Chức vụ" + (isCurrentUserAdmin ? " ▼" : ""));
         colChucVu.setMinWidth(110);
         colChucVu.setStyle("-fx-alignment: CENTER;");
         colChucVu.setCellValueFactory(c -> {
@@ -260,7 +266,7 @@ public class QuanLyNhanVienView extends BorderPane {
             }
         });
 
-        TableColumn<NhanVien, String> colTrangThai = new TableColumn<>("Trạng thái");
+        colTrangThai = new TableColumn<>("Trạng thái ▼");
         colTrangThai.setMinWidth(120);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(c -> {
@@ -270,6 +276,9 @@ public class QuanLyNhanVienView extends BorderPane {
 
         // ── Custom Header Labels (Bold & Aligned) ──────────────────
         for (TableColumn<NhanVien, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS, colNgayVao, colChucVu, colTrangThai)) {
+            // Skip columns that will get filter headers
+            if (c == colTrangThai || (c == colChucVu && isCurrentUserAdmin)) continue;
+
             Label lblHeader = new Label(c.getText());
             lblHeader.setStyle("-fx-font-weight: bold; -fx-text-fill: " + C_TEXT_DARK + ";");
             if (c == colTen) {
@@ -281,6 +290,12 @@ public class QuanLyNhanVienView extends BorderPane {
                 ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER);
             }
             c.setText(""); // Xóa text gốc để hiển thị Graphic
+        }
+
+        // ── Install column header filters ────────────────────────────
+        installColumnFilter(colTrangThai, "Trạng thái", buildTrangThaiNVMenu());
+        if (isCurrentUserAdmin) {
+            installColumnFilter(colChucVu, "Chức vụ", buildChucVuMenu());
         }
         colTrangThai.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -483,14 +498,81 @@ public class QuanLyNhanVienView extends BorderPane {
     private void applyFilter(String keyword) {
         if (filteredData == null)
             return;
-        if (keyword == null || keyword.isBlank()) {
-            filteredData.setPredicate(p -> true);
-        } else {
-            String lower = keyword.toLowerCase();
-            filteredData.setPredicate(nv -> nvl(nv.getMaNV()).toLowerCase().contains(lower) ||
-                    nvl(nv.getHoTen()).toLowerCase().contains(lower) ||
-                    nvl(nv.getSoDT()).contains(lower));
-        }
+        String kw = (keyword == null) ? "" : keyword.trim().toLowerCase();
+
+        filteredData.setPredicate(nv -> {
+            // Text search
+            if (!kw.isEmpty()) {
+                if (!nvl(nv.getMaNV()).toLowerCase().contains(kw)
+                        && !nvl(nv.getHoTen()).toLowerCase().contains(kw)
+                        && !nvl(nv.getSoDT()).contains(kw))
+                    return false;
+            }
+            // Chức vụ filter (admin only)
+            if (filterChucVu != null) {
+                String cv = (nv.getRole() == ChucVu.QUAN_LY) ? "QUẢN LÝ" : "NHÂN VIÊN";
+                if (!cv.equals(filterChucVu)) return false;
+            }
+            // Trạng thái filter
+            if (filterTrangThai != null) {
+                String tt = (nv.getTrangThai() == model.enums.TrangThaiNV.CON_LAM) ? "Còn làm" : "Đã nghỉ";
+                if (!tt.equals(filterTrangThai)) return false;
+            }
+            return true;
+        });
+    }
+
+    /* ── Column-header filter helpers ──────────────────────────────── */
+
+    private void installColumnFilter(TableColumn<NhanVien, String> col, String baseName, ContextMenu menu) {
+        Label headerLabel = new Label(col.getText());
+        headerLabel.setMaxWidth(Double.MAX_VALUE);
+        headerLabel.setAlignment(Pos.CENTER);
+        headerLabel.setCursor(Cursor.HAND);
+        headerLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + C_TEXT_DARK + ";");
+        headerLabel.setOnMouseClicked(e -> {
+            if (e.getButton() == MouseButton.PRIMARY) {
+                menu.show(headerLabel, Side.BOTTOM, 0, 0);
+            }
+        });
+        col.setGraphic(headerLabel);
+        col.setText("");
+    }
+
+    private ContextMenu buildChucVuMenu() {
+        ContextMenu menu = new ContextMenu();
+        MenuItem all = new MenuItem("Tất cả chức vụ");
+        all.setOnAction(e -> { filterChucVu = null; updateColumnHeader(colChucVu, "Chức vụ", null); applyFilter(txtSearch.getText()); });
+        menu.getItems().add(all);
+        menu.getItems().add(new SeparatorMenuItem());
+
+        MenuItem miNV = new MenuItem("NHÂN VIÊN");
+        miNV.setOnAction(e -> { filterChucVu = "NHÂN VIÊN"; updateColumnHeader(colChucVu, "Chức vụ", "Nhân viên"); applyFilter(txtSearch.getText()); });
+        MenuItem miQL = new MenuItem("QUẢN LÝ");
+        miQL.setOnAction(e -> { filterChucVu = "QUẢN LÝ"; updateColumnHeader(colChucVu, "Chức vụ", "Quản lý"); applyFilter(txtSearch.getText()); });
+        menu.getItems().addAll(miNV, miQL);
+        return menu;
+    }
+
+    private ContextMenu buildTrangThaiNVMenu() {
+        ContextMenu menu = new ContextMenu();
+        MenuItem all = new MenuItem("Tất cả trạng thái");
+        all.setOnAction(e -> { filterTrangThai = null; updateColumnHeader(colTrangThai, "Trạng thái", null); applyFilter(txtSearch.getText()); });
+        menu.getItems().add(all);
+        menu.getItems().add(new SeparatorMenuItem());
+
+        MenuItem miConLam = new MenuItem("Còn làm");
+        miConLam.setOnAction(e -> { filterTrangThai = "Còn làm"; updateColumnHeader(colTrangThai, "Trạng thái", "Còn làm"); applyFilter(txtSearch.getText()); });
+        MenuItem miDaNghi = new MenuItem("Đã nghỉ");
+        miDaNghi.setOnAction(e -> { filterTrangThai = "Đã nghỉ"; updateColumnHeader(colTrangThai, "Trạng thái", "Đã nghỉ"); applyFilter(txtSearch.getText()); });
+        menu.getItems().addAll(miConLam, miDaNghi);
+        return menu;
+    }
+
+    private void updateColumnHeader(TableColumn<NhanVien, String> col, String baseName, String value) {
+        String display = (value == null) ? baseName + " ▼" : baseName + ": " + value + " ▼";
+        Label lbl = (Label) col.getGraphic();
+        if (lbl != null) lbl.setText(display);
     }
 
     /*

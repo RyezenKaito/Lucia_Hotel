@@ -6,6 +6,8 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.Cursor;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -46,6 +48,14 @@ public class DatPhongView extends BorderPane {
 
     private Label lblTotal, lblDaDat, lblChoXacNhan, lblDangO, lblDaTra;
     private TextField txtSearch;
+    private model.utils.DatePicker dpFrom, dpTo;
+    private CheckBox chkFilterDate;
+
+    /* ── Column filter state ────────────────────────────────────────── */
+    private String filterTrangThai = null;
+    private TableColumn<Object[], String> colStatus;
+    private Button btnFilterTT;
+    private ContextMenu menuTrangThai;
 
     private final dao.DatPhongDAO datPhongDAO = new dao.DatPhongDAO();
     private boolean canDelete = false;
@@ -101,7 +111,7 @@ public class DatPhongView extends BorderPane {
         txtSearch.setPrefHeight(40);
         txtSearch.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
                 "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-padding: 8 14 8 14;");
-        txtSearch.textProperty().addListener((obs, o, n) -> applyFilter(n));
+        txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
 
         Region spacer2 = new Region();
         HBox.setHgrow(spacer2, Priority.ALWAYS);
@@ -121,7 +131,41 @@ public class DatPhongView extends BorderPane {
                 buildStatCard("Đã trả phòng", lblDaTra, C_TEXT_MUTED));
 
         row2.getChildren().addAll(txtSearch, spacer2, stats);
-        header.getChildren().addAll(row1, row2);
+
+        // ── Date filter row: Từ ngày – Đến ngày (theo Ngày nhận) ────
+        HBox dateFilterRow = new HBox(10);
+        dateFilterRow.setAlignment(Pos.CENTER_LEFT);
+
+        chkFilterDate = new CheckBox("Lọc theo ngày nhận:");
+        chkFilterDate.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        chkFilterDate.setTextFill(Color.web(C_TEXT_MUTED));
+        chkFilterDate.setOnAction(e -> applyFilter());
+
+        int curYear = java.time.LocalDate.now().getYear();
+
+        Label lblFrom = new Label("Từ:");
+        lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblFrom.setTextFill(Color.web(C_TEXT_MUTED));
+        dpFrom = new model.utils.DatePicker(curYear - 5, curYear + 2);
+        dpFrom.setValue(java.time.LocalDate.now().withDayOfMonth(1));
+        dpFrom.setPromptText("Từ ngày");
+        dpFrom.setPrefHeight(40);
+        dpFrom.setMaxWidth(200);
+        dpFrom.valueProperty().addListener((obs2, o2, n2) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+
+        Label lblTo = new Label("Đến:");
+        lblTo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblTo.setTextFill(Color.web(C_TEXT_MUTED));
+        dpTo = new model.utils.DatePicker(curYear - 5, curYear + 2);
+        dpTo.setValue(java.time.LocalDate.now());
+        dpTo.setPromptText("Đến ngày");
+        dpTo.setPrefHeight(40);
+        dpTo.setMaxWidth(200);
+        dpTo.valueProperty().addListener((obs2, o2, n2) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+
+        dateFilterRow.getChildren().addAll(chkFilterDate, lblFrom, dpFrom, lblTo, dpTo);
+
+        header.getChildren().addAll(row1, row2, dateFilterRow);
         return header;
     }
 
@@ -148,9 +192,11 @@ public class DatPhongView extends BorderPane {
     @SuppressWarnings("unchecked")
     private VBox buildTable() {
         table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setFixedCellSize(42);
         table.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
-                "; -fx-border-radius: 10; -fx-background-radius: 10;");
+                "; -fx-border-radius: 10; -fx-background-radius: 10;" +
+                " -fx-table-cell-border-color: " + C_BORDER + ";");
 
         table.setRowFactory(tv -> {
             TableRow<Object[]> row = new TableRow<>();
@@ -240,10 +286,11 @@ public class DatPhongView extends BorderPane {
         colCoc.setStyle("-fx-alignment: CENTER-RIGHT;");
 
         // Trạng thái Badge
-        TableColumn<Object[], String> colStatus = new TableColumn<>("Trạng thái");
+        colStatus = new TableColumn<>();
         colStatus.setReorderable(false);
+        colStatus.setSortable(false);
         colStatus.setCellValueFactory(cd -> new SimpleStringProperty((String) cd.getValue()[8]));
-        colStatus.setMinWidth(140);
+        colStatus.setMinWidth(160);
         colStatus.setStyle("-fx-alignment: CENTER;");
         colStatus.setCellFactory(c -> new TableCell<>() {
             @Override
@@ -301,6 +348,9 @@ public class DatPhongView extends BorderPane {
 
         table.getColumns().addAll(colSTT, colMaDat, colTenKH, colSDT, colPhong, colIn, colOut, colNguoi, colCoc,
                 colStatus);
+
+        // Install dropdown filter on Trạng thái column
+        installColumnFilter();
 
         table.getSortOrder().add(colMaDat);
         colMaDat.setSortType(TableColumn.SortType.ASCENDING);
@@ -409,18 +459,79 @@ public class DatPhongView extends BorderPane {
         table.sort();
     }
 
-    private void applyFilter(String keyword) {
+    private void applyFilter() {
         if (filteredData == null)
             return;
-        if (keyword == null || keyword.isBlank()) {
-            filteredData.setPredicate(p -> true);
-        } else {
-            String lower = keyword.toLowerCase();
-            filteredData.setPredicate(row -> ((String) row[0]).toLowerCase().contains(lower) ||
-                    ((String) row[1]).toLowerCase().contains(lower) ||
-                    ((String) row[2]).toLowerCase().contains(lower) ||
-                    ((String) row[3]).toLowerCase().contains(lower));
+        String kw = txtSearch != null && txtSearch.getText() != null
+                ? txtSearch.getText().toLowerCase().trim() : "";
+        boolean filterByDate = chkFilterDate != null && chkFilterDate.isSelected();
+        java.time.LocalDate fromDate = dpFrom != null ? dpFrom.getValue() : null;
+        java.time.LocalDate toDate = dpTo != null ? dpTo.getValue() : null;
+
+        filteredData.setPredicate(row -> {
+            // Date filter (Ngày nhận - index 4)
+            if (filterByDate) {
+                String checkInStr = (String) row[4];
+                if (checkInStr != null && !"—".equals(checkInStr)) {
+                    try {
+                        java.time.LocalDate checkInDate = java.time.LocalDateTime.parse(checkInStr, FMT).toLocalDate();
+                        if (fromDate != null && checkInDate.isBefore(fromDate)) return false;
+                        if (toDate != null && checkInDate.isAfter(toDate)) return false;
+                    } catch (Exception ignored) {}
+                }
+            }
+            // Trạng thái filter
+            if (filterTrangThai != null) {
+                String tt = (String) row[8];
+                if ("DA_HUY".equals(filterTrangThai)) {
+                    // "Đã hủy" bao gồm cả DA_HUY, HUY_HOAN_COC, HUY_MAT_COC
+                    if (tt == null || (!"DA_HUY".equals(tt) && !"HUY_HOAN_COC".equals(tt) && !"HUY_MAT_COC".equals(tt)))
+                        return false;
+                } else {
+                    if (tt == null || !tt.equals(filterTrangThai)) return false;
+                }
+            }
+            // Text filter
+            if (!kw.isEmpty()) {
+                return ((String) row[0]).toLowerCase().contains(kw) ||
+                       ((String) row[1]).toLowerCase().contains(kw) ||
+                       ((String) row[2]).toLowerCase().contains(kw) ||
+                       ((String) row[3]).toLowerCase().contains(kw);
+            }
+            return true;
+        });
+    }
+
+    /* ── Column-header filter helpers ──────────────────────────────── */
+    private void installColumnFilter() {
+        String baseName = "Trạng thái";
+        menuTrangThai = new ContextMenu();
+
+        MenuItem all = new MenuItem("Tất cả trạng thái");
+        all.setOnAction(e -> { filterTrangThai = null; btnFilterTT.setText(baseName + " ▼"); applyFilter(); });
+        menuTrangThai.getItems().add(all);
+        menuTrangThai.getItems().add(new SeparatorMenuItem());
+
+        String[][] statuses = {
+            {"DA_XACNHAN", "Đã xác nhận"},
+            {"DA_CHECKIN", "Đã nhận phòng"},
+            {"DA_CHECKOUT", "Đã trả phòng"},
+            {"DA_HUY", "Đã hủy"}
+        };
+        for (String[] st : statuses) {
+            MenuItem mi = new MenuItem(st[1]);
+            mi.setOnAction(e -> { filterTrangThai = st[0]; btnFilterTT.setText(st[1] + " ▼"); applyFilter(); });
+            menuTrangThai.getItems().add(mi);
         }
+
+        btnFilterTT = new Button(baseName + " ▼");
+        btnFilterTT.setStyle("-fx-font-size: 12px; -fx-background-color: transparent;"
+                + " -fx-padding: 4 8; -fx-cursor: hand;");
+        btnFilterTT.setMaxWidth(Double.MAX_VALUE);
+        btnFilterTT.setOnAction(e -> menuTrangThai.show(btnFilterTT, Side.BOTTOM, 0, 0));
+
+        colStatus.setGraphic(btnFilterTT);
+        colStatus.setText("");
     }
 
     /* ── ACTIONS ────────────────────────────────────────────────────── */

@@ -77,6 +77,7 @@ public class CheckOutView extends BorderPane {
     private List<Object[]> currentRoomList;
     private double currentTienPhong = 0, currentTienDV = 0, currentTienCoc = 0,
                    currentLateFee   = 0, currentTongTien = 0;
+    private double minLateFee       = 0; // phí trả muộn tối thiểu (tính tự động)
     private long   currentSoDem      = 0;
     private boolean isLateCheckout   = false;
     private boolean isModeDon        = true;    // mặc định: theo đơn đặt
@@ -827,7 +828,7 @@ public class CheckOutView extends BorderPane {
             else if (hour >= 12) lateFeeRate = 0.3;
         }
 
-        currentTienPhong = 0; currentTienCoc = 0; currentLateFee = 0;
+        currentTienPhong = 0; currentTienCoc = 0; currentLateFee = 0; minLateFee = 0;
         for (Object[] room : currentRoomList) {
             double giaCoc   = (double) room[2];
             double giaPhong = (double) room[3];
@@ -835,6 +836,7 @@ public class CheckOutView extends BorderPane {
             currentTienCoc   += giaCoc;
             currentLateFee   += giaPhong * lateFeeRate;
         }
+        minLateFee = currentLateFee; // lưu mức tối thiểu
         double base = currentTienPhong + currentLateFee + currentTienDV;
         currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
     }
@@ -917,12 +919,28 @@ public class CheckOutView extends BorderPane {
                 return null;
             }));
             txtLateFee.textProperty().addListener((obs, o, n) -> {
-                try { currentLateFee = n.isEmpty() ? 0 : Double.parseDouble(n); recalcTotal(); }
-                catch (NumberFormatException ignored) {}
+                try {
+                    double val = n.isEmpty() ? 0 : Double.parseDouble(n);
+                    currentLateFee = val;
+                    recalcTotal();
+                } catch (NumberFormatException ignored) {}
+            });
+            // Khi rời khỏi ô nhập, kiểm tra >= mức tối thiểu
+            txtLateFee.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                if (!isFocused) {
+                    if (currentLateFee < minLateFee) {
+                        currentLateFee = minLateFee;
+                        txtLateFee.setText(String.format("%.0f", minLateFee));
+                        recalcTotal();
+                    }
+                }
             });
             Label lblD = new Label("đ");
             lblD.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-            row.getChildren().addAll(lblLF, sp, txtLateFee, lblD);
+            Label lblMin = new Label(String.format("(tối thiểu %,.0f)", minLateFee));
+            lblMin.setFont(Font.font("Segoe UI", 11));
+            lblMin.setTextFill(Color.web("#ef4444"));
+            row.getChildren().addAll(lblLF, lblMin, sp, txtLateFee, lblD);
         } else {
             Label val = new Label(String.format("%,.0f đ", currentLateFee));
             val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
@@ -959,6 +977,17 @@ public class CheckOutView extends BorderPane {
     // ============================================================
     private void handleCheckOut() {
         if (currentDatPhong == null || currentRoomList == null) return;
+
+        // Kiểm tra phí trả muộn >= mức tối thiểu
+        if (isLateCheckout && currentLateFee < minLateFee) {
+            currentLateFee = minLateFee;
+            if (txtLateFee != null) txtLateFee.setText(String.format("%.0f", minLateFee));
+            recalcTotal();
+            new Alert(Alert.AlertType.WARNING, 
+                String.format("Phụ phí trả muộn không được thấp hơn mức tối thiểu (%,.0f đ).\nĐã tự động điều chỉnh lại.", minLateFee),
+                ButtonType.OK).showAndWait();
+            return;
+        }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận thanh toán");
         confirm.setHeaderText("Checkout " + currentRoomList.size()
@@ -1041,7 +1070,7 @@ public class CheckOutView extends BorderPane {
         currentRoomList = null;
         selectedItem = null;
         currentTienPhong = 0; currentTienDV = 0; currentTienCoc = 0;
-        currentLateFee   = 0; currentTongTien = 0;
+        currentLateFee   = 0; minLateFee = 0; currentTongTien = 0;
         currentSoDem     = 0;
 
         if (btnConfirm != null) {

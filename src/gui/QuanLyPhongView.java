@@ -11,6 +11,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
@@ -48,7 +49,12 @@ public class QuanLyPhongView extends BorderPane {
     /* ── Controls ───────────────────────────────────────────────────── */
     private TableView<Phong> table;
     private TextField txtSearch;
-    private ComboBox<String> cboLoaiPhong, cboTrangThai, cboTang;
+
+    /* ── Column filter state ────────────────────────────────────────── */
+    private String filterLoaiPhong = null;   // null = tất cả
+    private String filterTrangThai = null;
+    private Integer filterTang = null;
+    private TableColumn<Phong, String> colLoai, colTrangThai, colTang;
 
     /* ── PHÂN QUYỀN ────────────────────────────────────────────── */
     private final boolean isAdmin;
@@ -107,46 +113,7 @@ public class QuanLyPhongView extends BorderPane {
                         "-fx-padding: 0 16 0 16;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter(n));
 
-        /* ── Dòng 3: ComboBox filters ─────────────────────────────── */
-        String comboStyle = "-fx-background-color: white; -fx-border-color: " + C_BORDER
-                + "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 4 8; -fx-font-size: 13px;";
-
-        Label lblFilter = new Label("Lọc:");
-        lblFilter.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        lblFilter.setTextFill(Color.web(C_TEXT_GRAY));
-
-        cboLoaiPhong = new ComboBox<>();
-        cboLoaiPhong.getItems().add("Tất cả loại phòng");
-        for (model.enums.TenLoaiPhong tlp : model.enums.TenLoaiPhong.values()) {
-            cboLoaiPhong.getItems().add(tlp.getDisplayName());
-        }
-        cboLoaiPhong.setValue("Tất cả loại phòng");
-        cboLoaiPhong.setPrefHeight(38);
-        cboLoaiPhong.setStyle(comboStyle);
-        cboLoaiPhong.setOnAction(e -> applyFilter(txtSearch.getText()));
-
-        cboTrangThai = new ComboBox<>();
-        cboTrangThai.getItems().add("Tất cả trạng thái");
-        for (TrangThaiPhong tt : TrangThaiPhong.values()) {
-            cboTrangThai.getItems().add(tt.getLabel());
-        }
-        cboTrangThai.setValue("Tất cả trạng thái");
-        cboTrangThai.setPrefHeight(38);
-        cboTrangThai.setStyle(comboStyle);
-        cboTrangThai.setOnAction(e -> applyFilter(txtSearch.getText()));
-
-        cboTang = new ComboBox<>();
-        cboTang.getItems().add("Tất cả tầng");
-        cboTang.setValue("Tất cả tầng");
-        cboTang.setPrefHeight(38);
-        cboTang.setStyle(comboStyle);
-        cboTang.setOnAction(e -> applyFilter(txtSearch.getText()));
-
-        HBox filterRow = new HBox(12);
-        filterRow.setAlignment(Pos.CENTER_LEFT);
-        filterRow.getChildren().addAll(lblFilter, cboLoaiPhong, cboTrangThai, cboTang);
-
-        header.getChildren().addAll(titleRow, txtSearch, filterRow);
+        header.getChildren().addAll(titleRow, txtSearch);
         return header;
     }
 
@@ -181,12 +148,13 @@ public class QuanLyPhongView extends BorderPane {
         colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaPhong())));
 
-        // Cột Loại phòng
-        TableColumn<Phong, String> colLoai = new TableColumn<>("Loại phòng");
+        // Cột Loại phòng (có bộ lọc trong header)
+        colLoai = new TableColumn<>("Loại phòng ▼");
         colLoai.setMinWidth(150);
         colLoai.setStyle("-fx-alignment: CENTER;");
         colLoai.setCellValueFactory(p -> new SimpleStringProperty(
                 p.getValue().getLoaiPhong() != null ? p.getValue().getLoaiPhong().toString() : ""));
+        installColumnFilter(colLoai, "Loại phòng", buildLoaiPhongMenu());
 
         // Cột Đơn giá
         TableColumn<Phong, String> colGia = new TableColumn<>("Đơn giá");
@@ -210,8 +178,8 @@ public class QuanLyPhongView extends BorderPane {
             return new SimpleStringProperty("");
         });
 
-        // Cột Trạng thái
-        TableColumn<Phong, String> colTrangThai = new TableColumn<>("Trạng thái");
+        // Cột Trạng thái (có bộ lọc trong header)
+        colTrangThai = new TableColumn<>("Trạng thái ▼");
         colTrangThai.setMinWidth(150);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(p -> {
@@ -269,9 +237,10 @@ public class QuanLyPhongView extends BorderPane {
                 }
             }
         });
+        installColumnFilter(colTrangThai, "Trạng thái", buildTrangThaiMenu());
 
-        // Cột Tầng
-        TableColumn<Phong, String> colTang = new TableColumn<>("Tầng");
+        // Cột Tầng (có bộ lọc trong header)
+        colTang = new TableColumn<>("Tầng ▼");
         colTang.setMinWidth(80);
         colTang.setStyle("-fx-alignment: CENTER;");
         colTang.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getSoTang())));
@@ -354,28 +323,103 @@ public class QuanLyPhongView extends BorderPane {
             filteredData = new FilteredList<>(masterData, p -> true);
             table.setItems(filteredData);
 
-            // Populate floor ComboBox dynamically
-            if (cboTang != null) {
-                String current = cboTang.getValue();
-                cboTang.getItems().clear();
-                cboTang.getItems().add("Tất cả tầng");
-                ds.stream().map(Phong::getSoTang).distinct().sorted()
-                        .forEach(t -> cboTang.getItems().add("Tầng " + t));
-                cboTang.setValue(current != null && cboTang.getItems().contains(current) ? current : "Tất cả tầng");
+            // Rebuild Tầng menu dynamically after data load
+            if (colTang != null) {
+                installColumnFilter(colTang, "Tầng", buildTangMenu());
             }
+
+            applyFilter(txtSearch != null ? txtSearch.getText() : "");
         } catch (Exception ex) {
             // Không làm gì nếu lỗi db
         }
+    }
+
+    /* ── Column-header filter helpers ──────────────────────────────── */
+
+    /**
+     * Gắn ContextMenu vào header của cột. Click vào header sẽ mở menu lọc.
+     */
+    private void installColumnFilter(TableColumn<Phong, String> col, String baseName, ContextMenu menu) {
+        // Tìm Label trong header và gắn sự kiện click
+        col.setContextMenu(null); // clear old
+        // Sử dụng graphic label cho header để bắt sự kiện click
+        Label headerLabel = new Label(col.getText());
+        headerLabel.setMaxWidth(Double.MAX_VALUE);
+        headerLabel.setAlignment(Pos.CENTER);
+        headerLabel.setCursor(Cursor.HAND);
+        headerLabel.setStyle("-fx-font-size: 13px;");
+        headerLabel.setOnMouseClicked(e -> {
+            if (e.getButton() == MouseButton.PRIMARY) {
+                menu.show(headerLabel, Side.BOTTOM, 0, 0);
+            }
+        });
+        col.setGraphic(headerLabel);
+        col.setText("");
+    }
+
+    private ContextMenu buildLoaiPhongMenu() {
+        ContextMenu menu = new ContextMenu();
+        MenuItem all = new MenuItem("Tất cả loại phòng");
+        all.setOnAction(e -> { filterLoaiPhong = null; updateColumnHeader(colLoai, "Loại phòng", null); applyFilter(txtSearch.getText()); });
+        menu.getItems().add(all);
+        menu.getItems().add(new SeparatorMenuItem());
+        for (model.enums.TenLoaiPhong tlp : model.enums.TenLoaiPhong.values()) {
+            MenuItem mi = new MenuItem(tlp.getDisplayName());
+            mi.setOnAction(e -> { filterLoaiPhong = tlp.getDisplayName(); updateColumnHeader(colLoai, "Loại phòng", tlp.getDisplayName()); applyFilter(txtSearch.getText()); });
+            menu.getItems().add(mi);
+        }
+        return menu;
+    }
+
+    private ContextMenu buildTrangThaiMenu() {
+        ContextMenu menu = new ContextMenu();
+        MenuItem all = new MenuItem("Tất cả trạng thái");
+        all.setOnAction(e -> { filterTrangThai = null; updateColumnHeader(colTrangThai, "Trạng thái", null); applyFilter(txtSearch.getText()); });
+        menu.getItems().add(all);
+        menu.getItems().add(new SeparatorMenuItem());
+        for (TrangThaiPhong tt : TrangThaiPhong.values()) {
+            MenuItem mi = new MenuItem(tt.getLabel());
+            mi.setOnAction(e -> { filterTrangThai = tt.getLabel(); updateColumnHeader(colTrangThai, "Trạng thái", tt.getLabel()); applyFilter(txtSearch.getText()); });
+            menu.getItems().add(mi);
+        }
+        return menu;
+    }
+
+    private ContextMenu buildTangMenu() {
+        ContextMenu menu = new ContextMenu();
+        MenuItem all = new MenuItem("Tất cả tầng");
+        all.setOnAction(e -> { filterTang = null; updateColumnHeader(colTang, "Tầng", null); applyFilter(txtSearch.getText()); });
+        menu.getItems().add(all);
+        menu.getItems().add(new SeparatorMenuItem());
+        masterData.stream().map(Phong::getSoTang).distinct().sorted().forEach(t -> {
+            MenuItem mi = new MenuItem("Tầng " + t);
+            mi.setOnAction(e -> { filterTang = t; updateColumnHeader(colTang, "Tầng", String.valueOf(t)); applyFilter(txtSearch.getText()); });
+            menu.getItems().add(mi);
+        });
+        return menu;
+    }
+
+    /**
+     * Cập nhật text hiển thị trên header cột.
+     * Nếu value == null → hiển thị tên gốc (tất cả). Ngược lại → "Tên: giá trị".
+     */
+    private void updateColumnHeader(TableColumn<Phong, String> col, String baseName, String value) {
+        String display;
+        if (value == null) {
+            display = baseName + " ▼";
+        } else if ("Tầng".equals(baseName)) {
+            display = "Tầng " + value + " ▼";
+        } else {
+            display = baseName + ": " + value + " ▼";
+        }
+        Label lbl = (Label) col.getGraphic();
+        if (lbl != null) lbl.setText(display);
     }
 
     private void applyFilter(String keyword) {
         if (filteredData == null)
             return;
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
-
-        String selectedLoai = cboLoaiPhong != null ? cboLoaiPhong.getValue() : null;
-        String selectedTT = cboTrangThai != null ? cboTrangThai.getValue() : null;
-        String selectedTang = cboTang != null ? cboTang.getValue() : null;
 
         filteredData.setPredicate(p -> {
             // Text filter
@@ -385,25 +429,21 @@ public class QuanLyPhongView extends BorderPane {
                     return false;
             }
             // Room type filter
-            if (selectedLoai != null && !"Tất cả loại phòng".equals(selectedLoai)) {
+            if (filterLoaiPhong != null) {
                 String loaiStr = p.getLoaiPhong() != null ? p.getLoaiPhong().toString() : "";
-                if (!loaiStr.equals(selectedLoai))
+                if (!loaiStr.equals(filterLoaiPhong))
                     return false;
             }
             // Status filter
-            if (selectedTT != null && !"Tất cả trạng thái".equals(selectedTT)) {
+            if (filterTrangThai != null) {
                 String ttStr = p.getTrangThai() != null ? p.getTrangThai().getLabel() : "";
-                if (!ttStr.equals(selectedTT))
+                if (!ttStr.equals(filterTrangThai))
                     return false;
             }
             // Floor filter
-            if (selectedTang != null && !"Tất cả tầng".equals(selectedTang)) {
-                try {
-                    int tang = Integer.parseInt(selectedTang.replace("Tầng ", ""));
-                    if (p.getSoTang() != tang)
-                        return false;
-                } catch (NumberFormatException ignored) {
-                }
+            if (filterTang != null) {
+                if (p.getSoTang() != filterTang)
+                    return false;
             }
             return true;
         });
