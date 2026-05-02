@@ -500,6 +500,25 @@ public class DatPhongView extends BorderPane {
             }
             return true;
         });
+
+        // Cập nhật lại số lượng theo danh sách đã lọc
+        long cntDaDat = 0, cntDangO = 0, cntDaTra = 0, cntChoXacNhan = 0;
+        for (Object[] row : filteredData) {
+            String tt = (String) row[8];
+            if (tt != null) {
+                switch (tt) {
+                    case "DA_CHECKIN" -> cntDangO++;
+                    case "DA_CHECKOUT" -> cntDaTra++;
+                    case "DA_XACNHAN" -> cntDaDat++;
+                    case "CHO_XACNHAN" -> cntChoXacNhan++;
+                }
+            }
+        }
+        if (lblTotal != null) lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
+        if (lblDaDat != null) lblDaDat.setText(String.valueOf(cntDaDat));
+        if (lblChoXacNhan != null) lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
+        if (lblDangO != null) lblDangO.setText(String.valueOf(cntDangO));
+        if (lblDaTra != null) lblDaTra.setText(String.valueOf(cntDaTra));
     }
 
     /* ── Column-header filter helpers ──────────────────────────────── */

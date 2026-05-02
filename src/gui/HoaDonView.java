@@ -607,6 +607,13 @@ public class HoaDonView extends BorderPane {
             }
             return true;
         });
+
+        // Cập nhật lại tổng doanh thu và tổng số hóa đơn theo danh sách đã lọc
+        double tongDoanhThu = filteredData.stream()
+                .mapToDouble(RevenueCalculator::calculateActualRevenue)
+                .sum();
+        lblTongDoanhThu.setText(String.format("%,.0f đ", tongDoanhThu));
+        lblSoHoaDon.setText(String.valueOf(filteredData.size()));
     }
 
 
