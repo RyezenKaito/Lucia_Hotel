@@ -76,9 +76,10 @@ public class CheckOutView extends BorderPane {
     private DatPhong      currentDatPhong;
     private List<Object[]> currentRoomList;
     private double currentTienPhong = 0, currentTienDV = 0, currentTienCoc = 0,
-                   currentLateFee   = 0, currentTongTien = 0;
+                   currentLateFee   = 0, currentPhuThu = 0, currentTongTien = 0;
     private double minLateFee       = 0; // phí trả muộn tối thiểu (tính tự động)
     private long   currentSoDem      = 0;
+    private long   currentSoNgayTre  = 0;
     private boolean isLateCheckout   = false;
     private boolean isModeDon        = true;    // mặc định: theo đơn đặt
     private NhanVien staff;
@@ -816,16 +817,28 @@ public class CheckOutView extends BorderPane {
     private void calculateBilling() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime checkIn = currentDatPhong.getNgayCheckIn();
-        currentSoDem = checkIn != null ? Math.max(1, Duration.between(checkIn, now).toDays()) : 1;
+        LocalDateTime plannedOut = currentDatPhong.getNgayCheckOut();
+        if (plannedOut == null) plannedOut = now;
 
-        double lateFeeRate = 0;
+        // 1. Tiền phòng tính theo THỜI GIAN THỰC TẾ đã ở
+        long actualMins = Duration.between(checkIn, now).toMinutes();
+        currentSoDem = (actualMins + 1439) / 1440; // Làm tròn lên đêm
+        if (currentSoDem < 1) currentSoDem = 1;
+
+        // 2. Phụ phí tính theo SỐ NGÀY TRỄ so với dự kiến (Tiền phạt)
+        currentSoNgayTre = 0;
         isLateCheckout = false;
-        if (currentDatPhong.getNgayCheckOut() != null && now.isAfter(currentDatPhong.getNgayCheckOut())) {
-            isLateCheckout = true;
-            int hour = now.getHour();
-            if (hour >= 18) lateFeeRate = 1;
-            else if (hour >= 15) lateFeeRate = 0.5;
-            else if (hour >= 12) lateFeeRate = 0.3;
+        if (now.isAfter(plannedOut)) {
+            Duration d = Duration.between(plannedOut, now);
+            currentSoNgayTre = d.toDays(); // Tính theo số ngày trọn vẹn trễ
+            
+            // Nếu trễ hơn 15 phút thì mới bắt đầu tính trễ (grace period)
+            // Hoặc nếu bạn muốn trễ 1 phút tính 1 ngày thì dùng ceil. 
+            // Ở đây tôi dùng toDays() để ra con số 10 ngày như bạn mong đợi.
+            if (d.toMinutes() > 0) {
+                isLateCheckout = true;
+                if (currentSoNgayTre == 0) currentSoNgayTre = 1; // Trễ dưới 1 ngày tính 1 ngày
+            }
         }
 
         currentTienPhong = 0; currentTienCoc = 0; currentLateFee = 0; minLateFee = 0;
@@ -834,10 +847,10 @@ public class CheckOutView extends BorderPane {
             double giaPhong = (double) room[3];
             currentTienPhong += giaPhong * currentSoDem;
             currentTienCoc   += giaCoc;
-            currentLateFee   += giaPhong * lateFeeRate;
+            currentLateFee   += giaPhong * currentSoNgayTre;
         }
-        minLateFee = currentLateFee; // lưu mức tối thiểu
-        double base = currentTienPhong + currentLateFee + currentTienDV;
+        minLateFee = currentLateFee; 
+        double base = currentTienPhong + currentLateFee + currentTienDV + currentPhuThu;
         currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
     }
 
@@ -858,8 +871,11 @@ public class CheckOutView extends BorderPane {
         rows.getChildren().add(billRow(tienPhongLbl, String.format("%,.0f đ", currentTienPhong), Color.web(C_TEXT_DARK)));
         rows.getChildren().add(billRow("Tiền dịch vụ",  String.format("%,.0f đ", currentTienDV),  Color.web(C_TEXT_DARK)));
 
-        // Phụ phí trả muộn (editable nếu trễ)
+        // Phụ phí trả muộn (không cho sửa)
         rows.getChildren().add(buildLateFeeRow());
+
+        // Phí phụ thu (cho nhập tay)
+        rows.getChildren().add(buildPhuThuRow());
 
         rows.getChildren().add(billRow("Tiền cọc (đã khấu trừ)", String.format("%,.0f đ", -currentTienCoc), Color.web(C_GREEN)));
 
@@ -897,56 +913,53 @@ public class CheckOutView extends BorderPane {
     private HBox buildLateFeeRow() {
         HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
-        Label lblLF = new Label("Phụ phí trả muộn");
+        String label = "Phụ phí trả muộn";
+        if (isLateCheckout) label += " (trễ " + currentSoNgayTre + " ngày)";
+        Label lblLF = new Label(label);
         lblLF.setTextFill(Color.web(C_TEXT_GRAY));
         lblLF.setFont(Font.font("Segoe UI", 13));
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 
-        if (isLateCheckout) {
-            txtLateFee = new TextField(String.format("%.0f", currentLateFee));
-            txtLateFee.setPrefWidth(120);
-            txtLateFee.setStyle(
-                "-fx-alignment:CENTER-RIGHT;" +
-                "-fx-font-weight:bold;" +
-                "-fx-border-color:" + C_BORDER + ";" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-padding:4 8;"
-            );
-            txtLateFee.setTextFormatter(new TextFormatter<>(change -> {
-                String t = change.getControlNewText();
-                if (t.isEmpty() || t.matches("[0-9]+")) return change;
-                return null;
-            }));
-            txtLateFee.textProperty().addListener((obs, o, n) -> {
-                try {
-                    double val = n.isEmpty() ? 0 : Double.parseDouble(n);
-                    currentLateFee = val;
-                    recalcTotal();
-                } catch (NumberFormatException ignored) {}
-            });
-            // Khi rời khỏi ô nhập, kiểm tra >= mức tối thiểu
-            txtLateFee.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                if (!isFocused) {
-                    if (currentLateFee < minLateFee) {
-                        currentLateFee = minLateFee;
-                        txtLateFee.setText(String.format("%.0f", minLateFee));
-                        recalcTotal();
-                    }
-                }
-            });
-            Label lblD = new Label("đ");
-            lblD.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-            Label lblMin = new Label(String.format("(tối thiểu %,.0f)", minLateFee));
-            lblMin.setFont(Font.font("Segoe UI", 11));
-            lblMin.setTextFill(Color.web("#ef4444"));
-            row.getChildren().addAll(lblLF, lblMin, sp, txtLateFee, lblD);
-        } else {
-            Label val = new Label(String.format("%,.0f đ", currentLateFee));
-            val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-            val.setTextFill(Color.web(C_TEXT_DARK));
-            row.getChildren().addAll(lblLF, sp, val);
-        }
+        Label val = new Label(String.format("%,.0f đ", currentLateFee));
+        val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        val.setTextFill(isLateCheckout ? Color.web("#ef4444") : Color.web(C_TEXT_DARK));
+        row.getChildren().addAll(lblLF, sp, val);
+        return row;
+    }
+
+    private HBox buildPhuThuRow() {
+        HBox row = new HBox(8);
+        row.setAlignment(Pos.CENTER_LEFT);
+        Label lbl = new Label("Phí phụ thu");
+        lbl.setTextFill(Color.web(C_TEXT_GRAY));
+        lbl.setFont(Font.font("Segoe UI", 13));
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+
+        TextField txt = new TextField(String.format("%.0f", currentPhuThu));
+        txt.setPrefWidth(120);
+        txt.setStyle(
+            "-fx-alignment:CENTER-RIGHT;" +
+            "-fx-font-weight:bold;" +
+            "-fx-border-color:" + C_BORDER + ";" +
+            "-fx-border-radius:6;" +
+            "-fx-background-radius:6;" +
+            "-fx-padding:4 8;"
+        );
+        txt.setTextFormatter(new TextFormatter<>(change -> {
+            String t = change.getControlNewText();
+            if (t.isEmpty() || t.matches("[0-9]+")) return change;
+            return null;
+        }));
+        txt.textProperty().addListener((obs, o, n) -> {
+            try {
+                currentPhuThu = n.isEmpty() ? 0 : Double.parseDouble(n);
+                recalcTotal();
+            } catch (NumberFormatException ignored) {}
+        });
+        Label lblD = new Label("đ");
+        lblD.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+
+        row.getChildren().addAll(lbl, sp, txt, lblD);
         return row;
     }
 
@@ -966,9 +979,9 @@ public class CheckOutView extends BorderPane {
     }
 
     private void recalcTotal() {
-        double base = currentTienPhong + currentLateFee + currentTienDV;
+        double base = currentTienPhong + currentLateFee + currentTienDV + currentPhuThu;
         currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
-        if (lblVAT      != null) lblVAT     .setText(String.format("%,.0f đ", (currentTienPhong + currentLateFee + currentTienDV) * VAT_RATE));
+        if (lblVAT      != null) lblVAT     .setText(String.format("%,.0f đ", (currentTienPhong + currentLateFee + currentTienDV + currentPhuThu) * VAT_RATE));
         if (lblTongTien != null) lblTongTien.setText(String.format("%,.0f đ", currentTongTien));
     }
 
@@ -978,16 +991,7 @@ public class CheckOutView extends BorderPane {
     private void handleCheckOut() {
         if (currentDatPhong == null || currentRoomList == null) return;
 
-        // Kiểm tra phí trả muộn >= mức tối thiểu
-        if (isLateCheckout && currentLateFee < minLateFee) {
-            currentLateFee = minLateFee;
-            if (txtLateFee != null) txtLateFee.setText(String.format("%.0f", minLateFee));
-            recalcTotal();
-            new Alert(Alert.AlertType.WARNING, 
-                String.format("Phụ phí trả muộn không được thấp hơn mức tối thiểu (%,.0f đ).\nĐã tự động điều chỉnh lại.", minLateFee),
-                ButtonType.OK).showAndWait();
-            return;
-        }
+        // Logic kiểm tra phí trả muộn cũ đã bỏ
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận thanh toán");
         confirm.setHeaderText("Checkout " + currentRoomList.size()
@@ -1043,11 +1047,11 @@ public class CheckOutView extends BorderPane {
             double sumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
-            hd.setTienPhong(sumPhong);
-            hd.setTienDV(tienDV);
+            hd.setTienPhong(sumPhong + currentLateFee);
+            hd.setTienDV(tienDV + currentPhuThu);
             hd.setThueVAT(VAT_RATE);
             hd.setNgayTaoHD(now);
-            double newTong = Math.max(0, (sumPhong + tienDV) * (1 + VAT_RATE) - hd.getTienCoc());
+            double newTong = Math.max(0, (hd.getTienPhong() + hd.getTienDV()) * (1 + VAT_RATE) - hd.getTienCoc());
             hd.setTongTien(newTong);
             if (datPhongDAO.isAllRoomsCheckedOut(currentDatPhong.getMaDat())) {
                 datPhongDAO.updateTrangThai(currentDatPhong.getMaDat(), "DA_CHECKOUT");
@@ -1070,8 +1074,9 @@ public class CheckOutView extends BorderPane {
         currentRoomList = null;
         selectedItem = null;
         currentTienPhong = 0; currentTienDV = 0; currentTienCoc = 0;
-        currentLateFee   = 0; minLateFee = 0; currentTongTien = 0;
+        currentLateFee   = 0; currentPhuThu = 0; minLateFee = 0; currentTongTien = 0;
         currentSoDem     = 0;
+        currentSoNgayTre = 0;
 
         if (btnConfirm != null) {
             btnConfirm.setVisible(false);

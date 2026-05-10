@@ -326,6 +326,9 @@ public class QuanLyPhongView extends BorderPane {
             // Rebuild Tầng menu dynamically after data load
             if (colTang != null) {
                 installColumnFilter(colTang, "Tầng", buildTangMenu());
+                if (filterTang != null) {
+                    updateColumnHeader(colTang, "Tầng", String.valueOf(filterTang));
+                }
             }
 
             applyFilter(txtSearch != null ? txtSearch.getText() : "");
@@ -343,7 +346,7 @@ public class QuanLyPhongView extends BorderPane {
         // Tìm Label trong header và gắn sự kiện click
         col.setContextMenu(null); // clear old
         // Sử dụng graphic label cho header để bắt sự kiện click
-        Label headerLabel = new Label(col.getText());
+        Label headerLabel = new Label(baseName + " ▼");
         headerLabel.setMaxWidth(Double.MAX_VALUE);
         headerLabel.setAlignment(Pos.CENTER);
         headerLabel.setCursor(Cursor.HAND);
