@@ -1,7 +1,9 @@
 package gui;
 
 import dao.DichVuDAO;
+import dao.LoaiDichVuDAO;
 import model.entities.DichVu;
+import model.entities.LoaiDichVu;
 import model.utils.ValidationUtils;
 import model.utils.EventUtils;
 import model.utils.DimOverlay;
@@ -21,6 +23,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 import java.util.Random;
+import java.util.List;
 
 /**
  * ThemSuaDichVuDialog – JavaFX
@@ -43,7 +46,8 @@ public class ThemSuaDichVuDialog extends Stage {
     private final boolean isEdit;
 
     private TextField txtMaDV, txtTenDV, txtDonVi;
-    private ComboBox<String> cbLoai, cbTrangThai;
+    private ComboBox<LoaiDichVu> cbLoai;
+    private ComboBox<String> cbTrangThai;
     private Label errTen, errDonVi;
     private Button btnSave;
 
@@ -155,16 +159,27 @@ public class ThemSuaDichVuDialog extends Stage {
 
         // 3. Loại dịch vụ
         cbLoai = new ComboBox<>(FXCollections.observableArrayList());
-        for (model.enums.LoaiDichVu l : model.enums.LoaiDichVu.values()) {
-            cbLoai.getItems().add(l.getDisplayName());
-        }
+        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
+        List<LoaiDichVu> listLoai = ldvDAO.getAll();
+        cbLoai.getItems().addAll(listLoai);
         if (isEdit) {
-            cbLoai.setValue(model.enums.LoaiDichVu.fromDbKey(dichVu.getLoaiDV()).getDisplayName());
-        } else {
-            cbLoai.setValue(model.enums.LoaiDichVu.THUC_PHAM.getDisplayName());
+            for (LoaiDichVu l : listLoai) {
+                if (l.getMaLoaiDV().equals(dichVu.getLoaiDV())) {
+                    cbLoai.setValue(l);
+                    break;
+                }
+            }
+        } else if (!listLoai.isEmpty()) {
+            cbLoai.setValue(listLoai.get(0));
         }
         cbLoai.setMaxWidth(Double.MAX_VALUE);
         cbLoai.setStyle(fieldStyle());
+
+        Button btnAddLoai = new Button("+");
+        btnAddLoai.setStyle("-fx-background-color: " + C_SIDEBAR + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-pref-height: 40; -fx-pref-width: 40;");
+        btnAddLoai.setOnAction(e -> showAddLoaiDialog());
+        HBox loaiBox = new HBox(8, cbLoai, btnAddLoai);
+        HBox.setHgrow(cbLoai, Priority.ALWAYS);
 
         // 4. Đơn vị tính
         txtDonVi = makeField(isEdit ? dichVu.getDonVi() : "Cái", "Ví dụ: Chai, Lượt, Cái...");
@@ -185,7 +200,7 @@ public class ThemSuaDichVuDialog extends Stage {
         form.getChildren().addAll(
                 fieldBlock("Mã dịch vụ", txtMaDV, null, "Mã định danh tự động"),
                 fieldBlock("Tên dịch vụ *", txtTenDV, errTen, "Nhập tên sản phẩm hoặc dịch vụ"),
-                fieldBlock("Loại dịch vụ", cbLoai, null, null),
+                fieldBlock("Loại dịch vụ", loaiBox, null, null),
                 fieldBlock("Đơn vị tính *", txtDonVi, errDonVi, "Đơn vị định lượng (Lon, Bộ...)"),
                 fieldBlock("Trạng thái", cbTrangThai, null, "Trạng thái phục vụ khách hàng"));
 
@@ -257,8 +272,12 @@ public class ThemSuaDichVuDialog extends Stage {
         String ma = txtMaDV.getText().trim();
         String ten = ValidationUtils.toTitleCase(txtTenDV.getText().trim());
         Double gia = isEdit ? dichVu.getGia() : null;
-        String loaiDisplayName = cbLoai.getValue();
-        String loaiKey = model.enums.LoaiDichVu.fromDisplayName(loaiDisplayName).getDbKey();
+        LoaiDichVu selectedLoai = cbLoai.getValue();
+        if (selectedLoai == null) {
+            showError("Vui lòng chọn hoặc thêm Loại dịch vụ.");
+            return;
+        }
+        String loaiKey = selectedLoai.getMaLoaiDV();
         String donVi = txtDonVi.getText().trim();
         int trangThai = cbTrangThai.getValue().equals("Đang phục vụ") ? 0 : 1;
 
@@ -299,6 +318,27 @@ public class ThemSuaDichVuDialog extends Stage {
     private String generateCode() {
         Random r = new Random();
         return "DV" + (10000 + r.nextInt(90000));
+    }
+
+    private void showAddLoaiDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Thêm Loại Dịch Vụ Mới");
+        dialog.setHeaderText("Nhập tên loại dịch vụ mới:");
+        dialog.setContentText("Tên loại:");
+        dialog.initOwner(this);
+        dialog.showAndWait().ifPresent(name -> {
+            if (!name.trim().isEmpty()) {
+                LoaiDichVuDAO dao = new LoaiDichVuDAO();
+                String newId = dao.generateNextMaLoaiDV();
+                LoaiDichVu newLoai = new LoaiDichVu(newId, name.trim());
+                if (dao.insert(newLoai)) {
+                    cbLoai.getItems().add(newLoai);
+                    cbLoai.setValue(newLoai);
+                } else {
+                    showError("Thêm loại dịch vụ thất bại.");
+                }
+            }
+        });
     }
 
     /* ── UI Helpers (Synced with other dialogs) ────────────────────────── */

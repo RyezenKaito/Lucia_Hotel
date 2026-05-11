@@ -14,7 +14,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getAll() {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT * FROM DV";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
@@ -34,7 +34,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getAllActive() {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT * FROM DV WHERE trangThai = 0";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.trangThai = 0";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
@@ -54,7 +54,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT * FROM DV WHERE loaiDV = ?";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maLoaiDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, loaiDV);
@@ -74,7 +74,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getActiveByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT * FROM DV WHERE loaiDV = ? AND trangThai = 0";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maLoaiDV = ? AND d.trangThai = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, loaiDV);
@@ -93,7 +93,7 @@ public class DichVuDAO {
      * Cập nhật thông tin dịch vụ
      */
     public boolean update(DichVu dv) {
-        String sql = "UPDATE DV SET tenDV = ?, gia = ?, loaiDV = ?, mieuTa = ?, donVi = ?, trangThai = ? WHERE maDV = ?";
+        String sql = "UPDATE DV SET tenDV = ?, gia = ?, maLoaiDV = ?, mieuTa = ?, donVi = ?, trangThai = ? WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
 
@@ -120,7 +120,7 @@ public class DichVuDAO {
      * Thêm mới dịch vụ
      */
     public boolean insert(DichVu dv) {
-        String sql = "INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO DV (maDV, tenDV, gia, maLoaiDV, mieuTa, donVi, trangThai) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
 
@@ -147,7 +147,7 @@ public class DichVuDAO {
      * Lấy thông tin dịch vụ theo mã dịch vụ (ID)
      */
     public DichVu getServiceByID(String ma) {
-        String sql = "SELECT * FROM DV WHERE maDV = ?";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -169,7 +169,10 @@ public class DichVuDAO {
         dv.setTenDV(rs.getString("tenDV"));
         Object giaObj = rs.getObject("gia");
         dv.setGia(giaObj != null ? rs.getDouble("gia") : null);
-        dv.setLoaiDV(rs.getString("loaiDV"));
+        dv.setLoaiDV(rs.getString("maLoaiDV"));
+        try {
+            dv.setTenLoaiDV(rs.getString("tenLoaiDV"));
+        } catch (SQLException ignore) {}
         dv.setMieuTa(rs.getString("mieuTa"));
         dv.setDonVi(rs.getString("donVi"));
         try {

@@ -12,7 +12,8 @@ public class DichVu {
     private String maDV;
     private String tenDV;
     private Double gia;
-    private String loaiDV;
+    private String loaiDV; // Lưu maLoaiDV
+    private String tenLoaiDV;
     private String mieuTa;
     private String donVi;
     private int trangThai; // 0: DANG_PHUC_VU, 1: TAM_NGUNG
@@ -70,8 +71,11 @@ public class DichVu {
      * Trả về tên hiển thị (Tiếng Việt) của loại dịch vụ
      */
     public String getTenLoaiDV() {
-        if (loaiDV == null) return "Chưa phân loại";
-        return model.enums.LoaiDichVu.fromDbKey(loaiDV).getDisplayName();
+        return tenLoaiDV != null ? tenLoaiDV : "Chưa phân loại";
+    }
+
+    public void setTenLoaiDV(String tenLoaiDV) {
+        this.tenLoaiDV = tenLoaiDV;
     }
 
     public void setLoaiDV(String loaiDV) {

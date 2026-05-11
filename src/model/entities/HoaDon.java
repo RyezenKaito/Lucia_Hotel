@@ -11,6 +11,8 @@ public class HoaDon {
     private double tienDV;
     private double tienCoc;
     private double thueVAT;
+    private double phuThu;
+    private double phuPhiTraMuon;
     private double tongTien;
     private double doanhThu;
     private transient double tongCP;
@@ -18,7 +20,6 @@ public class HoaDon {
     // New fields
     private String loaiHD;
     private String trangThaiThanhToan;
-    private String phuongThucThanhToan;
     private LocalDateTime ngayThanhToan;
     private String ghiChuThanhToan;
 
@@ -52,7 +53,25 @@ public class HoaDon {
     public void setTienCoc(double tienCoc) { this.tienCoc = tienCoc; }
 
     public double getThueVAT() { return thueVAT; }
-    public void setThueVAT(double thueVAT) { this.thueVAT = thueVAT; }
+    public void setThueVAT(double thueVAT) {
+        this.thueVAT = thueVAT;
+    }
+
+    public double getPhuThu() {
+        return phuThu;
+    }
+
+    public void setPhuThu(double phuThu) {
+        this.phuThu = phuThu;
+    }
+
+    public double getPhuPhiTraMuon() {
+        return phuPhiTraMuon;
+    }
+
+    public void setPhuPhiTraMuon(double phuPhiTraMuon) {
+        this.phuPhiTraMuon = phuPhiTraMuon;
+    }
 
     public double getTongTien() { return tongTien; }
     public void setTongTien(double tongTien) { this.tongTien = tongTien; }
@@ -67,10 +86,6 @@ public class HoaDon {
     public String getTrangThaiThanhToan() { return trangThaiThanhToan; }
     public void setTrangThaiThanhToan(String trangThaiThanhToan) { this.trangThaiThanhToan = trangThaiThanhToan; }
     public String getTenTrangThaiThanhToan() { return model.enums.TrangThaiThanhToan.fromName(trangThaiThanhToan).getDisplayName(); }
-
-    public String getPhuongThucThanhToan() { return phuongThucThanhToan; }
-    public void setPhuongThucThanhToan(String phuongThucThanhToan) { this.phuongThucThanhToan = phuongThucThanhToan; }
-    public String getTenPhuongThucThanhToan() { return phuongThucThanhToan != null ? model.enums.PhuongThucThanhToan.fromName(phuongThucThanhToan).getDisplayName() : "—"; }
 
     public LocalDateTime getNgayThanhToan() { return ngayThanhToan; }
     public void setNgayThanhToan(LocalDateTime ngayThanhToan) { this.ngayThanhToan = ngayThanhToan; }

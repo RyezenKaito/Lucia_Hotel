@@ -221,8 +221,8 @@ public class ThongTinCaNhanView extends Stage {
                 body.getChildren().add(infoRow("Ngày vào làm",
                                 nv.getNgayVaoLamDate() != null ? nv.getNgayVaoLamDate().format(FMT) : "Chưa cập nhật"));
 
-                if (nv.getRole() == ChucVu.NHAN_VIEN && nv.getMaQL() != null) {
-                        String qlId = nv.getMaQL();
+                if (nv.getRole() == ChucVu.NHAN_VIEN && nv.getQuanLy() != null && nv.getQuanLy().getMaNV() != null) {
+                        String qlId = nv.getQuanLy().getMaNV();
                         String qlVal = qlId;
                         try {
                                 NhanVien ql = dao.getById(qlId);

@@ -73,7 +73,8 @@ public class ThemSuaNhanVienDialog extends Stage {
     private VBox nguoiQuanLyBox;
 
     /* ── Constructor ──────────────────────────────────────────────── */
-    public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit, NhanVien currentUser, gui.QuanLyNhanVienView parentView) {
+    public ThemSuaNhanVienDialog(Window owner, NhanVien nvEdit, NhanVien currentUser,
+            gui.QuanLyNhanVienView parentView) {
         this.owner = owner;
         this.nvEdit = nvEdit;
         this.currentUser = currentUser;
@@ -342,11 +343,11 @@ public class ThemSuaNhanVienDialog extends Stage {
         }
 
         // Load NQL khi sửa
-        if (nvEdit != null && nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getMaQL() != null) {
+        if (nvEdit != null && nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getQuanLy().getMaNV() != null) {
             nguoiQuanLyBox.setVisible(true);
             nguoiQuanLyBox.setManaged(true);
             for (int i = 0; i < cbNguoiQuanLy.getItems().size(); i++) {
-                if (Objects.equals(cbNguoiQuanLy.getItems().get(i).getMaNV(), nvEdit.getMaQL())) {
+                if (Objects.equals(cbNguoiQuanLy.getItems().get(i).getMaNV(), nvEdit.getQuanLy().getMaNV())) {
                     cbNguoiQuanLy.getSelectionModel().select(i);
                     break;
                 }
@@ -590,14 +591,15 @@ public class ThemSuaNhanVienDialog extends Stage {
             }
 
             if (n.getRole() == ChucVu.NHAN_VIEN && cbNguoiQuanLy.getValue() != null) {
-                n.setMaQL(cbNguoiQuanLy.getValue().getMaNV());
+                n.setQuanLy(new NhanVien(cbNguoiQuanLy.getValue().getMaNV()));
             } else {
-                n.setMaQL(null);
+                n.setQuanLy(null);
             }
 
             if (nvEdit != null && (n.getTrangThai() == TrangThaiNV.DA_NGHI || n.getRole() != ChucVu.QUAN_LY)) {
                 java.util.List<NhanVien> subordinates = dao.getAll().stream()
-                        .filter(nv -> nvEdit.getMaNV().equals(nv.getMaQL()) && nv.getTrangThai() != TrangThaiNV.DA_NGHI)
+                        .filter(nv -> nvEdit.getMaNV().equals(nv.getQuanLy().getMaNV())
+                                && nv.getTrangThai() != TrangThaiNV.DA_NGHI)
                         .toList();
 
                 if (!subordinates.isEmpty()) {
@@ -627,7 +629,7 @@ public class ThemSuaNhanVienDialog extends Stage {
                     if (result.isPresent()) {
                         NhanVien newManager = result.get();
                         for (NhanVien sub : subordinates) {
-                            sub.setMaQL(newManager.getMaNV());
+                            sub.setQuanLy(new NhanVien(newManager.getMaNV()));
                             dao.update(sub);
                         }
                     } else {

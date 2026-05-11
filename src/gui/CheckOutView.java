@@ -1047,12 +1047,19 @@ public class CheckOutView extends BorderPane {
             double sumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
-            hd.setTienPhong(sumPhong + currentLateFee);
-            hd.setTienDV(tienDV + currentPhuThu);
+            hd.setTienPhong(sumPhong);
+            hd.setTienDV(tienDV);
+            hd.setPhuThu(currentPhuThu);
+            hd.setPhuPhiTraMuon(currentLateFee);
             hd.setThueVAT(VAT_RATE);
             hd.setNgayTaoHD(now);
-            double newTong = Math.max(0, (hd.getTienPhong() + hd.getTienDV()) * (1 + VAT_RATE) - hd.getTienCoc());
+            
+            // Tính toán tổng tiền mới (Tiền phòng + Tiền DV + Phụ thu + Phí trả muộn) * (1 + VAT) - Tiền cọc
+            double base = hd.getTienPhong() + hd.getTienDV() + hd.getPhuThu() + hd.getPhuPhiTraMuon();
+            double newTong = Math.max(0, base * (1 + VAT_RATE) - hd.getTienCoc());
             hd.setTongTien(newTong);
+            // Doanh thu không bao gồm tiền cọc (đã tính trong tiền phòng)
+            hd.setDoanhThu(base + (base * VAT_RATE));
             if (datPhongDAO.isAllRoomsCheckedOut(currentDatPhong.getMaDat())) {
                 datPhongDAO.updateTrangThai(currentDatPhong.getMaDat(), "DA_CHECKOUT");
                 hd.setTrangThaiThanhToan("DA_THANH_TOAN");

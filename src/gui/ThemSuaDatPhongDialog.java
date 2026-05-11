@@ -914,8 +914,8 @@ public class ThemSuaDatPhongDialog extends Stage {
                 con.setAutoCommit(false);
                 try {
                     String maKH = khachHangDAO.findOrCreate(con, hoTen, soDT, cccd, ngaySinh, preGenMaKH);
-                    String trangThaiMoi = "DA_XACNHAN"; // Always DA_XACNHAN because we force deposit
-                    datPhongDAO.insertWithConnection(con, preGenMaDat, maKH, checkIn, checkOut, trangThaiMoi);
+                    String trangThaiMoi = "DA_XACNHAN";
+                    datPhongDAO.insertWithConnection(con, preGenMaDat, maKH, checkIn, checkOut, trangThaiMoi, soNguoi);
 
                     // Parse base number cho maCTDP
                     int baseNum = 0;
@@ -955,10 +955,18 @@ public class ThemSuaDatPhongDialog extends Stage {
                     hd.setDatPhong(new model.entities.DatPhong(preGenMaDat));
                     hd.setNhanVien(new model.entities.NhanVien("ADMIN"));
                     hd.setNgayTaoHD(LocalDateTime.now());
-                    hd.setTienPhong(0);
+                    long rawDays = java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut);
+                    final long days = rawDays <= 0 ? 1 : rawDays;
+                    double tongPhong = finalPhongs.stream().mapToDouble(p -> p.getLoaiPhong().getGia() * days).sum();
+                    double vatAmount = tongPhong * 0.1;
+                    double tongTien = Math.max(0, (tongPhong + vatAmount) - tienCoc);
+
+                    hd.setTienPhong(tongPhong);
                     hd.setTienDV(0);
                     hd.setTienCoc(tienCoc);
-                    hd.setTongTien(0);
+                    hd.setThueVAT(vatAmount);
+                    hd.setDoanhThu(tongPhong + vatAmount);
+                    hd.setTongTien(tongTien);
                     hd.setLoaiHD("HOA_DON_PHONG");
                     hd.setTrangThaiThanhToan("DA_THANH_TOAN_COC");
                     hdDAO.insertWithConnection(con, hd);

@@ -1,7 +1,9 @@
 package gui;
 
 import dao.DichVuDAO;
+import dao.LoaiDichVuDAO;
 import model.entities.DichVu;
+import model.entities.LoaiDichVu;
 import model.utils.BadgeUtils;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -112,8 +114,10 @@ public class QuanLyDichVuView extends BorderPane {
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
 
         cbCategory = new ComboBox<>(FXCollections.observableArrayList("Tất cả"));
-        for (model.enums.LoaiDichVu l : model.enums.LoaiDichVu.values()) {
-            cbCategory.getItems().add(l.getDisplayName());
+        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
+        List<LoaiDichVu> loaiList = ldvDAO.getAll();
+        for (LoaiDichVu l : loaiList) {
+            cbCategory.getItems().add(l.getTenLoaiDV());
         }
         cbCategory.setValue("Tất cả");
         cbCategory.setPrefHeight(45);
@@ -339,9 +343,8 @@ public class QuanLyDichVuView extends BorderPane {
                     || (dv.getTenDV() != null && dv.getTenDV().toLowerCase().contains(kw));
 
             boolean matchesCategory = category.equals("Tất cả");
-            if (!matchesCategory && dv.getLoaiDV() != null) {
-                model.enums.LoaiDichVu enumVal = model.enums.LoaiDichVu.fromDisplayName(category);
-                if (dv.getLoaiDV().equalsIgnoreCase(enumVal.getDbKey())) {
+            if (!matchesCategory && dv.getTenLoaiDV() != null) {
+                if (dv.getTenLoaiDV().equalsIgnoreCase(category)) {
                     matchesCategory = true;
                 }
             }

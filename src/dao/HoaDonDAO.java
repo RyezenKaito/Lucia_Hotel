@@ -89,7 +89,7 @@ public class HoaDonDAO {
      * Thêm mới hóa đơn
      */
     public boolean insert(HoaDon hd) {
-        String sql = "INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, doanhThu, loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan, ghiChuThanhToan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, doanhThu, loaiHD, trangThaiThanhToan, ngayThanhToan, ghiChuThanhToan, phu_thu, phu_phi_tra_muon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -106,9 +106,10 @@ public class HoaDonDAO {
             ps.setDouble(10, hd.getDoanhThu());
             ps.setString(11, hd.getLoaiHD() != null ? hd.getLoaiHD() : "HOA_DON_PHONG");
             ps.setString(12, hd.getTrangThaiThanhToan() != null ? hd.getTrangThaiThanhToan() : "CHUA_THANH_TOAN");
-            ps.setString(13, hd.getPhuongThucThanhToan());
-            ps.setTimestamp(14, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
-            ps.setString(15, hd.getGhiChuThanhToan());
+            ps.setTimestamp(13, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
+            ps.setString(14, hd.getGhiChuThanhToan());
+            ps.setDouble(15, hd.getPhuThu());
+            ps.setDouble(16, hd.getPhuPhiTraMuon());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -133,9 +134,12 @@ public class HoaDonDAO {
         hd.setThueVAT(rs.getDouble("thueVAT"));
         hd.setTongTien(rs.getDouble("tongTien"));
         hd.setDoanhThu(rs.getDouble("doanhThu"));
+        try {
+            hd.setPhuThu(rs.getDouble("phu_thu"));
+            hd.setPhuPhiTraMuon(rs.getDouble("phu_phi_tra_muon"));
+        } catch (SQLException ignored) {}
         hd.setLoaiHD(rs.getString("loaiHD"));
         hd.setTrangThaiThanhToan(rs.getString("trangThaiThanhToan"));
-        hd.setPhuongThucThanhToan(rs.getString("phuongThucThanhToan"));
         hd.setNgayThanhToan(
                 rs.getTimestamp("ngayThanhToan") != null ? rs.getTimestamp("ngayThanhToan").toLocalDateTime() : null);
         hd.setGhiChuThanhToan(rs.getString("ghiChuThanhToan"));
@@ -174,7 +178,7 @@ public class HoaDonDAO {
      */
     public boolean updateTongTien(HoaDon hd) {
         String sql = "UPDATE HoaDon SET tienPhong=?, tienDV=?, tienCoc=?, thueVAT=?, tongTien=?, doanhThu=?," +
-                " ngayTaoHD=?, trangThaiThanhToan=?, phuongThucThanhToan=?, ngayThanhToan=? WHERE maHD=?";
+                " ngayTaoHD=?, trangThaiThanhToan=?, ngayThanhToan=?, phu_thu=?, phu_phi_tra_muon=? WHERE maHD=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDouble(1, hd.getTienPhong());
@@ -187,9 +191,10 @@ public class HoaDonDAO {
                     ? Timestamp.valueOf(hd.getNgayTaoHD())
                     : Timestamp.valueOf(java.time.LocalDateTime.now()));
             ps.setString(8, hd.getTrangThaiThanhToan() != null ? hd.getTrangThaiThanhToan() : "DA_THANH_TOAN");
-            ps.setString(9, hd.getPhuongThucThanhToan());
-            ps.setTimestamp(10, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
-            ps.setString(11, hd.getMaHD());
+            ps.setTimestamp(9, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
+            ps.setDouble(10, hd.getPhuThu());
+            ps.setDouble(11, hd.getPhuPhiTraMuon());
+            ps.setString(12, hd.getMaHD());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -251,7 +256,7 @@ public class HoaDonDAO {
 
     /** Tạo hoá đơn dùng chung Connection (transaction) */
     public boolean insertWithConnection(Connection con, HoaDon hd) throws SQLException {
-        String sql = "INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, doanhThu, loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan, ghiChuThanhToan) VALUES (?,?,?,GETDATE(),?,?,?,?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, doanhThu, loaiHD, trangThaiThanhToan, ngayThanhToan, ghiChuThanhToan, phu_thu, phu_phi_tra_muon) VALUES (?,?,?,GETDATE(),?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, hd.getMaHD());
             ps.setString(2, hd.getDatPhong().getMaDat());
@@ -264,9 +269,10 @@ public class HoaDonDAO {
             ps.setDouble(9, hd.getDoanhThu());
             ps.setString(10, hd.getLoaiHD() != null ? hd.getLoaiHD() : "HOA_DON_PHONG");
             ps.setString(11, hd.getTrangThaiThanhToan() != null ? hd.getTrangThaiThanhToan() : "CHUA_THANH_TOAN");
-            ps.setString(12, hd.getPhuongThucThanhToan());
-            ps.setTimestamp(13, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
-            ps.setString(14, hd.getGhiChuThanhToan());
+            ps.setTimestamp(12, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
+            ps.setString(13, hd.getGhiChuThanhToan());
+            ps.setDouble(14, hd.getPhuThu());
+            ps.setDouble(15, hd.getPhuPhiTraMuon());
             return ps.executeUpdate() > 0;
         }
     }
@@ -322,7 +328,7 @@ public class HoaDonDAO {
 
     public double tinhTongTien(HoaDon hd) {
         // Tiền cọc = trả trước đêm đầu, trừ thẳng vào tổng
-        double subtotal = hd.getTienPhong() + hd.getTienDV();
+        double subtotal = hd.getTienPhong() + hd.getTienDV() + hd.getPhuThu() + hd.getPhuPhiTraMuon();
         double giaVAT = subtotal * hd.getThueVAT();
         double tongTien = Math.max(0, subtotal + giaVAT - hd.getTienCoc());
         hd.setTongTien(tongTien);

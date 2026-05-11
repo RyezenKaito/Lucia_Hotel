@@ -213,40 +213,21 @@ public class DatPhongView extends BorderPane {
             MenuItem miCancel = new MenuItem("Hủy đơn đặt phòng");
             miCancel.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miCancel.setOnAction(e -> {
-                Object[] r = row.getItem();
-                if (r != null)
-                    confirmCancel(r);
+                Object[] data = row.getItem();
+                if (data != null) confirmCancel(data);
             });
 
-            MenuItem miDelete = new MenuItem("Xóa đơn đặt phòng");
-            miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
-            miDelete.setOnAction(e -> {
-                Object[] r = row.getItem();
-                if (r != null)
-                    confirmDelete(r);
-            });
-
-            // Khóa chức năng hủy/xóa dựa trên trạng thái
+            // Khóa chức năng hủy dựa trên trạng thái
             row.itemProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
                     String status = (String) newVal[8];
-
                     // Chỉ cho hủy khi CHƯA nhận phòng
                     boolean canCancel = "CHO_XACNHAN".equals(status) || "DA_XACNHAN".equals(status);
                     miCancel.setDisable(!canCancel);
-
-                    // Chỉ cho xóa nếu không phải đang ở hoặc đã trả phòng
-                    boolean canDeleteBooking = !"DA_CHECKIN".equals(status) && !"DA_CHECKOUT".equals(status);
-                    miDelete.setDisable(!canDeleteBooking);
                 }
             });
 
-            // [ĐÃ SỬA] Chỉ cho phép xóa nếu có quyền canDelete (thường là ADMIN)
-            if (canDelete) {
-                ctx.getItems().addAll(miDetail, miCancel, new SeparatorMenuItem(), miDelete);
-            } else {
-                ctx.getItems().addAll(miDetail, miCancel);
-            }
+            ctx.getItems().addAll(miDetail, miCancel);
             row.setContextMenu(ctx);
 
             row.setOnMouseClicked(e -> {
@@ -668,48 +649,7 @@ public class DatPhongView extends BorderPane {
         }
     }
 
-    private void confirmDelete(Object[] row) {
-        String maDat = (String) row[0];
-        String tenKH = (String) row[1];
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Xác nhận xóa");
-        alert.setHeaderText(null);
-        alert.setContentText("Bạn có chắc muốn xóa đơn " + maDat + " của " + tenKH + "?");
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK)
-            return;
-
-        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-            con.setAutoCommit(false);
-            try {
-                String[] sqls = {
-                        "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietDatPhong ctdp ON dvsd.maCTDP = ctdp.maCTDP WHERE ctdp.maDat = ?",
-                        "DELETE cthd FROM ChiTietHoaDon cthd JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
-                        "DELETE FROM HoaDon WHERE maDat = ?",
-                        "DELETE FROM ChiTietDatPhong WHERE maDat = ?",
-                        "DELETE FROM DatPhong WHERE maDat = ?"
-                };
-                for (String s : sqls) {
-                    try (PreparedStatement ps = con.prepareStatement(s)) {
-                        ps.setString(1, maDat);
-                        ps.executeUpdate();
-                    }
-                }
-                con.commit();
-                loadData();
-                showInfo("Thành công!", "Đã xóa đơn đặt phòng " + maDat + ".");
-            } catch (Exception ex) {
-                con.rollback();
-                showError("Lỗi khi xóa: " + ex.getMessage());
-            } finally {
-                con.setAutoCommit(true);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
 
     /* ── Helpers ────────────────────────────────────────────────────── */
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {

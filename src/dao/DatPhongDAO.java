@@ -208,6 +208,8 @@ public class DatPhongDAO {
                 dp.setNgayCheckOut(
                         rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime()
                                 : null);
+                dp.setSoNguoi(rs.getInt("so_nguoi"));
+                dp.setNgayThanhToan(rs.getTimestamp("ngay_thanh_toan") != null ? rs.getTimestamp("ngay_thanh_toan").toLocalDateTime() : null);
 
                 return dp;
             }
@@ -221,7 +223,7 @@ public class DatPhongDAO {
      * Insert đơn đặt phòng mới
      */
     public boolean insert(DatPhong dp) {
-        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES (?,?,?,?,?,?)";
+        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai, so_nguoi, ngay_thanh_toan) VALUES (?,?,?,?,?,?,?,?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
 
@@ -238,6 +240,8 @@ public class DatPhongDAO {
             
             pstmt.setString(6, (dp.getTrangThai() != null && !dp.getTrangThai().isEmpty()) 
                                ? dp.getTrangThai() : "CHO_XACNHAN");
+            pstmt.setInt(7, dp.getSoNguoi() > 0 ? dp.getSoNguoi() : 1);
+            pstmt.setTimestamp(8, dp.getNgayThanhToan() != null ? Timestamp.valueOf(dp.getNgayThanhToan()) : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
@@ -514,6 +518,8 @@ public class DatPhongDAO {
                         rs.getTimestamp("ngayCheckIn") != null ? rs.getTimestamp("ngayCheckIn").toLocalDateTime() : null);
                 dp.setNgayCheckOut(
                         rs.getTimestamp("ngayCheckOut") != null ? rs.getTimestamp("ngayCheckOut").toLocalDateTime() : null);
+                dp.setSoNguoi(rs.getInt("so_nguoi"));
+                dp.setNgayThanhToan(rs.getTimestamp("ngay_thanh_toan") != null ? rs.getTimestamp("ngay_thanh_toan").toLocalDateTime() : null);
                 return dp;
             }
         } catch (Exception e) {
@@ -547,25 +553,23 @@ public class DatPhongDAO {
 
     // Các hàm dưới đây nhận trực tiếp LocalDate từ UI Dialog truyền xuống nên không
     // cần sửa
-    /** Insert đơn đặt phòng (trangThai mặc định CHO_XACNHAN) */
     public boolean insertWithConnection(Connection con, String maDat, String maKH,
-            LocalDate checkIn, LocalDate checkOut) throws SQLException {
-        return insertWithConnection(con, maDat, maKH, checkIn, checkOut, "CHO_XACNHAN");
+            LocalDate checkIn, LocalDate checkOut, int soNguoi) throws SQLException {
+        return insertWithConnection(con, maDat, maKH, checkIn, checkOut, "CHO_XACNHAN", soNguoi);
     }
 
     /** Insert đơn đặt phòng với trangThai tuỳ chọn */
     public boolean insertWithConnection(Connection con, String maDat, String maKH,
             LocalDate checkIn, LocalDate checkOut,
-            String trangThai) throws SQLException {
-        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai) VALUES(?,GETDATE(),?,?,?,?)";
+            String trangThai, int soNguoi) throws SQLException {
+        String sql = "INSERT INTO DatPhong(maDat, ngayDat, maKH, ngayCheckIn, ngayCheckOut, trangThai, so_nguoi) VALUES(?,GETDATE(),?,?,?,?,?)";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDat);
             ps.setString(2, maKH);
-            // ps.setDate(3, java.sql.Date.valueOf(checkIn));
-            // ps.setDate(4, java.sql.Date.valueOf(checkOut));
             ps.setTimestamp(3, Timestamp.valueOf(checkIn.atTime(14, 0)));
             ps.setTimestamp(4, Timestamp.valueOf(checkOut.atTime(12, 0)));
             ps.setString(5, trangThai);
+            ps.setInt(6, soNguoi);
             return ps.executeUpdate() > 0;
         }
     }

@@ -6,6 +6,7 @@ public class KhachHang {
     private String maKH;
     private String tenKH;
     private String soCCCD;
+    private boolean isDeleted;
     private String soDT;
     private LocalDate ngaySinh;
 
@@ -59,7 +60,17 @@ public class KhachHang {
     public void   setTenKH(String v)    { this.tenKH = v; }
 
     public String getSoCCCD()           { return soCCCD; }
-    public void   setSoCCCD(String v)   { this.soCCCD = v; }
+    public void setSoCCCD(String soCCCD) {
+        this.soCCCD = soCCCD;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
 
     public String getSoDT()             { return soDT; }
     public void   setSoDT(String v)     { this.soDT = v; }

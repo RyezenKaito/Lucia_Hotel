@@ -13,7 +13,8 @@ public class NhanVien {
     private trinhDo trinhDo;
     private TrangThaiNV trangThai;
     private LocalDate ngaySinh, ngayVaoLamDate;
-    private String maQL;
+    private NhanVien quanLy;
+    private boolean isDeleted;
 
     // Sử dụng static để tránh tạo mới formatter cho mỗi object, tiết kiệm bộ nhớ
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -62,15 +63,12 @@ public class NhanVien {
         return maNV;
     }
 
-    public String getMaQL() {
-        return maQL;
+    public NhanVien getQuanLy() {
+        return quanLy;
     }
 
-    public void setMaQL(String maQL) {
-        // Cho phép maQL null (vì Quản lý cấp cao nhất không có người quản lý)
-        if (maQL != null && !(maQL.equals("ADMIN") || maQL.matches("LUCIA\\d+")))
-            throw new IllegalArgumentException("Mã QL phải in hoa 'LUCIA' và đi kèm số (VD: LUCIA001) hoặc là 'ADMIN'");
-        this.maQL = maQL;
+    public void setQuanLy(NhanVien quanLy) {
+        this.quanLy = quanLy;
     }
 
     public String getMatKhau() {
@@ -132,6 +130,14 @@ public class NhanVien {
 
     public void setDiaChi(String diaChi) {
         this.diaChi = diaChi;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 
     public trinhDo getTrinhDo() {

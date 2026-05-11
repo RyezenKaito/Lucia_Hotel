@@ -8,6 +8,8 @@ public class DatPhong {
     private KhachHang khachHang;
     private LocalDateTime ngayCheckIn;
     private LocalDateTime ngayCheckOut;
+    private int soNguoi;
+    private LocalDateTime ngayThanhToan;
     private String trangThai; // CHO_XACNHAN, DA_XACNHAN, DA_CHECKIN, DA_CHECKOUT, DA_HUY
 
     public DatPhong() {
@@ -64,6 +66,22 @@ public class DatPhong {
 
     public void setNgayCheckOut(LocalDateTime ngayCheckOut) {
         this.ngayCheckOut = ngayCheckOut;
+    }
+
+    public int getSoNguoi() {
+        return soNguoi;
+    }
+
+    public void setSoNguoi(int soNguoi) {
+        this.soNguoi = soNguoi;
+    }
+
+    public LocalDateTime getNgayThanhToan() {
+        return ngayThanhToan;
+    }
+
+    public void setNgayThanhToan(LocalDateTime ngayThanhToan) {
+        this.ngayThanhToan = ngayThanhToan;
     }
 
     public String getTrangThai() {

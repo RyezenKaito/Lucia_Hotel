@@ -3,8 +3,10 @@ package gui; // Re-index 2026-04-18 05:58 AM
 import dao.BangGiaDichVuDAO;
 import dao.DatPhongDAO;
 import dao.DichVuDAO;
+import dao.LoaiDichVuDAO;
 import dao.PhongDAO;
 import model.entities.DichVu;
+import model.entities.LoaiDichVu;
 import model.entities.Phong;
 import model.enums.TrangThaiPhong;
 
@@ -47,7 +49,7 @@ public class SuDungDichVuView extends BorderPane {
 
     /* ── State ───────────────────────────────────────────────────────── */
     private String selectedMaPhong = "";
-    private model.enums.LoaiDichVu currentCategoryEnum = model.enums.LoaiDichVu.THUC_PHAM;
+    private LoaiDichVu currentCategory;
     private final Map<DichVu, Integer> cart = new HashMap<>();
 
     /* ── UI Controls ─────────────────────────────────────────────────── */
@@ -65,8 +67,14 @@ public class SuDungDichVuView extends BorderPane {
         setTop(buildHeaderBlock());
         setCenter(buildBody());
 
+        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
+        List<LoaiDichVu> categories = ldvDAO.getAll();
+        if (!categories.isEmpty()) {
+            currentCategory = categories.get(0);
+        }
+
         refreshRooms();
-        refreshServices(currentCategoryEnum);
+        refreshServices(currentCategory);
     }
 
     /* ══════════════════ HEADER TITLE ══════════════════ */
@@ -138,7 +146,8 @@ public class SuDungDichVuView extends BorderPane {
 
         // Tab bar
         tabBar = new HBox(8);
-        for (model.enums.LoaiDichVu c : model.enums.LoaiDichVu.values())
+        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
+        for (LoaiDichVu c : ldvDAO.getAll())
             tabBar.getChildren().add(buildTabButton(c));
 
         servicePane = new FlowPane(12, 12);
@@ -156,9 +165,9 @@ public class SuDungDichVuView extends BorderPane {
         return pane;
     }
 
-    private Button buildTabButton(model.enums.LoaiDichVu cat) {
-        boolean isActive = cat == currentCategoryEnum;
-        Button btn = new Button(cat.getDisplayName());
+    private Button buildTabButton(LoaiDichVu cat) {
+        boolean isActive = cat != null && currentCategory != null && cat.getMaLoaiDV().equals(currentCategory.getMaLoaiDV());
+        Button btn = new Button(cat != null ? cat.getTenLoaiDV() : "");
         btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         btn.setCursor(Cursor.HAND);
         btn.setPrefHeight(36);
@@ -170,7 +179,7 @@ public class SuDungDichVuView extends BorderPane {
                     "-fx-border-color: " + C_BORDER + "; -fx-background-radius: 8; -fx-border-radius: 8;");
         }
         btn.setOnAction(e -> {
-            currentCategoryEnum = cat;
+            currentCategory = cat;
             refreshTabBar();
             refreshServices(cat);
         });
@@ -179,7 +188,8 @@ public class SuDungDichVuView extends BorderPane {
 
     private void refreshTabBar() {
         tabBar.getChildren().clear();
-        for (model.enums.LoaiDichVu c : model.enums.LoaiDichVu.values()) {
+        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
+        for (LoaiDichVu c : ldvDAO.getAll()) {
             tabBar.getChildren().add(buildTabButton(c));
         }
     }
@@ -235,7 +245,7 @@ public class SuDungDichVuView extends BorderPane {
         btnClear.setOnAction(e -> {
             cart.clear();
             updateBillUI();
-            refreshServices(currentCategoryEnum);
+            refreshServices(currentCategory);
         });
 
         Button btnConfirm = new Button("✔ XÁC NHẬN");
@@ -323,7 +333,7 @@ public class SuDungDichVuView extends BorderPane {
                 else
                     cart.put(dv, q - 1);
                 updateBillUI();
-                refreshServices(currentCategoryEnum);
+                refreshServices(currentCategory);
             }
         });
 
@@ -338,7 +348,7 @@ public class SuDungDichVuView extends BorderPane {
         btnPlus.setOnAction(e -> {
             cart.put(dv, cart.getOrDefault(dv, 0) + 1);
             updateBillUI();
-            refreshServices(currentCategoryEnum);
+            refreshServices(currentCategory);
         });
 
         qtyBox.getChildren().addAll(btnMinus, lblQty, btnPlus);
@@ -364,10 +374,11 @@ public class SuDungDichVuView extends BorderPane {
         }
     }
 
-    private void refreshServices(model.enums.LoaiDichVu cat) {
+    private void refreshServices(LoaiDichVu cat) {
         servicePane.getChildren().clear();
+        if (cat == null) return;
         DichVuDAO dichVuDAO = new DichVuDAO();
-        List<DichVu> list = dichVuDAO.getActiveByType(cat.getDbKey());
+        List<DichVu> list = dichVuDAO.getActiveByType(cat.getMaLoaiDV());
 
         // Lấy bản đồ giá đang áp dụng (Trạng thái = 0 và trong thời gian hiệu lực)
         Map<String, Double> activePrices = bangGiaDAO.getActivePriceMap();
@@ -459,7 +470,7 @@ public class SuDungDichVuView extends BorderPane {
             btnRemove.setOnAction(e -> {
                 cart.remove(dv);
                 updateBillUI();
-                refreshServices(currentCategoryEnum);
+                refreshServices(currentCategory);
             });
 
             row.getChildren().addAll(lblQty, lblName, dots, lblSub, btnRemove);

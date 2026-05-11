@@ -10,6 +10,7 @@ public class Phong {
     private TrangThaiPhong tinhTrang;
     private int soPhong;
     private int soTang;
+    private boolean isDeleted;
 
     public Phong() {
     }
@@ -73,6 +74,14 @@ public class Phong {
 
     public void setSoTang(int soTang) {
         this.soTang = soTang;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 
     @Override

@@ -8,7 +8,7 @@ DELETE LoaiPhong
 DELETE Phong
 -- NV
 -- Thứ tự cột: maNV, hoTen, soDT, soCCCD, diaChi, ngaySinh, ngayVaoLam, trinhDo, mk, role, trangThai, maQL
-INSERT INTO NV VALUES
+INSERT INTO NV (maNV, hoTen, soDT, soCCCD, diaChi, ngaySinh, ngayVaoLam, trinhDo, mk, role, trangThai, maQL) VALUES
 ('ADMIN',   N'LUCIA OWNER',         NULL,          NULL,           NULL,       NULL,         NULL,         NULL,        '123', N'ADMIN',     NULL,        NULL),
 ('LUCIA001',N'Phạm Lê Khánh An',   '0365755828',  '079090909090', N'TP.HCM', '1990-06-07', '2024-02-01', N'DAIHOC',   '123', N'QUAN_LY',   'CON_LAM',   'ADMIN'),
 ('LUCIA002',N'Hoàng Văn Hưng',       '0365755829',  '079090909091', N'Hà Nội', '1990-04-12', '2024-02-01', N'DAIHOC',   '123', N'QUAN_LY',   'CON_LAM',   'ADMIN'),
@@ -67,11 +67,19 @@ INSERT INTO Phong (maPhong, tenPhong, loaiPhong, tinhTrang, soPhong, soTang) VAL
 -- Cấu trúc: INSERT INTO ChiTietDatPhong (maCTDP, maPhong, maDat, giaCoc, soNguoi, ghiChu) VALUES ...
 
 DELETE DV
+DELETE LoaiDichVu
 DELETE BangGiaDV_Header
 DELETE BangGiaDV_Detail
--- DV (loaiDV đổi sang ASCII key)
--- Thứ tự cột: maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai
-INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES
+-- LoaiDichVu
+INSERT INTO LoaiDichVu (maLoaiDV, tenLoaiDV) VALUES
+('THUC_PHAM', N'Thực phẩm'),
+('GIAI_TRI', N'Giải trí'),
+('SUC_KHOE', N'Sức khỏe'),
+('TIEN_ICH', N'Tiện ích');
+
+-- DV
+-- Thứ tự cột: maDV, tenDV, gia, maLoaiDV, mieuTa, donVi, trangThai
+INSERT INTO DV (maDV, tenDV, gia, maLoaiDV, mieuTa, donVi, trangThai) VALUES
 ('DV001', N'Nước suối',  NULL,  N'THUC_PHAM', N'Chai 500ml',    N'Chai', 0),
 ('DV002', N'Cơm chiên hải sản', NULL,  N'THUC_PHAM', N'Phần 1 người', N'Suất', 0),
 ('DV003', N'Giặt ủi',   NULL,  N'TIEN_ICH',  N'Gói giặt ủi',  N'Lần',  0),
@@ -86,7 +94,7 @@ INSERT INTO DV (maDV, tenDV, gia, loaiDV, mieuTa, donVi, trangThai) VALUES
 ('DV012', N'Karaoke VIP',  NULL, N'GIAI_TRI', N'Phòng 2 giờ kèm nước', N'Phòng', 0);
 
 -- HoaDon - Đã xóa dữ liệu rác.
--- Cấu trúc: INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, loaiHD, trangThaiThanhToan, phuongThucThanhToan, ngayThanhToan) VALUES ...
+-- Cấu trúc: INSERT INTO HoaDon (maHD, maDat, maNV, ngayTaoHD, tienPhong, tienDV, tienCoc, thueVAT, tongTien, loaiHD, trangThaiThanhToan, ngayThanhToan) VALUES ...
 
 -- ChiTietHoaDon - Đã xóa dữ liệu rác.
 -- Cấu trúc: INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien) VALUES ...

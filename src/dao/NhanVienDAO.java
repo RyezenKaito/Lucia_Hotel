@@ -27,7 +27,7 @@ public class NhanVienDAO {
                 parseVaiTro(rs.getString("role")));
 
         nv.setSoDT(rs.getString("soDT"));
-        nv.setMaQL(rs.getString("maQL"));
+        nv.setQuanLy(rs.getString("maQL") != null ? new NhanVien(rs.getString("maQL")) : null);
         nv.setMatKhau(rs.getString("mk"));
 
         // SDT, CCCD (nullable từ DB)
@@ -48,6 +48,10 @@ public class NhanVienDAO {
         } catch (Exception e) {
             nv.setTrangThai(TrangThaiNV.CON_LAM);
         }
+
+        try {
+            nv.setDeleted(rs.getBoolean("is_deleted"));
+        } catch (Exception ignored) {}
 
         return nv;
     }
@@ -96,7 +100,7 @@ public class NhanVienDAO {
     // ── READ ALL ──────────────────────────────────────────────────────────────
     public List<NhanVien> getAll() {
         List<NhanVien> ds = new ArrayList<>();
-        String sql = "SELECT * FROM NV";
+        String sql = "SELECT * FROM NV WHERE is_deleted = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -111,7 +115,7 @@ public class NhanVienDAO {
     // ── TÌM KIẾM THEO TÊN, MÃ, SĐT ──────────────────────────────────────────
     public List<NhanVien> findByKeyword(String keyword) {
         List<NhanVien> ds = new ArrayList<>();
-        String sql = "SELECT * FROM NV WHERE maNV LIKE ? OR hoTen LIKE ? OR soDT LIKE ?";
+        String sql = "SELECT * FROM NV WHERE (maNV LIKE ? OR hoTen LIKE ? OR soDT LIKE ?) AND is_deleted = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             String searchStr = "%" + keyword + "%";
@@ -130,7 +134,7 @@ public class NhanVienDAO {
 
     // ── READ BY ID ────────────────────────────────────────────────────────────
     public NhanVien getById(String maNV) {
-        String sql = "SELECT * FROM NV WHERE maNV = ?";
+        String sql = "SELECT * FROM NV WHERE maNV = ? AND is_deleted = 0";
         Connection con = ConnectDatabase.getInstance().getConnection();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maNV);
@@ -164,7 +168,7 @@ public class NhanVienDAO {
             ps.setString(7, nv.getDiaChi());
             ps.setString(8, nv.getTrinhDo() != null ? nv.getTrinhDo().name() : null);
             ps.setString(9, nv.getTrangThai() != null ? nv.getTrangThai().name() : "CON_LAM");
-            ps.setString(10, nv.getMaQL());
+            ps.setString(10, nv.getQuanLy() != null ? nv.getQuanLy().getMaNV() : null);
             ps.setDate(11, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
             ps.setString(12, nv.getCccd());
 
@@ -188,7 +192,7 @@ public class NhanVienDAO {
             ps.setString(2, nv.getSoDT());
             ps.setDate(3, nv.getNgayVaoLamDate() != null ? Date.valueOf(nv.getNgayVaoLamDate()) : null);
             ps.setString(4, toVaiTroString(nv.getRole()));
-            ps.setString(5, nv.getMaQL());
+            ps.setString(5, nv.getQuanLy() != null ? nv.getQuanLy().getMaNV() : null);
             ps.setString(6, nv.getDiaChi());
             ps.setDate(7, nv.getNgaySinh() != null ? Date.valueOf(nv.getNgaySinh()) : null);
             ps.setString(8, nv.getCccd());
@@ -205,7 +209,7 @@ public class NhanVienDAO {
 
     // ── DELETE ────────────────────────────────────────────────────────────────
     public boolean delete(String maNV) {
-        String sql = "DELETE FROM NV WHERE maNV=?";
+        String sql = "UPDATE NV SET is_deleted = 1 WHERE maNV=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maNV);
@@ -220,7 +224,7 @@ public class NhanVienDAO {
      * Đếm số lượng nhân viên đang được quản lý bởi maNV này.
      */
     public int countSubordinates(String maQL) {
-        String sql = "SELECT COUNT(*) FROM NV WHERE maQL = ?";
+        String sql = "SELECT COUNT(*) FROM NV WHERE maQL = ? AND is_deleted = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maQL);
@@ -252,7 +256,7 @@ public class NhanVienDAO {
 
     // ── AUTHENTICATE ──────────────────────────────────────────────────────────
     public boolean authenticate(String staffID, String password) {
-        String sql = "SELECT mk FROM NV WHERE maNV=?";
+        String sql = "SELECT mk FROM NV WHERE maNV=? AND is_deleted = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, staffID);

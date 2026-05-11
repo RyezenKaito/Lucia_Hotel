@@ -17,7 +17,8 @@ CREATE TABLE KH (
     tenKH    NVARCHAR(100)  NOT NULL,
     soDT     VARCHAR(10),
     ngaySinh DATE,
-    soCCCD   VARCHAR(12)
+    soCCCD   VARCHAR(12),
+    is_deleted BIT DEFAULT 0
 );
 
 CREATE TABLE NV (
@@ -33,6 +34,7 @@ CREATE TABLE NV (
     role        NVARCHAR(20)  CHECK (role IN (N'NHAN_VIEN', N'QUAN_LY', N'ADMIN')),
     trangThai   NVARCHAR(20)  DEFAULT 'CON_LAM' CHECK (trangThai IN ('CON_LAM', 'DA_NGHI')),
     maQL        VARCHAR(9)    NULL,
+    is_deleted  BIT DEFAULT 0,
     CONSTRAINT FK_NV_QL    FOREIGN KEY (maQL) REFERENCES NV(maNV),
     CONSTRAINT CK_MaNV_Chuan CHECK (maNV = 'ADMIN' OR maNV LIKE 'LUCIA[0-9]%')
 );
@@ -43,15 +45,20 @@ CREATE TABLE LoaiPhong (
     sucChua     INT            NOT NULL        -- Sá»©c chá»©a tá»‘i Ä‘a (ngÆ°á» i)
 );
 
+CREATE TABLE LoaiDichVu (
+    maLoaiDV VARCHAR(20) PRIMARY KEY,
+    tenLoaiDV NVARCHAR(100) NOT NULL
+);
+
 CREATE TABLE DV (
     maDV     VARCHAR(20)   PRIMARY KEY,
     tenDV    NVARCHAR(100) NOT NULL,
     gia      DECIMAL(18,2) NULL,
-    -- DÃ¹ng ASCII key trÃ¡nh lá»—i collation khi so sÃ¡nh
-    loaiDV   NVARCHAR(20)  CHECK (loaiDV IN (N'THUC_PHAM', N'GIAI_TRI', N'SUC_KHOE', N'TIEN_ICH')),
+    maLoaiDV VARCHAR(20),
     mieuTa   NVARCHAR(255),
     donVi    NVARCHAR(20),
-    trangThai BIT DEFAULT 0   -- 0: Đang phục vụ, 1: Tạm ngưng phục vụ
+    trangThai BIT DEFAULT 0,  -- 0: Đang phục vụ, 1: Tạm ngưng phục vụ
+    CONSTRAINT FK_DV_LoaiDV FOREIGN KEY (maLoaiDV) REFERENCES LoaiDichVu(maLoaiDV)
 );
 
 -- =============================
@@ -66,6 +73,7 @@ CREATE TABLE Phong (
     tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG')),
     soPhong   INT,
     soTang    INT,
+    is_deleted BIT DEFAULT 0,
     CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (loaiPhong) REFERENCES LoaiPhong(maLoaiPhong)
 );
 
@@ -78,11 +86,13 @@ CREATE TABLE DatPhong (
     ngayCheckOut DATETIME,
     trangThai    NVARCHAR(20) NOT NULL DEFAULT N'CHO_XACNHAN'
                  CHECK (trangThai IN (
-                     N'DA_XACNHAN',   -- NV Ä‘Ã£ xÃ¡c nháº­n, chá» khÃ¡ch Ä‘áº¿n
+                     N'DA_XACNHAN',   -- NV Ä‘Ã£ xÃ¡c nháº­n, chá»  khÃ¡ch Ä‘áº¿n
                      N'DA_CHECKIN',   -- KhÃ¡ch Ä‘ang á»Ÿ
                      N'DA_CHECKOUT',  -- KhÃ¡ch Ä‘Ã£ tráº£ phÃ²ng, hÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t
-                     N'DA_HUY'        -- ÄÆ¡n bá»‹ há»§y
+                     N'DA_HUY'        -- Ä Æ¡n bá»‹ há»§y
                  )),
+    so_nguoi     INT NOT NULL DEFAULT 1,
+    ngay_thanh_toan DATETIME NULL,
     CONSTRAINT FK_DatPhong_KH FOREIGN KEY (maKH) REFERENCES KH(maKH)
 );
 
@@ -117,26 +127,24 @@ CREATE TABLE HoaDon (
     loaiHD               NVARCHAR(30)  NOT NULL DEFAULT N'HOA_DON_PHONG'
                          CHECK (loaiHD IN (
                              N'HOA_DON_PHONG',      -- HÃ³a Ä‘Æ¡n thanh toÃ¡n khi checkout (loáº¡i chÃ­nh)
-                             N'HOA_DON_HOAN_TIEN'   -- HÃ³a Ä‘Æ¡n hoÃ n tiá»n (VD: há»§y Ä‘áº·t phÃ²ng Ä‘Ã£ cá»c)
+                             N'HOA_DON_HOAN_TIEN'   -- HÃ³a Ä‘Æ¡n hoÃ n tiá» n (VD: há»§y Ä‘áº·t phÃ²ng Ä‘Ã£ cá» c)
                          )),
 
     -- Tráº¡ng thÃ¡i thanh toÃ¡n
     trangThaiThanhToan   NVARCHAR(30)  NOT NULL DEFAULT N'CHUA_THANH_TOAN'
                          CHECK (trangThaiThanhToan IN (
-                            N'CHUA_THANH_TOAN',     -- HÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t nhÆ°ng chÆ°a thu tiá»n
-                            N'DA_THANH_TOAN_COC',   -- ÄÃ£ thu cá»c, chÆ°a thanh toÃ¡n toÃ n bá»™
-                            N'DA_THANH_TOAN',        -- ÄÃ£ thu Ä‘á»§ tiá»n
+                            N'CHUA_THANH_TOAN',     -- HÃ³a Ä‘Æ¡n Ä‘Ã£ xuáº¥t nhÆ°ng chÆ°a thu tiá» n
+                            N'DA_THANH_TOAN_COC',   -- Ä Ã£ thu cá» c, chÆ°a thanh toÃ¡n toÃ n bá»™
+                            N'DA_THANH_TOAN',        -- Ä Ã£ thu Ä‘á»§ tiá» n
                             N'DA_HOAN_COC',    -- MỚI
                             N'DA_MAT_COC' 
                          )),
 
-    -- ThÃ´ng tin thanh toÃ¡n (Ä‘iá»n khi DA_THANH_TOAN)
-    phuongThucThanhToan  NVARCHAR(30)  NULL
-                         CHECK (phuongThucThanhToan IN (
-                             N'TIEN_MAT', N'THE_TIN_DUNG', N'CHUYEN_KHOAN', N'VI_DIEN_TU'
-                         )),
-    ngayThanhToan        DATETIME      NULL,   -- Thá»i Ä‘iá»ƒm thu Ä‘á»§ tiá»n â†’ báº±ng chá»©ng khi khiáº¿u náº¡i
-    ghiChuThanhToan      NVARCHAR(500) NULL,   -- MÃ£ giao dá»‹ch, lÃ½ do hoÃ n tiá»n, v.v.
+    -- ThÃ´ng tin thanh toÃ¡n (Ä‘iá» n khi DA_THANH_TOAN)
+    ngayThanhToan        DATETIME      NULL,   -- Thá» i Ä‘iá»ƒm thu Ä‘á»§ tiá» n â†’ báº±ng chá»©ng khi khiáº¿u náº¡i
+    ghiChuThanhToan      NVARCHAR(500) NULL,   -- MÃ£ giao dá»‹ch, lÃ½ do hoÃ n tiá» n, v.v.
+    phu_thu              DECIMAL(18,2) DEFAULT 0,
+    phu_phi_tra_muon     DECIMAL(18,2) DEFAULT 0,
 
     CONSTRAINT FK_HoaDon_DatPhong FOREIGN KEY (maDat) REFERENCES DatPhong(maDat),
     CONSTRAINT FK_HoaDon_NV       FOREIGN KEY (maNV)  REFERENCES NV(maNV)
