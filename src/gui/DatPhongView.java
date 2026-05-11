@@ -52,7 +52,7 @@ public class DatPhongView extends BorderPane {
     private CheckBox chkFilterDate;
 
     /* ── Column filter state ────────────────────────────────────────── */
-    private String filterTrangThai = null;
+    private java.util.Set<String> selectedTrangThais = new java.util.HashSet<>();
     private TableColumn<Object[], String> colStatus;
     private Button btnFilterTT;
     private ContextMenu menuTrangThai;
@@ -494,15 +494,21 @@ public class DatPhongView extends BorderPane {
                     } catch (Exception ignored) {}
                 }
             }
-            // Trạng thái filter
-            if (filterTrangThai != null) {
+
+            // Trạng thái filter (Hỗ trợ chọn nhiều)
+            if (!selectedTrangThais.isEmpty()) {
                 String tt = (String) row[8];
-                if ("DA_HUY".equals(filterTrangThai)) {
-                    // "Đã hủy" bao gồm cả DA_HUY, HUY_HOAN_COC, HUY_MAT_COC
-                    if (tt == null || (!"DA_HUY".equals(tt) && !"HUY_HOAN_COC".equals(tt) && !"HUY_MAT_COC".equals(tt)))
-                        return false;
-                } else {
-                    if (tt == null || !tt.equals(filterTrangThai)) return false;
+                if (tt == null) return false;
+
+                // Quy đổi các trạng thái hủy chi tiết về chung một nhóm "DA_HUY" để so sánh lọc
+                String ttCheck = tt;
+                if ("HUY_HOAN_COC".equals(tt) || "HUY_MAT_COC".equals(tt)) {
+                    ttCheck = "DA_HUY";
+                }
+
+                // Nếu trạng thái của dòng này không nằm trong danh sách đang được tick chọn thì ẩn đi
+                if (!selectedTrangThais.contains(ttCheck)) {
+                    return false;
                 }
             }
             // Text filter
@@ -536,14 +542,11 @@ public class DatPhongView extends BorderPane {
     }
 
     /* ── Column-header filter helpers ──────────────────────────────── */
-    private void installColumnFilter() {
+private void installColumnFilter() {
         String baseName = "Trạng thái";
         menuTrangThai = new ContextMenu();
 
         MenuItem all = new MenuItem("Tất cả trạng thái");
-        all.setOnAction(e -> { filterTrangThai = null; btnFilterTT.setText(baseName + " ▼"); applyFilter(); });
-        menuTrangThai.getItems().add(all);
-        menuTrangThai.getItems().add(new SeparatorMenuItem());
 
         String[][] statuses = {
             {"DA_XACNHAN", "Đã xác nhận"},
@@ -551,10 +554,48 @@ public class DatPhongView extends BorderPane {
             {"DA_CHECKOUT", "Đã trả phòng"},
             {"DA_HUY", "Đã hủy"}
         };
+
+        java.util.List<CheckBox> checkBoxes = new java.util.ArrayList<>();
+
+        // Nút "Tất cả trạng thái" sẽ làm mới lại danh sách
+        all.setOnAction(e -> {
+            selectedTrangThais.clear();
+            for (CheckBox cb : checkBoxes) {
+                cb.setSelected(false); // Bỏ tích toàn bộ CheckBox
+            }
+            btnFilterTT.setText(baseName + " ▼");
+            applyFilter();
+        });
+
+        menuTrangThai.getItems().add(all);
+        menuTrangThai.getItems().add(new SeparatorMenuItem());
+
+        // Tạo các tùy chọn lọc bằng CheckBox
         for (String[] st : statuses) {
-            MenuItem mi = new MenuItem(st[1]);
-            mi.setOnAction(e -> { filterTrangThai = st[0]; btnFilterTT.setText(st[1] + " ▼"); applyFilter(); });
-            menuTrangThai.getItems().add(mi);
+            CheckBox cb = new CheckBox(st[1]);
+            cb.setStyle("-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
+            
+            // CustomMenuItem giúp menu KHÔNG BỊ ĐÓNG khi click vào CheckBox
+            CustomMenuItem cmi = new CustomMenuItem(cb);
+            cmi.setHideOnClick(false);
+            menuTrangThai.getItems().add(cmi);
+
+            cb.setOnAction(e -> {
+                if (cb.isSelected()) {
+                    selectedTrangThais.add(st[0]);
+                } else {
+                    selectedTrangThais.remove(st[0]);
+                }
+
+                // Cập nhật text cho Header Button
+                if (selectedTrangThais.isEmpty()) {
+                    btnFilterTT.setText(baseName + " ▼");
+                } else {
+                    btnFilterTT.setText("Đã chọn (" + selectedTrangThais.size() + ") ▼");
+                }
+                applyFilter();
+            });
+            checkBoxes.add(cb);
         }
 
         btnFilterTT = new Button(baseName + " ▼");
