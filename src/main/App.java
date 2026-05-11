@@ -1,6 +1,5 @@
 package main;
 
-import javax.swing.SwingUtilities;
 
 import gui.DangNhapView;
 import gui.MainFrameView;
