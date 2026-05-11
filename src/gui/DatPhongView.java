@@ -102,37 +102,19 @@ public class DatPhongView extends BorderPane {
 
         row1.getChildren().addAll(titleBox, spacer, btnAdd);
 
-        HBox row2 = new HBox(14);
-        row2.setAlignment(Pos.CENTER_LEFT);
+        // ── Cấu trúc: VBox trái (search + date filter) | HBox phải (stat cards cao) ──
+        int curYear = java.time.LocalDate.now().getYear();
 
+        // --- Left: search bar ---
         txtSearch = new TextField();
         txtSearch.setPromptText("🔍  Tìm theo mã đặt, tên KH, SĐT...");
-        txtSearch.setPrefWidth(320);
         txtSearch.setPrefHeight(40);
+        txtSearch.setMaxWidth(Double.MAX_VALUE);
         txtSearch.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
                 "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 13px; -fx-padding: 8 14 8 14;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
 
-        Region spacer2 = new Region();
-        HBox.setHgrow(spacer2, Priority.ALWAYS);
-
-        lblTotal = new Label("0");
-        lblDaDat = new Label("0");
-        lblChoXacNhan = new Label("0");
-        lblDangO = new Label("0");
-        lblDaTra = new Label("0");
-
-        HBox stats = new HBox(10);
-        stats.setAlignment(Pos.CENTER_RIGHT);
-        stats.getChildren().addAll(
-                buildStatCard("Tổng", lblTotal, "#1f2937"),
-                buildStatCard("Đã xác nhận", lblDaDat, C_ACTIVE),
-                buildStatCard("Đã nhận phòng", lblDangO, "#16a34a"),
-                buildStatCard("Đã trả phòng", lblDaTra, C_TEXT_MUTED));
-
-        row2.getChildren().addAll(txtSearch, spacer2, stats);
-
-        // ── Date filter row: Từ ngày – Đến ngày (theo Ngày nhận) ────
+        // --- Left: date filter row ---
         HBox dateFilterRow = new HBox(10);
         dateFilterRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -140,8 +122,6 @@ public class DatPhongView extends BorderPane {
         chkFilterDate.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         chkFilterDate.setTextFill(Color.web(C_TEXT_MUTED));
         chkFilterDate.setOnAction(e -> applyFilter());
-
-        int curYear = java.time.LocalDate.now().getYear();
 
         Label lblFrom = new Label("Từ:");
         lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
@@ -165,15 +145,49 @@ public class DatPhongView extends BorderPane {
 
         dateFilterRow.getChildren().addAll(chkFilterDate, lblFrom, dpFrom, lblTo, dpTo);
 
-        header.getChildren().addAll(row1, row2, dateFilterRow);
+        // --- Left VBox: search on top, date filter below ---
+        // leftBox KHÔNG grow → width = natural width của dateFilterRow
+        // txtSearch (maxWidth=MAX) sẽ fill cùng width với dateFilterRow
+        VBox leftBox = new VBox(10);
+        // Không set HGrow ALWAYS → leftBox chỉ rộng bằng dateFilterRow
+        leftBox.getChildren().addAll(txtSearch, dateFilterRow);
+
+        // Spacer đẩy stats sang phải
+        Region spacerMid = new Region();
+        HBox.setHgrow(spacerMid, Priority.ALWAYS);
+
+        // --- Right: stat cards ---
+        lblTotal = new Label("0");
+        lblDaDat = new Label("0");
+        lblChoXacNhan = new Label("0");
+        lblDangO = new Label("0");
+        lblDaTra = new Label("0");
+
+        HBox stats = new HBox(10);
+        stats.setAlignment(Pos.CENTER_RIGHT);
+        stats.setMaxHeight(Double.MAX_VALUE);
+        stats.getChildren().addAll(
+                buildStatCard("Tổng", lblTotal, "#1f2937"),
+                buildStatCard("Đã xác nhận", lblDaDat, C_ACTIVE),
+                buildStatCard("Đã nhận phòng", lblDangO, "#16a34a"),
+                buildStatCard("Đã trả phòng", lblDaTra, C_TEXT_MUTED));
+
+        // --- Outer row: leftBox | spacer | stats ---
+        HBox row2 = new HBox(14);
+        row2.setAlignment(Pos.CENTER_LEFT);
+        row2.getChildren().addAll(leftBox, spacerMid, stats);
+
+        header.getChildren().addAll(row1, row2);
         return header;
     }
 
     private VBox buildStatCard(String title, Label valueLbl, String color) {
-        VBox card = new VBox(2);
+        VBox card = new VBox(4);
         card.setAlignment(Pos.CENTER_LEFT);
-        card.setPadding(new Insets(10, 18, 10, 18));
-        card.setMinWidth(110);
+        card.setPadding(new Insets(12, 18, 12, 18));
+        card.setMinWidth(115);
+        card.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(card, Priority.ALWAYS);
         card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
                 "; -fx-border-radius: 10; -fx-background-radius: 10;");
 
@@ -181,7 +195,7 @@ public class DatPhongView extends BorderPane {
         lbl.setFont(Font.font("Segoe UI", 11));
         lbl.setTextFill(Color.web("#9ca3af"));
 
-        valueLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
+        valueLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         valueLbl.setTextFill(Color.web(color));
 
         card.getChildren().addAll(lbl, valueLbl);
@@ -213,21 +227,40 @@ public class DatPhongView extends BorderPane {
             MenuItem miCancel = new MenuItem("Hủy đơn đặt phòng");
             miCancel.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
             miCancel.setOnAction(e -> {
-                Object[] data = row.getItem();
-                if (data != null) confirmCancel(data);
+                Object[] r = row.getItem();
+                if (r != null)
+                    confirmCancel(r);
             });
 
-            // Khóa chức năng hủy dựa trên trạng thái
+            MenuItem miDelete = new MenuItem("Xóa đơn đặt phòng");
+            miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
+            miDelete.setOnAction(e -> {
+                Object[] r = row.getItem();
+                if (r != null)
+                    confirmDelete(r);
+            });
+
+            // Khóa chức năng hủy/xóa dựa trên trạng thái
             row.itemProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
                     String status = (String) newVal[8];
+
                     // Chỉ cho hủy khi CHƯA nhận phòng
                     boolean canCancel = "CHO_XACNHAN".equals(status) || "DA_XACNHAN".equals(status);
                     miCancel.setDisable(!canCancel);
+
+                    // Chỉ cho xóa nếu không phải đang ở hoặc đã trả phòng
+                    boolean canDeleteBooking = !"DA_CHECKIN".equals(status) && !"DA_CHECKOUT".equals(status);
+                    miDelete.setDisable(!canDeleteBooking);
                 }
             });
 
-            ctx.getItems().addAll(miDetail, miCancel);
+            // [ĐÃ SỬA] Chỉ cho phép xóa nếu có quyền canDelete (thường là ADMIN)
+            if (canDelete) {
+                ctx.getItems().addAll(miDetail, miCancel, new SeparatorMenuItem(), miDelete);
+            } else {
+                ctx.getItems().addAll(miDetail, miCancel);
+            }
             row.setContextMenu(ctx);
 
             row.setOnMouseClicked(e -> {
@@ -649,7 +682,48 @@ public class DatPhongView extends BorderPane {
         }
     }
 
+    private void confirmDelete(Object[] row) {
+        String maDat = (String) row[0];
+        String tenKH = (String) row[1];
 
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Xác nhận xóa");
+        alert.setHeaderText(null);
+        alert.setContentText("Bạn có chắc muốn xóa đơn " + maDat + " của " + tenKH + "?");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK)
+            return;
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                String[] sqls = {
+                        "DELETE dvsd FROM DichVuSuDung dvsd JOIN ChiTietDatPhong ctdp ON dvsd.maCTDP = ctdp.maCTDP WHERE ctdp.maDat = ?",
+                        "DELETE cthd FROM ChiTietHoaDon cthd JOIN HoaDon hd ON cthd.maHD = hd.maHD WHERE hd.maDat = ?",
+                        "DELETE FROM HoaDon WHERE maDat = ?",
+                        "DELETE FROM ChiTietDatPhong WHERE maDat = ?",
+                        "DELETE FROM DatPhong WHERE maDat = ?"
+                };
+                for (String s : sqls) {
+                    try (PreparedStatement ps = con.prepareStatement(s)) {
+                        ps.setString(1, maDat);
+                        ps.executeUpdate();
+                    }
+                }
+                con.commit();
+                loadData();
+                showInfo("Thành công!", "Đã xóa đơn đặt phòng " + maDat + ".");
+            } catch (Exception ex) {
+                con.rollback();
+                showError("Lỗi khi xóa: " + ex.getMessage());
+            } finally {
+                con.setAutoCommit(true);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 
     /* ── Helpers ────────────────────────────────────────────────────── */
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {
