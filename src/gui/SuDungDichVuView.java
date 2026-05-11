@@ -56,9 +56,9 @@ public class SuDungDichVuView extends BorderPane {
         setPadding(new Insets(32));
         setTop(buildHeaderBlock());
         setCenter(buildBody());
-        
+
         refreshRooms();
-        
+
         List<model.entities.LoaiDichVu> cats = loaiDVDAO.getAll();
         if (!cats.isEmpty()) {
             currentCategory = cats.get(0);
@@ -129,7 +129,8 @@ public class SuDungDichVuView extends BorderPane {
         VBox.setVgrow(serviceBox, Priority.ALWAYS);
 
         tabBar = new HBox(8);
-        // tabBar sẽ được populate qua refreshTabBar() gọi từ constructor hoặc sau khi load data
+        // tabBar sẽ được populate qua refreshTabBar() gọi từ constructor hoặc sau khi
+        // load data
 
         servicePane = new FlowPane(12, 12);
         ScrollPane serviceScroll = new ScrollPane(servicePane);
@@ -349,7 +350,8 @@ public class SuDungDichVuView extends BorderPane {
     }
 
     private void refreshServices(model.entities.LoaiDichVu cat) {
-        if (cat == null) return;
+        if (cat == null)
+            return;
         servicePane.getChildren().clear();
         DichVuDAO dichVuDAO = new DichVuDAO();
         List<DichVu> list = dichVuDAO.getByType(cat.getMaLoaiDV());
