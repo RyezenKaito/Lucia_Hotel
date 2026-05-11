@@ -67,7 +67,7 @@ public class QuanLyNhanVienView extends BorderPane {
     private ObservableList<NhanVien> masterData = FXCollections.observableArrayList();
     private FilteredList<NhanVien> filteredData;
 
-    private Label lblTotal, lblStaff, lblManager;
+    private Label lblTotal, lblStaff, lblManager, lblWorking, lblResigned;
     private TextField txtSearch;
 
     /* ── Column filter state ────────────────────────────────────────── */
@@ -125,17 +125,32 @@ public class QuanLyNhanVienView extends BorderPane {
         statsRow.setAlignment(Pos.CENTER_LEFT);
 
         lblTotal = new Label("0");
-        lblStaff = new Label("0");
-        lblManager = new Label("0");
 
-        VBox c1 = createStatCard("👥", "TỔNG NHÂN VIÊN", lblTotal, C_NAVY);
-        VBox c2 = createStatCard("👔", "NHÂN VIÊN", lblStaff, C_BLUE);
-        VBox c3 = createStatCard("⭐", "QUẢN LÝ", lblManager, C_GOLD);
+        if (isCurrentUserAdmin) {
+            lblStaff = new Label("0");
+            lblManager = new Label("0");
 
-        HBox.setHgrow(c1, Priority.ALWAYS);
-        HBox.setHgrow(c2, Priority.ALWAYS);
-        HBox.setHgrow(c3, Priority.ALWAYS);
-        statsRow.getChildren().addAll(c1, c2, c3);
+            VBox c1 = createStatCard("👥", "TỔNG NHÂN VIÊN", lblTotal, C_NAVY);
+            VBox c2 = createStatCard("👔", "NHÂN VIÊN", lblStaff, C_BLUE);
+            VBox c3 = createStatCard("⭐", "QUẢN LÝ", lblManager, C_GOLD);
+
+            HBox.setHgrow(c1, Priority.ALWAYS);
+            HBox.setHgrow(c2, Priority.ALWAYS);
+            HBox.setHgrow(c3, Priority.ALWAYS);
+            statsRow.getChildren().addAll(c1, c2, c3);
+        } else {
+            lblWorking = new Label("0");
+            lblResigned = new Label("0");
+
+            VBox c1 = createStatCard("👥", "TỔNG NHÂN VIÊN", lblTotal, C_NAVY);
+            VBox c2 = createStatCard("✅", "CÒN LÀM", lblWorking, C_GREEN);
+            VBox c3 = createStatCard("🚪", "ĐÃ NGHỈ", lblResigned, C_RED);
+
+            HBox.setHgrow(c1, Priority.ALWAYS);
+            HBox.setHgrow(c2, Priority.ALWAYS);
+            HBox.setHgrow(c3, Priority.ALWAYS);
+            statsRow.getChildren().addAll(c1, c2, c3);
+        }
 
         /* ── Dòng 3: Thanh tìm kiếm ──────────────────────────────── */
         txtSearch = new TextField();
@@ -468,6 +483,7 @@ public class QuanLyNhanVienView extends BorderPane {
         masterData.clear();
 
         long totalStaff = 0, totalManager = 0;
+        long totalWorking = 0, totalResigned = 0;
 
         for (NhanVien nv : all) {
             if (nv.getRole() == ChucVu.ADMIN)
@@ -483,6 +499,12 @@ public class QuanLyNhanVienView extends BorderPane {
             if (!isCurrentUserAdmin && nv.getRole() != ChucVu.NHAN_VIEN)
                 continue;
 
+            // Tính thống kê làm việc cho danh sách được hiển thị
+            if (nv.getTrangThai() == model.enums.TrangThaiNV.CON_LAM)
+                totalWorking++;
+            else
+                totalResigned++;
+
             // Thêm vào danh sách hiển thị
             masterData.add(nv);
         }
@@ -490,9 +512,15 @@ public class QuanLyNhanVienView extends BorderPane {
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
 
-        lblTotal.setText(String.valueOf(totalStaff + totalManager));
-        lblStaff.setText(String.valueOf(totalStaff));
-        lblManager.setText(String.valueOf(totalManager));
+        if (isCurrentUserAdmin) {
+            lblTotal.setText(String.valueOf(totalStaff + totalManager));
+            if (lblStaff != null) lblStaff.setText(String.valueOf(totalStaff));
+            if (lblManager != null) lblManager.setText(String.valueOf(totalManager));
+        } else {
+            lblTotal.setText(String.valueOf(totalWorking + totalResigned));
+            if (lblWorking != null) lblWorking.setText(String.valueOf(totalWorking));
+            if (lblResigned != null) lblResigned.setText(String.valueOf(totalResigned));
+        }
     }
 
     private void applyFilter(String keyword) {
