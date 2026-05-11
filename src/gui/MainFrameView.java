@@ -195,6 +195,7 @@ public class MainFrameView {
 
         if (isAdmin) {
             nav.getChildren().add(navBtn("👔", "Nhân viên", "staff"));
+            nav.getChildren().add(navBtn("📊", "Thống kê", "statistics"));
         }
 
         sidebar.getChildren().add(nav);
@@ -450,6 +451,13 @@ public class MainFrameView {
                     showFX(buildAccessDenied());
                 } else {
                     showFX(new gui.QuanLyNhanVienView(staff));
+                }
+            }
+            case "statistics" -> {
+                if (!isAdmin) {
+                    showFX(buildAccessDenied());
+                } else {
+                    showFX(new gui.ThongKeDoanhThuView(staff));
                 }
             }
             case "booking" -> showFX(new DatPhongView(staff != null && staff.getRole() == model.enums.ChucVu.ADMIN));

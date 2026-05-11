@@ -13,6 +13,7 @@ public class HoaDon {
     private double thueVAT;
     private double tongTien;
     private double doanhThu;
+    private transient double tongCP;
     
     // New fields
     private String loaiHD;
@@ -55,6 +56,9 @@ public class HoaDon {
 
     public double getTongTien() { return tongTien; }
     public void setTongTien(double tongTien) { this.tongTien = tongTien; }
+
+    public double getTongCP() { return tongCP; }
+    public void setTongCP(double tongCP) { this.tongCP = tongCP; }
 
     public String getLoaiHD() { return loaiHD; }
     public void setLoaiHD(String loaiHD) { this.loaiHD = loaiHD; }

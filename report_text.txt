@@ -1,0 +1,1800 @@
+Đại học Công Nghiệp thành phố Hồ Chí Minh
+Khoa Công Nghệ Thông Tin
+BÁO CÁO BÀI TẬP LỚN MÔN: PHÁT TRIỂN ỨNG DỤNG
+ĐỀ TÀI: ỨNG DỤNG QUẢN LÝ KHÁCH SẠN
+Lớp: DHKHMT19CTT
+Nhóm: 1
+Sinh viên thực hiện:
+Phạm Lê Khánh An
+23703661
+Trần Quang Đại
+23714441
+Phạm Tuấn Đạt
+23706451
+Lưu Nguyễn Hoàng Anh
+23699961
+Đặng Nguyễn Thành Công
+MỤC LỤC
+MỤC LỤC0
+DANH MỤC CÁC HÌNH VẼ3
+DANH MỤC CÁC BẢNG BIỂU3
+LỜI MỞ ĐẦU4
+CHƯƠNG 1 : GIỚI THIỆU5
+1.1 Tổng quan5
+1.2 Mục tiêu đề tài5
+1.3 Phạm vi đề tài5
+1.4 Mô tả yêu cầu chức năng5
+1.5 Mô tả yêu cầu phi chức năng5
+CHƯƠNG 2 : PHÂN TÍCH11
+2.1 Mô hình Use case11
+2.2 Danh sách các tác nhân và mô tả11
+2.3 Danh sách Use case và mô tả11
+2.4 Đặc tả các yêu cầu chức năng11
+CHƯƠNG 3 : THIẾT KẾ VÀ HIỆN THỰC12
+3.1 Mô hình lớp (Class Diagram)12
+3.1.1 Mô hình12
+3.1.2 Đặc tả lớp12
+3.2 Cơ sở dữ liệu12
+3.2.1 Mô hình EER12
+3.2.2 Mô hình cơ sở dữ liệu quan hệ12
+3.2.3 Các ràng buộc toàn vẹn trong CSDL12
+3.3 Phân luồng màn hình của ứng dụng12
+3.4 Màn hình của ứng dụng12
+3.5 Kiểm thử chức năng ứng dụng12
+3.5.1 Những yêu cầu về tài nguyên cho kiểm thử ứng dụng12
+3.5.1.1 Phần cứng12
+3.5.1.2 Phần mềm12
+3.5.2 Danh sách các tình huống để kiểm tra ứng dụng12
+CHƯƠNG 4 : KẾT LUẬN13
+4.1 Kết quả đạt được13
+4.2 Các chức năng chưa hoàn thànhError! Bookmark not defined.
+4.3 Hướng phát triển13
+CHƯƠNG 5 : KHỞI NGHIỆP13
+TÀI LIỆU THAM KHẢO13
+PHỤ LỤC14
+DANH MỤC CÁC HÌNH VẼ
+Hình 1-1 Thao tác cập nhật mục lụcError! Bookmark not defined.
+Hình 1-2 Cách chèn nhãn cho hìnhError! Bookmark not defined.
+Hình 1-3 Cách tạo một nhãn mớiError! Bookmark not defined.
+Hình 1-4 Cách tham chiếu đến một nhãnError! Bookmark not defined.
+DANH MỤC CÁC BẢNG BIỂU
+Bảng 1-1 Tên bảngError! Bookmark not defined.
+CHƯƠNG 1: GIỚI THIỆU 
+1.1 Tổng quan
+1.1.1. Thu thập yêu cầu:
+1.1.a. Khảo sát hiện trạng
+Phương thức quản lý hiện tại:
+Thông tin khách thuê phòng được lễ tân ghi nhận thủ công thông qua sổ sau đó chuyển sang lưu dưới dạng các bảng tính đơn lẻ bằng excel, áp dụng cho cả khách đến thuê trực tiếp tại quầy và khách đặt phòng trước qua điện thoại.
+Thời gian lưu trú, thời gian giữ phòng và thông tin đặt cọc của khách được ghi chú thủ công, chưa có công cụ hỗ trợ kiểm soát đặt phòng tự động.
+Việc theo dõi tình trạng phòng trống, phòng đã đặt trước và phòng đang có khách được thực hiện bằng bảng ghi chú hoặc sơ đồ phòng treo tại quầy lễ tân.
+Các dịch vụ phát sinh trong thời gian khách lưu trú ( giặt ủi, ăn uống tại phòng,…) được ghi nhận riêng lẻ trên phiếu giấy và chỉ được tổng hợp khi khách trả phòng, ví dụ: sử dụng dịch vụ giặt ủi cũng đến ngày trả phòng sẽ được quản lý hoặc lễ tân tổng hợp lại và tính tiền cùng với tổng tiền thuê.
+Những hạn chế và bất cập:
+Sai lệch dữ liệu: Việc ghi chép thủ công dễ dẫn đến thiếu sót hoặc nhầm lẫn thông tin quan trọng như số điện thoại liên hệ  ví dụ: số điện thoại ghi sai hoặc không thể đọc do chữ viết tay,...
+Đặt trùng phòng: Trong các thời điểm lễ, tết,..., trạng thái phòng không được cập nhật kịp thời có thể gây ra tình trạng một phòng được nhận đặt cho nhiều khách khác nhau.
+Tra cứu chậm: Khi khách đến làm thủ tục nhận phòng, nhân viên lễ tân mất nhiều thời gian tìm kiếm lại thông tin booking vì chỉ lưu thông tin trên bảng tính excel, ảnh hưởng đến tốc độ phục vụ.
+Phòng trống không được khai thác: Các booking đặt trước nhưng khách không đến đúng hẹn không được xử lý kịp thời, dẫn đến việc phòng bị giữ nhưng không có khách sử dụng.
+Tính toán thiếu chính xác: Việc cộng tổng tiền phòng, tiền dịch vụ và các khoản phụ thu do trả phòng trễ được thực hiện thủ công nên dễ xảy ra sai sót trong quá trình tính toán.
+1.1.b. Quy trình nghiệp vụ
+Quy trình Đặt phòng
+Quy trình quản lý phòng (Trạng thái phòng)
+Quy trình nhận phòng
+Quy trình Sử dụng dịch vụ trong thời gian lưu trú
+Quy trình trả phòng & thanh toán
+1.1.c. Quy định:
+Giờ check-in chuẩn: 14:00.
+Giờ check-out chuẩn: 12:00.
+Check-in sớm:
+Trước 13:00 giờ check-in mỗi tiếng tăng thêm 20%.
+Trước 10:00 sáng tính là 100% tiền phòng.
+Check-out trễ: Quá 30p so với giờ check out thì tính là 1 tiếng và các tiếng sau tương tự. 
+Trễ 1 tiếng :
+Phụ thu thêm 10% giá phòng mỗi tiếng
+Sau 18:00: Tính thêm 01 ngày tiền phòng.
+Quy định gán phòng: mỗi phòng chỉ được gán cho một khách hoặc một đoàn tại một thời điểm.
+Quy định đặt cọc:
+Khách đặt phòng có thể phải đặt cọc bằng giá phòng ngày đầu tiên theo quy định của khách sạn.
+Tiền đặt cọc được trừ vào tổng chi phí khi trả phòng.
+Trường hợp hủy phòng cách ngày nhận phòng 3 ngày, tiền đặt cọc không được hoàn lại.
+Quy định sử dụng dịch vụ:
+Các dịch vụ phát sinh (giặt ủi, ăn uống tại phòng, …) được ghi nhận trong thời gian lưu trú.
+Chi phí dịch vụ được cộng vào hóa đơn tổng khi khách trả phòng.
+ Quy định khi trả phòng:
+Nếu khi trả phòng mà vật dụng, tài sản của khách sạn có vấn đề: hư, mất mát,... thì khách trả theo giá niêm yết của khách sạn.
+Trường hợp khách mất đồ trong thời gian lưu trú tại khách sạn thì khách sạn chỉ hỗ trợ tìm kiếm, không chịu trách nhiệm mất mát.
+Trường hợp khách làm mất thẻ từ/chìa khóa phụ thu 15% tiền phòng . 
+1.1.2 Danh sách các câu hỏi khi thu thập và làm rõ yêu cầu của ứng dụng
+STT
+Câu hỏi (Questions)
+Trả lời (Answers)
+Ghi chú
+1.
+Tôi có thể đặt phòng trước bao lâu?
+Khách hàng đặt trước tối đa 1 tháng trước khi nhận phòng
+Cần quản lý booking theo thời gian
+2.
+Nếu tôi check-out trễ thì tính phí như thế nào?
+Tính phụ phí theo từng khung giờ hoặc tính thêm 1 ngày nếu quá trễ:
+- Quá 30 phút so với giờ check out thì tính là 1 tiếng và các tiếng sau tương tự
+- Trễ 1 tiếng: 10% giá phòng/tiếng.
+- Sau 18:00: Tính 100% giá phòng.
+ 
+3.
+Khách sạn có bao nhiêu loại phòng?
+Hiện có phòng Đơn, Đôi, Gia đình và VIP
+ 
+4.
+ Hệ thống có những vai trò nào và phân quyền cho các vai trò?
+Lễ tân (User)
+- Quản lý phòng (Trống - Đang ở - Đang dọn)
+- Quản lý lịch đặt phòng
+- Thanh toán
+- Cập nhật trạng thái phòng
+- Cập nhật thông tin khách hàng
+- Báo cáo thống kê
+- Đặc phòng
+- Check - in
+- Check - out
+Quản lý (Admin)
+- Quản lý thông tin khách hàng
+- Quản lý phòng
+- Thiết lập giá phòng
+- Quản lý khách hàng
+- Quản lý báo cáo thống kê
+- Quản lý quy trình đặt phòng của khách sạn
+ 
+5.
+Thông tin khách hàng cần lưu trữ những trường nào để đảm bảo quy định lưu trú?
+ 
+Họ tên, SĐT, Số CCCD
+ 
+ 
+ 
+6.
+Trường hợp khách muốn đặt nhiều phòng cùng lúc (Khách đoàn/Gia đình) thì xử lý thế nào?
+Một người đại diện sẽ đứng tên trên phiếu đặt phòng và thanh toán cho tất cả các phòng đó. Tuy nhiên, vẫn cần nhập tên khách ở từng phòng nếu có.
+ 
+7.
+Khi đổi phòng trong thời gian lưu trú(do hỏng hóc hoặc khách yêu cầu), giá phòng tính thế nào?
+Nếu lỗi do khách sạn: đổi phòng cùng mức giá khách đã đặt.
+Nếu khách muốn đổi loại phòng: Tính giá phòng mới cho những ngày còn lại.
+ 
+ 
+Tách thành 2 hóa đơn phòng cũ và phòng mới cho dễ quản lý
+8.
+Khi khách đặt phòng, nhưng đã quá thời gian quy định mà khách không đến thì sao?
+Khách đến trễ có thể thông báo thì khách sạn sẽ giữ phòng, nếu khách không báo khách sạn sẽ hủy phòng sau 16h (xem thời gian tại mục quy định)
+ 
+9.
+Tôi muốn trả phòng sớm hơn ngày dự kiến thì tính chi phí như thế nào?
+Tính theo thời gian ở thực tế, không hoàn tiền cọc
+ 
+10.
+Quản lý có cần theo dõi doanh thu chi tiết theo từng ca làm việc của lễ tân để bàn giao tiền mặt khi hết ca không?
+Rất cần thiết tách theo ca  vì nghiệp vụ của khách sạn là chốt két tiền khi đổi ca.
+ 
+ 
+1.2 Mục tiêu đề tài
+Mục tiêu cốt lõi của đề tài là nghiên cứu và xây dựng một hệ thống phần mềm quản lý thông tin đặt phòng khách sạn toàn diện, nhằm thay thế phương thức quản lý thủ công truyền thống bằng quy trình số hóa hiện đại. Cụ thể, đề tài hướng đến các mục tiêu chi tiết sau:
+Về mặt nghiệp vụ: Tự động hóa các quy trình cốt lõi bao gồm đặt phòng (Booking), nhận phòng (Check-in), trả phòng (Check-out) và quản lý trạng thái phòng thời gian thực. Hệ thống giúp loại bỏ các sai sót do ghi chép thủ công (như đặt trùng phòng, sai lệch thông tin khách hàng) và rút ngắn thời gian xử lý các tác vụ nghiệp vụ xuống dưới 3 giây.
+Về mặt quản lý: Cung cấp công cụ quản lý tập trung danh mục phòng, dịch vụ, nhân viên và lịch sử khách hàng. Đặc biệt, hệ thống hỗ trợ chức năng báo cáo, thống kê doanh thu và hiệu suất sử dụng phòng, giúp nhà quản lý đưa ra các quyết định điều hành chính xác và kịp thời.
+Về mặt trải nghiệm người dùng: Xây dựng giao diện trực quan, tối giản thao tác nhập liệu, giúp nhân viên dễ dàng tiếp cận và vận hành hệ thống một cách hiệu quả, từ đó nâng cao chất lượng dịch vụ và sự hài lòng của khách hàng.
+Về mặt kỹ thuật: Đảm bảo tính toàn vẹn của dữ liệu thông qua các ràng buộc trong cơ sở dữ liệu và thiết lập hệ thống phân quyền chặt chẽ giữa các vai trò (Quản trị viên, Quản lý, Lễ tân) để bảo mật thông tin kinh doanh.
+1.3 Phạm vi đề tài
+1.3.1. Phạm vi chức năng 
+Hệ thống tập trung vào các nhóm chức năng chính phục vụ hoạt động vận hành khách sạn:
+Quản lý lưu trú: Thực hiện toàn bộ quy trình từ tiếp nhận yêu cầu đặt phòng (khách lẻ và khách đoàn), kiểm tra phòng trống, thực hiện Check-in/Check-out và đổi phòng theo nhu cầu.
+Quản lý danh mục & Tình trạng phòng: Theo dõi và cập nhật trạng thái phòng (Trống, Đang ở, Đang dọn dẹp, Bảo trì) và quản lý giá phòng theo từng loại phòng/thời điểm.
+Quản lý dịch vụ & Thanh toán: Ghi nhận các dịch vụ phát sinh trong quá trình lưu trú (ăn uống, giặt là...), tính toán hóa đơn tự động và hỗ trợ đa dạng hình thức thanh toán (tiền mặt, thẻ, chuyển khoản).
+Quản lý hệ thống & Báo cáo: Phân quyền người dùng, quản lý hồ sơ nhân viên và xuất các báo cáo doanh thu, báo cáo mật độ phòng định kỳ.
+1.3.2. Phạm vi đối tượng và người dùng
+Đối tượng phục vụ: Các khách sạn quy mô vừa và nhỏ có nhu cầu hiện đại hóa quy trình quản lý.
+Người dùng hệ thống: Bao gồm nhân viên lễ tân (thực hiện nghiệp vụ hằng ngày) và nhà quản lý/quản trị viên (giám sát hoạt động và cấu hình hệ thống).
+1.3.3. Phạm vi công nghệ ứng dụng
+Hệ thống được phát triển dưới dạng ứng dụng Desktop (Desktop Application).
+Ngôn ngữ lập trình: Java.
+Hệ quản trị cơ sở dữ liệu: MySQL.
+Môi trường phát triển: Eclipse IDE, sử dụng các thư viện chuẩn để xây dựng giao diện và kết nối dữ liệu.
+1.4 Mô tả yêu cầu chức năng
+Nhân viên lễ tân
+-Đặt phòng
+-Check-in
+-Check-out
+-Đổi phòng
+-Quản lý lịch đặt phòng
+-Thanh toán
+-Quản lý thông tin khách hàng
+-Báo cáo thống kê
+-Lập hóa đơn
+-Quản lý tình trạng phòng
+-Quản lý dịch vụ
+Quản lý
+-Quản lý báo cáo thống kê.
+-Quản lý nhân viên.
+-Quản lý thông tin khách hàng.
+-Thiết lập giá dịch vụ.
+-Quản lý quy trình đặt phòng của khách sạn
+-Quản lý số lượng phòng
+-Quản lý tình trạng phòng
+Sơ đồ phân cấp chức năng
+Các chức năng chính cho ứng dụng (mục tiêu của ứng dụng):
+Quản lý phòng.
+Quản lý số lượng phòng
+Quản lý tình trạng phòng (trống, đã đặt, đang sử dụng, bảo trì).
+Cập nhật giá phòng theo từng loại phòng và thời điểm.
+Quản lý đặt phòng
+Đặt phòng trước theo thông tin khách hàng và thời gian lưu trú.
+Thực hiện check-in khi khách đến và check-out khi khách rời đi.
+Tự động cập nhật trạng thái phòng theo từng giai đoạn sử dụng.
+Nghiệp vụ thanh toán
+Tính toán chi phí lưu trú dựa trên thời gian ở và loại phòng.
+Tổng hợp chi phí dịch vụ phát sinh.
+Hỗ trợ nhiều hình thức thanh toán (tiền mặt, chuyển khoản, thẻ).
+Xuất hóa đơn và lưu trữ lịch sử thanh toán.
+ Quản lý dịch vụ phát sinh
+Quản lý danh sách các dịch vụ đi kèm (ăn uống, giặt là,…).
+Ghi nhận và cập nhật dịch vụ khách hàng đã sử dụng.
+Tự động cộng chi phí dịch vụ vào hóa đơn thanh toán.
+Báo cáo và thống kê
+Thống kê doanh thu theo ngày, tháng, năm.
+Báo cáo tình trạng sử dụng phòng.
+Cung cấp dữ liệu phục vụ cho việc phân tích và ra quyết định quản lý.
+1.5 Mô tả yêu cầu phi chức năng
+-  Tính sẵn sàng và độ tin cậy: Hệ thống hoạt động 24/7. Dữ liệu phải được sao lưu (backup) tự động hàng ngày.
+-  Bảo mật: Thông tin khách hàng, mật khẩu nhân viên phải được mã hóa. Phân quyền rõ ràng giữa Quản lý (xem doanh thu) và Lễ tân (chỉ thao tác nghiệp vụ).
+-  Hiệu năng: Tốc độ xử lý tìm kiếm phòng trống và tính tiền phải dưới 3 giây để đảm bảo khách không phải chờ lâu.
+-  Tính dễ sử dụng: Giao diện trực quan, tối giản thao tác nhập liệu để nhân viên mới có thể làm quen nhanh chóng.
+ CHƯƠNG 2: PHÂN TÍCH 
+2.1 Mô hình Use case 
+Hình 1. Use case tổng quát
+2.2 Danh sách các tác nhân và mô tả
+Tác nhân
+Mô tả tác nhân
+Ghi chú
+Lễ tân
+Tiếp nhận và phục vụ yêu cầu đặt phòng của khách hàng ở quầy lễ tân
+Quản lý
+Điều hành, giám sát, quản lý nhân viên và quy trình đặt phòng của khách sạn
+2.3 Danh sách Use case và mô tả
+ID
+Tên Use case
+Mô tả ngắn gọn Use case
+Chức năng
+Ghi chú
+UC01
+Đặt phòng
+Lễ tân sử dụng chức năng để đặt phòng cho khách hàng
+Tạo lịch đặt phòng nếu đặt thành công
+UC02
+Check-in
+Ghi nhận giờ nhận phòng của khách hàng
+Ghi nhận giờ đặt phòng và cập nhật trạng thái phòng lên hệ thống
+UC03
+Check-out
+Ghi nhận giờ trả phòng và tính toán tổng chi phí khách hàng phải trả
+Trả phòng và thành toán, cập nhật lại trạng thái phòng trên CSDL
+UC04
+Đổi phòng
+Xử lý yêu cầu đổi phòng của khách hàng
+Xử lý yêu cầu đổi phòng
+UC05
+Cập nhật tình trạng phòng
+Quản lý tình trạng mỗi phòng (Bẩn, Đã có khách, Đã đặt trước, Sẵn sàng).
+Quản lý tình trạng mỗi phòng
+UC06
+Thanh toán
+Khách hàng thanh toán tiền cọc hoặc tiền phòng bằng 3 hình thức (thẻ tín dụng, tiền mặt, ngân hàng)
+Thanh toán tiền phòng hoặc tiền cọc
+UC07
+Thêm khách hàng
+Dùng để thêm dữ liệu của 1 khách hàng vào hệ thống
+Thêm KH
+UC08
+Báo cáo thống kê
+Nhân viên sử dụng use case để thực hiện báo cáo thống kê doanh thu định kỳ và gửi báo cáo cho quản lý
+Báo cáo thống kê doanh thu của cửa hàng
+UC08
+Lập hóa đơn
+Nhân viên lập hóa đơn cho khách hàng khi check-out
+Lập hóa đơn cho khách hàng
+UC09
+Quản lý báo cáo doanh thu
+Quản lý báo cáo doanh thu của nhân viên theo kỳ hoặc ngày tháng năm
+Quản lý báo cáo doanh thu cho khách sạn
+UC10
+Quản lý nhân viên
+Use Case cho phép người quản lý tạo, cập nhật, theo dõi và kiểm soát thông tin nhân viên trong khách sạn.
+Quản lý nhân viên trong khách sạn
+UC11
+Thêm phòng
+Cho phép Quản lý  thêm đồng thời thiết lập và điều chỉnh giá phòng theo từng loại phòng, thời gian và chính sách kinh doanh của khách sạn.
+Thêm phòng
+UC12
+Quản lý đặt phòng
+Quản lý theo dõi, xử lý và kiểm soát toàn bộ quy trình đặt phòng của khách sạn
+Quản lý quy trình đặt phòng của khách sạn
+UC13
+Quản lý dịch vụ phát sinh
+Lễ tân quản lý dịch vụ phát sinh và cập nhật lên hệ thống
+Quản lý dịch vụ phát sinh của khách sạn
+UC14
+Sửa KH
+Sửa thông tin 1 KH trong DB
+Sửa KH
+UC15
+Xóa KH
+Xóa thông tin 1 KH trong DB
+Xóa KH
+UC16
+Sửa phòng
+Cho phép quản lý sửa thông tin phòng và giá
+Sửa phòng
+UC17
+Xóa phòng
+Cho phép quản lý xóa phòng
+Xóa phòng
+UC18
+Xem phòng
+Xem thông tin phòng
+Xem phòng
+UC19
+Thêm NV
+Cho phép quản lý thêm thông tin 1 NV mới
+Thêm nhân viên
+UC20
+Sửa NV
+Cho phép quản lý sửa thông tin 1 NV mới
+Sửa nhân viên
+UC21
+Xóa NV
+Cho phép quản lý xóa thông tin 1 NV mới
+Xóa nhân viên
+2.4 Các điều kiện phụ thuộc
+Cấu hình phần cứng
+ Máy chủ (Server)
+CPU: Tối thiểu 8 nhân 16 luồng, 2.5 GHz hoặc cao hơn.
+RAM: Tối thiểu 16 GB (tốt nhất là 32 GB hoặc cao hơn để có khả năng xử lý đồng thời)
+Ổ cứng: SSD Tối thiểu 2TB để đảm bảo tốc độ truy cập và ổn định
+Hệ điều hành: Window Server.
+ Máy trạm (Client)
+CPU: Tối thiểu 4 nhân 8 luồng, 2.5 GHz hoặc cao hơn.
+RAM: Tối thiểu 8 GB (tốt nhất là 32 GB hoặc cao hơn để có khả năng xử lý đồng thời)
+Ổ cứng: SSD Tối thiểu 500GB để đảm bảo tốc độ truy cập và ổn định
+Hệ điều hành: Window Server.
+Cấu hình phần mềm
+MySQL: Là hệ quản trị cơ sở dữ liệu phổ biến, dễ tích hợp và hiệu suất tốt cho các ứng dụng đặt phòng.
+Java: Hệ thống lớn, độ bảo mật cao và khả năng mở rộng tốt.
+Cấu hình mạng
+Kết nối Internet: Ổn định với tốc độ tối thiểu 10 Mbps cho máy trạm và 50 Mbps cho máy chủ nếu sử dụng qua mạng trực tuyến.
+IP Tĩnh: Cho máy chủ nếu muốn truy cập từ xa.
+Firewall: Cấu hình bảo mật mạng để bảo vệ dữ liệu khách hàng, bao gồm việc sử dụng tường lửa và VPN nếu cần thiết.
+Công cụ phát triển
+Eclipse: Phổ biến cho java
+Các yêu cầu khác
+Khả năng mở rộng: Hệ thống cần có khả năng mở rộng để phục vụ số lượng lớn người dùng và khách hàng. Có thể sử dụng Docker hoặc Kubernetes để triển khai và quản lý các container, giúp dễ dàng mở rộng hệ thống khi cần.
+Tích hợp các cổng thanh toán: Tích hợp các cổng thanh toán trực tuyến như VNPay, Momo, Paypal.
+2.5 ĐẶC TẢ CÁC YÊU CẦU CHỨC NĂNG (FUNCTIONAL)
+UC01_Đặt phòng
+Mô tả use case UC01
+Use case: UC01_ Đặt phòng
+Mục đích:
+Ghi nhận yêu cầu đặt phòng của khách trước ngày đến ở, kiểm tra tình trạng phòng và lưu thông tin booking vào hệ thống quản lý khách sạn.
+Mô tả:
+Lễ tân tiếp nhận yêu cầu đặt phòng của khách. Lễ tân kiểm tra tình trạng phòng trên hệ thống, ghi nhận thông tin khách hàng và xác nhận booking. Hệ thống lưu thông tin đặt phòng và cập nhật trạng thái phòng tương ứng.
+Tác nhân:
+Lễ tân
+Điều kiện trước:
+Tiếp nhận yêu cầu đặt phòng của khách.
+Lễ tân đã đăng nhập vào hệ thống.
+Điều kiện sau:
+Thông tin booking được lưu trong hệ thống.
+Luồng sự kiện chính (Basic flows)
+Lễ tân
+Hệ thống
+1.Chọn chức năng booking
+2.Nhập thông tin yêu cầu đặt phòng (thời gian check_in/check_out, số người, loại phòng).
+3.Nhấn nút xác nhận
+4.Kiểm tra tình trạng phòng.
+5.Trả kết quả còn phòng.
+6.Nhập thông tin khách hàng (họ tên, SĐT,CCCD).
+7. Kiểm tra thông tin
+8.Nhấn nút đặt phòng.
+9. Hiển thị UC Thanh toán
+10. Hiển thị thanh toán thành công.
+11. Lưu thông tin booking.
+12. Thông báo đặt phòng thành công.
+Luồng sự kiện phụ (Alternative Flows):
+Trường hợp: không còn phòng như yêu cầu
+5.1.Trả kết quả hết phòng.
+5.2.Thông báo không còn phòng.
+5.3 Quay lại bước 1
+Biểu đồ
+Hình 2. Activity Diagram đặt phòng
+Hình 3. Sequence Diagram đặt phòng
+UC02_Check-in 
+Mô tả use case UC02
+Use case: UC02_Check-in
+Mục đích:
+Khách nhận được phòng và hệ thống cập nhật trạng thái phòng.
+Mô tả:
+Ghi nhận việc khách nhận phòng tại quầy lễ tân, xác minh thông tin booking hoặc thực hiện đặt phòng trực tiếp (nếu khách chưa có booking), đồng thời cập nhật trạng thái phòng trong hệ thống quản lý khách sạn.
+Tác nhân:
+Nhân viên lễ tân
+Điều kiện trước:
+Lễ tân đã đăng nhập vào hệ thống quản lý khách sạn.
+Khách đã đến quầy lễ tân để thực hiện thủ tục check-in.
+Điều kiện sau:
+Thông tin check-in của khách được ghi nhận trong hệ thống.
+Thời điểm check-in được lưu lại.
+Trạng thái phòng được cập nhật sang “Đã có khách”.
+Luồng sự kiện chính (Basic flows)  
+Lễ tân
+Hệ thống
+1.Nhập thông tin khách hàng.
+2.Kiểm tra thông tin booking.
+3.Thông báo booking hợp lệ.
+4.Ghi nhận thời điểm check-in lên hệ thống.
+5.Cập nhật trạng thái phòng.
+6.Thông báo đã cập nhật trạng thái phòng có khách.
+7.Kết thúc.
+Luồng sự kiện phụ (Alternative Flows):
+Trường hợp: Khách chưa có booking
+3.1 Thông báo không tìm thấy thông tin booking.
+3.2. Chọn phòng theo yêu cầu của khách
+3.3.Kiểm tra tình trạng phòng.
+3.4.Thông báo còn phòng.
+3.5 Quay về bước 4
+Trường hợp: Không còn phòng theo yêu cầu
+3.4.1 Thông báo hết phòng.
+2.4.2. Kết thúc
+Biểu đồ
+Hình 4. Activity Diagram check-in
+Hình 5. Sequence Diagram check-in
+UC07_Thêm khách hàng: 
+Mô tả use case UC07
+Use case: UC07_Thêm khách hàng
+Mục đích:
+Thêm thông tin khách hàng.
+Mô tả:
+Lễ tân nhập thông tin khách hàng, hệ thống kiểm tra thông tin. Nếu là khách cũ, hệ thống thông báo khách cũ. Nếu là khách mới, hệ thống thông báo khách hàng mới và lưu vào DB.
+Tác nhân:
+Chính: Lễ tân.
+Điều kiện trước:
+Lễ tân đã đăng nhập vào hệ thống
+Điều kiện sau:
+Hệ thống kiểm tra thông tin khách hàng nếu là khách hàng mới thông báo khách mới và lưu vào DB, nếu là khách hàng cũ thì thông báo là khách hàng cũ.
+Luồng sự kiện chính (Basic flows)
+Lễ tân
+Hệ thống
+1.Lễ tân chọn chức năng thêm khách hàng.
+2.Hệ thống hiện cửa sổ nhập thông tin khách hàng.
+3.Lễ tân nhập thông tin khách hàng.
+4.Lễ tân nhấn nút Thêm khách hàng.
+5.Hệ thống kiểm tra tính hợp lệ thông tin khách hàng
+6.Hệ thống kiểm tra có phải khách hàng mới không?
+7.Thông báo khách hàng mới.
+8.Lưu thông tin khách hàng mới vào DB.
+9.Kết thúc.
+Luồng sự kiện phụ (Alternative Flo:
+Trường hợp: Thông tin khách hàng không hợp lệ
+6.1.Thông báo ô nhập liệu không hợp lệ.
+6.2.Quay lại bước 3.
+Trường hợp: Khách hàng cũ
+7.1.Thông báo khách hàng cũ.
+7.2.Hiển thị bảng thông tin khách hàng cũ để lễ tân xác nhận.
+7.3.Lễ tân chọn đóng cửa sổ.
+7.4.Kết thúc.
+Biểu đồ
+Hình 6. Activity Diagram Thêm khách hàng
+Hình 7. Sequence Diagram Thêm khách hàng
+UC05_ Cập nhật tình trạng phòng
+Mô tả use case UC05
+Use case: 
+UC05_ Cập nhật tình trạng phòng
+Mục đích:
+Quản lý chính xác tình trạng sử dụng của phòng.
+Hỗ trợ lễ tân sắp xếp phòng cho khách.
+Tránh việc bố trí nhầm phòng.
+Mô tả:
+Cập nhật đúng tình trạng thực tế mỗi phòng (Bẩn, Đã có khách, Đã đặt trước, Sẵn sàng).
+Tác nhân:
+Lễ tân
+Điều kiện trước:
+Lễ tân đã đăng nhập hệ thống.
+Khách hàng phải đến check in hoặc check out hoặc nhận thông báo đã dọn phòng của nhân viên vệ sinh.
+Điều kiện sau:
+Thông tin phòng được lưu, cập nhật thành công.
+Trạng thái phòng được cập nhật đúng tình trạng thực tế.
+Luồng sự kiện chính (Basic flows)
+Lễ tân
+Hệ thống
+Chọn chức năng “Danh sách các phòng”.
+Hiển thị danh sách các tầng và phòng tương ứng.
+Chọn phòng cần cập nhật trạng thái.
+Chọn trạng thái mới cho phòng: Đã có khách, Bẩn, Đã đặt trước, Sẵn sàng.
+Hệ thống kiểm tra trạng thái mới hợp lệ.
+Hiển thị thông báo thay đổi.
+Xác nhận thay đổi.
+Lưu trạng thái mới và hiển thị thông báo cập nhật thành công.
+Kết thúc.
+Luồng sự kiện phụ (Alternative Flows):
+5.1 Hệ thống kiểm tra trạng thái mới không hợp lệ.
+5.2 Quay lại bước 2
+Biểu đồ
+Hình 8. Activity Diagram cập nhật tình trạng phòng
+Hình 9. Sequence Diagram cập nhật tình trạng phòng
+UC06_Thanh toán:
+Mô tả use case UC06:
+Use case: UC06_ Thanh toán
+Mục đích:
+Ghi nhận hoàn tất thanh toán cho hóa đơn hiện tại.
+Mô tả:
+Lễ tân thực hiện lệnh thanh toán cho hóa đơn đang được xử lý.
+Tác nhân:
+Lễ tân
+Điều kiện trước:
+Lễ tân đã đăng nhập hệ thống.
+Hóa đơn đã được tạo và đang ở trạng thái "Chưa thanh toán".
+Điều kiện sau:
+Nếu thanh toán thành công hóa đơn chuyển trạng thái thành "Đã thanh toán", giao dịch được lưu.
+Nếu thất bại hoặc hủy trạng thái hóa đơn giữ nguyên.
+Luồng sự kiện chính (Basic flows)
+Lễ tân
+Hệ thống
+1. Lễ tân nhấn nút "Thanh toán"
+2. Hệ thống hiển thị form Chi tiết hóa đơn
+3. Lễ tân nhấn nút "Xác nhận thanh toán".
+4. Hệ thống thực hiện Ghi nhận giao dịch vào cơ sở dữ liệu.
+5. Hệ thống cập nhật trạng thái hóa đơn thành "Đã thanh toán".
+6. Hệ thống hiển thị thông báo "Thanh toán thành công".
+Luồng sự kiện ngoại lệ (Exception Flow):
+Trường hợp: Hủy bỏ thanh toán
+Lễ tân
+Hệ thống
+3.1. Lễ tân nhấn nút "Hủy bỏ".
+4.1. Hệ thống không cập nhật dữ liệu.
+5.1. Hệ thống đóng form chi tiết.
+Trường hợp: Thanh toán thất bại
+3. Lễ tân nhấn nút "Xác nhận thanh toán".
+4.2. Hệ thống thực hiện xử lý nhưng phát hiện lỗi kết nối hoặc lỗi ghi dữ liệu.
+5.2. Ngừng quy trình xử lý. Không cập nhật trạng thái hóa đơn
+6.2. Hiển thị thông báo lỗi: "Thanh toán thất bại. Vui lòng thử lại."
+7.2.Lễ tân nhấn nút "Đóng" trên thông báo lỗi.
+8.2. Hệ thống giữ nguyên form chi tiết để Lễ tân có thể thao tác lại (Quay về Bước 2 luồng chính).
+Biểu đồ
+Hình 10. Activity Diagram thanh toán
+Hình 11. Sequence Diagram thanh toán
+CHƯƠNG 3: THIẾT KẾ VÀ HIỆN THỰC
+3.1 Mô hình lớp (Class Diagram)
+3.1.1 Mô hình
+3.1.2 Đặc tả lớp
+Đặc tả sơ đồ lớp:
+Table 1. Thực thể Nhân viên (NhanVien)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maNV
+String
+Bắt đầu bằng 'LUCIA' và đi kèm số hoặc là 'ADMIN'
+{id}
+1.2
+hoTen
+String
+Không được rỗng
+1.3
+diaChi
+String
+1.4
+soDT
+String
+Đủ 10 chữ số và bắt đầu từ số 0
+1.5
+matKhau
+String
+Không rỗng
+1.6
+cccd
+String
+Gồm 9 hoặc 12 chữ số
+1.7
+role
+ChucVu
+Không được để trống
+KH Enum (NHAN_VIEN, QUAN_LY)
+1.8
+trinhDo
+trinhDo
+Enum
+1.9
+trangThai
+TrangThaiNV
+Không được để trống
+Enum (CON_LAM, DA_NGHI)
+1.10
+ngaySinh
+LocalDate
+Phải đủ 18 tuổi trở lên
+1.11
+ngayVaoLamDate
+LocalDate
+Nhỏ hơn hoặc bằng ngày hiện tại
+1.12
+maQL
+String
+'LUCIA' kèm số hoặc 'ADMIN'
+Có thể null
+2
+Viết các phương thức getter, setter
+2.1
+setMaNV(String maNV)
+void
+Kiểm tra ràng buộc của hệ thống định dạng REGEX
+ném IllegalArgumentException
+2.2
+setNgaySinh(LocalDate)
+void
+Khoảng cách năm so với hiện tại >= 18
+ném IllegalArgumentException
+2.3
+setSoDT(String soDT)
+void
+REGEX 0\d{9}
+ném IllegalArgumentException
+2.4
+setCccd(String cccd)
+void
+REGEX \d{9}(\d{3})?
+ném IllegalArgumentException
+2.5
+setHoTen(String hoTen)
+void
+Kiểm tra chuỗi rỗng (isBlank())
+ném IllegalArgumentException
+2.6
+setNgayVaoLamDate(Loc..)
+void
+isAfter(now) phải là false
+ném IllegalArgumentException
+Table 2. Thực thể Khách hàng (KhachHang)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maKH
+String
+{id}
+1.2
+tenKH
+String
+1.3
+soCCCD
+String
+1.4
+soDT
+String
+1.5
+ngaySinh
+LocalDate
+2
+Viết các phương thức
+2.1
+isBirthdayToday()
+boolean
+Trả về true nếu hôm nay là sn
+2.2
+isBirthdayThisMonth()
+boolean
+Trả về true nếu trong tháng là sn
+Table 3. Thực thể Phòng (Phong)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maPhong
+String
+{id}
+1.2
+tenPhong
+String
+1.3
+loaiPhong
+LoaiPhong
+Foreign Key (Khóa ngoại)
+1.4
+tinhTrang
+TrangThaiPhong
+Enum tình trạng
+1.5
+soPhong
+int
+1.6
+soTang
+int
+2
+Viết phương thức
+2.1
+phatSinhMaPhong(...)
+String
+Dựa theo tham số tầng ví dụ: 2 -> P201
+Automatic generation (static method)
+Table 4. Thực thể Đặt Phòng (DatPhong)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maDat
+String
+{id}
+1.2
+ngayDat
+LocalDateTime
+1.3
+khachHang
+KhachHang
+Foreign Key
+1.4
+ngayCheckIn
+LocalDateTime
+1.5
+ngayCheckOut
+LocalDateTime
+1.6
+trangThai
+String
+CHO_XACNHAN, DA_XACNHAN...
+Table 5. Thực thể Hóa Đơn (HoaDon)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maHD
+String
+{id}
+1.2
+ngayTaoHD
+LocalDateTime
+1.3
+datPhong
+DatPhong
+Foreign Key
+1.4
+nhanVien
+NhanVien
+Foreign Key
+1.5
+tienPhong
+double
+1.6
+tienDV
+double
+1.7
+tienCoc
+double
+1.8
+thueVAT
+double
+1.9
+tongTien
+double
+1.10
+loaiHD
+String
+1.11
+trangThaiThanhToan
+String
+1.12
+phuongThucThanhToan
+String
+1.13
+ngayThanhToan
+LocalDateTime
+1.14
+ghiChuThanhToan
+String
+Table 6. Thực thể Dịch Vụ (DichVu)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maDV
+String
+{id}
+1.2
+tenDV
+String
+1.3
+gia
+double
+1.4
+loaiDV
+String
+1.5
+mieuTa
+String
+1.6
+donVi
+String
+1.7
+trangThai
+int
+0 (active) hoặc 1 (hidden)
+Table 7. Thực thể Loại Phòng (LoaiPhong)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maLoaiPhong
+String
+{id}
+1.2
+gia
+double
+1.3
+sucChua
+int
+Table 8. Thực thể Bảng Giá Phòng (BangGiaPhong)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maBangGia
+String
+{id}
+1.2
+loaiPhong
+LoaiPhong
+Foreign Key
+1.3
+ngayBatDau
+LocalDateTime
+1.4
+ngayKetThuc
+LocalDateTime
+1.5
+donGia
+double
+Không được âm
+2
+Viết các phương thức
+2.1
+setDonGia(double donGia)
+void
+Nếu donGia < 0 thì gán = 0
+2.2
+isHopLe()
+boolean
+donGia > 0 và ngayBatDau < ngayKetThuc
+Trả về boolean
+Table 9. Thực thể Bảng Giá Dịch Vụ (BangGiaDichVu)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maBangGia
+String
+{id}
+1.2
+tenBangGia
+String
+1.3
+ngayApDung
+Date
+java.sql.Date
+1.4
+ngayHetHieuLuc
+Date
+java.sql.Date
+1.5
+trangThai
+int
+2
+Viết các phương thức
+2.1
+createMaBangGia()
+String
+Tự sinh bằng currentTimeMillis
+VD: BG16345... (static)
+Table 10. Thực thể Chi Tiết Bảng Giá Dịch Vụ (BangGiaDichVu_ChiTiet)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maChiTietBangGia
+String
+{id}
+1.2
+maBangGia
+BangGiaDichVu
+Foreign Key
+1.3
+maDichVu
+DichVu
+Foreign Key
+1.4
+giaDichVu
+double
+1.5
+donViTinh
+String
+Table 11. Thực thể Chi Tiết Đặt Phòng (ChiTietDatPhong)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maCTDP
+String
+{id}
+1.2
+phong
+Phong
+Foreign Key
+1.3
+datPhong
+DatPhong
+Foreign Key
+1.4
+giaCoc
+double
+1.5
+soNguoi
+int
+1.6
+ghiChu
+String
+Table 12. Thực thể Chi Tiết Hóa Đơn (ChiTietHoaDon)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maCTHD
+String
+{id}
+1.2
+hoaDon
+HoaDon
+Foreign Key
+1.3
+chiTietDatPhong
+ChiTietDatPhong
+Foreign Key
+1.4
+thoiGianLuuTru
+double
+1.5
+soLuongPhong
+int
+1.6
+thanhTien
+double
+Table 13. Thực thể Dịch Vụ Sử Dụng (DichVuSuDung)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+dichVu
+DichVu
+Foreign Key
+1.2
+chiTietHoaDon
+ChiTietHoaDon
+Foreign Key
+1.3
+ngaySuDung
+LocalDate
+1.4
+soLuong
+int
+1.5
+giaDV
+double
+1.6
+trangThai
+boolean
+2
+Viết các phương thức
+2.1
+getThanhTien()
+double
+giaDV * soLuong
+Table 14. Thực thể Tiện Nghi (TienNghi)
+STT
+Công việc
+Kiểu dữ liệu
+Ràng buộc
+Ghi chú
+1
+Khai báo thuộc tính:
+1.1
+maTienNghi
+String
+{id}
+1.2
+tenTienNghi
+String
+1.3
+moTa
+String
+3.2 Cơ sở dữ liệu
+3.2.1 Mô hình EER
+3.2.2 Mô hình cơ sở dữ liệu quan hệ
+3.2.3 Các ràng buộc toàn vẹn trong CSDL
+2.2.1 Bảng khách hàng (KH): 
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maKH
+VARCHAR(20)
+NOT NULL
+PK
+tenKH
+NVARCHAR(100)
+NOT NULL
+soDT
+VARCHAR(10)
+UNIQUE
+ngaySinh
+DATE
+soCCCD
+VARCHAR(12)
+2.2.2 Bảng Nhân viên (NV):
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maNV
+VARCHAR(9)
+NOT NULL
+Mã được định dạng: ‘LUCIA[0-9]%’
+PK
+hoTen
+NVARCHAR(100)
+NOT NULL
+soDT
+VARCHAR(10)
+UNIQUE
+ngaySinh
+DATE
+soCCCD
+VARCHAR(12)
+ngayVaoLam
+DATE
+ngayVaoLam-ngaySinh>= 18
+trinhDo
+NVARCHAR(10)
+IN ('THCS', 'THPT', 'CAODANG', 'DAIHOC')
+mk
+VARCHAR(100)
+role
+NVARCHAR(5)
+maQL
+VARCHAR(9)
+NV(maNV)
+FK
+2.2.3 Bảng Loại phòng (LoaiPhong )
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maLoaiPhong
+VARCHAR(20)
+NOT NULL
+PK
+gia
+DECIMAL(18,2)
+NOT NULL
+sucChua
+INT
+NOT NULL
+2.2.4 Bảng Dịch vụ (DV)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maDV
+VARCHAR(20)
+NOT NULL
+PK
+tenDV
+NVARCHAR(100)
+NOT NULL
+gia
+DECIMAL(18,2)
+loaiDV
+NVARCHAR(20)
+IN('THUCAN', 'MAYGIAT', 'NUOCUONG')
+mieuTa
+NVARCHAR(255)
+donVi
+NVARCHAR(20)
+2.2.5 Bảng Phòng (Phong)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maPhong
+VARCHAR(10)
+NOT NULL
+PK
+tenPhong
+VARCHAR(50)
+loaiPhong
+VARCHAR(20)
+LoaiPhong(maLoaiPhong)
+FK
+tinhTrang
+NVARCHAR(20)
+IN ('BAN', 'CONTRONG', 'DANGSUDUNG')
+soPhong
+INT
+soTang
+INT
+2.2.6 Bảng Đặt Phòng (DatPhong)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maDat
+VARCHAR(20)
+NOT NULL
+PK
+ngayDat
+DATE
+maKH
+VARCHAR(20)
+KH(maKH)
+FK
+ngayCheckIn
+DATE
+ngayCheckIn >= ngayDat
+ngayCheckOut
+DATE
+ngayCheckOut >= ngayCheckIn
+2.2.7 Bảng Chi Tiết Đặt Phòng (ChiTietDatPhong)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maCTDP
+VARCHAR(20)
+NOT NULL
+PK
+maPhong
+VARCHAR(10)
+Phong(maPhong)
+FK
+maDat
+VARCHAR(20)
+DatPhong(maDat)
+FK
+giaCoc
+DECIMAL(18,2)
+soNguoi
+INT
+>0
+ghiChu
+NVARCHAR(255)
+2.2.8 Bảng Hóa Đơn (HoaDon)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maHD
+VARCHAR(20)
+NOT NULL
+PK
+maDat
+VARCHAR(20)
+DatPhong(maDat)
+FK
+maNV
+VARCHAR(9)
+NV(maNV)
+FK
+ngayTaoHD
+DATE
+tienPhong
+DECIMAL(18,2)
+2.2.9 Bảng Chi Tiết Hóa Đơn (ChiTietHoaDon )
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maCTHD
+VARCHAR(20)
+NOT NULL
+PK
+maHD
+VARCHAR
+NOT NULL
+HoaDon(maHoaDon)
+FK
+thoiGianLuuTru
+DECIMAL(5,2)
+soLuongPhong
+INT
+>0
+thanhTien
+DECIMAL(18,2)
+2..2.10 Bảng Dịch vụ Sử Dụng (DichVuSuDung)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maDV
+VARCHAR(20)
+NOT NULL
+DV(maDV)
+PK, FK
+maHD
+VARCHAR(20)
+NOT NULL
+HoaDon(maHD)
+PK,FK
+ngaySuDung
+DATE
+soLuong
+INT
+>0
+giaDV
+DECIMAL(18,2)
+trangThai
+BIT
+2.2.11 Bảng Giá Dịch Vụ - Header (BangGiaDV_Header) 
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maBangGia
+VARCHAR(20)
+NOT NULL
+PK
+tenBangGia
+NVARCHAR(100)
+ngayApDung
+DATE
+ngayHetHieuLuc
+DATE
+ngayHetHieuLuc >ngayApDung
+trangThai
+BIT
+2.2.12 Bảng Giá Dịch Vụ - Detail (BangGiaDV_Detail)
+Tên thuộc tính
+Kiểu dữ liệu
+Ràng buộc
+Tham chiếu
+Ghi chú
+maBangGia
+VARCHAR(20)
+NOT NULL
+BangGiaDV_Header(maBangGia)
+PK, FK
+maDV
+VARCHAR(20)
+NOT NULL
+DV(maDV)
+PK,FK
+giaDV
+DECIMAL(18,2)
+ghiChu
+NVARCHAR(255)
+3.3 Phân luồng màn hình của ứng dụng
+ 
+Ảnh 3.1:  Phân luồng màn hình
+3.4 Màn hình của ứng dụng
+3.4.1 Màn hình chính
+Chức năng của màn hình dùng để xem tổng quan phòng và doanh thu.
+Mô tả: 
+Xem tổng số phòng, số phòng trống và phòng đang có khách.
+Xem tổng số doanh thu trong tháng.
+Xem tổng quan tình trạng phòng theo từng tầng.
+3.4.2 Màn hình quản lý nhân viên:
+Hình  2: màn hình quản lý nhân viên
+Chức năng của màn hình dùng để quản lý các nhân viên đang làm.
+Mô tả: 
+Thêm 1 nhân viên mới vào làm.
+Xem tổng số nhân viên đang làm việc, phân chia ra nhân viên và quản lý.
+Tìm kiếm nhân viên theo: mã nhân viên, họ và tên, số điện thoại.
+Xem danh sách các nhân viên.
+Các chức năng thao tác với nhân viên.
+3.4.3 Màn hình Quản lý khách hàng
+Hình  3: màn hình Quản lý khách hàng
+Chức năng của màn hình dùng để quản lý thông tin khách hàng.
+Mô tả: 
+Dùng để thêm khách hàng lần đầu tiên đến khách sạn.
+Xem số lượng khách hàng đã và đang thuê phòng tại khách sạn.
+Tìm kiếm khách hàng với các thông tin như: mã khách hàng, họ và tên, số cccd…
+Xem danh sách tất cả các khách hàng.
+Thay đổi thông tin hoặc xóa khách hàng.
+3.4.4 Màn hình Quản lý bảng giá dịch vụ
+Chức năng của màn hình dùng để quản lý giá các loại dịch vụ.
+Mô tả: 
+Thêm 1 dịch vụ mới vào hệ thống.
+Thêm 1 bảng giá để thay đổi giá các dịch vụ mong muốn.
+Xem thống kê số lượng bảng giá.
+Tìm kiếm các bảng giá có trong danh sách theo: mã bảng giá, tên bảng giá….
+Xem danh sách các bảng giá.
+Chỉnh sửa hoặc xóa bảng giá được chọn.
+3.4.5 Màn hình Quản lý phòng
+Chức năng của màn hình dùng để quản lý các phòng.
+Mô tả: 
+Thêm 1 phòng mới vào hệ thống.
+Tìm kiếm phòng trong danh sách theo: mã phòng, loại phòng….
+Xem thông tin các phòng có trong danh sách.
+Chỉnh sửa và xóa phòng được chọn.
+3.4.6 Màn hình Hóa đơn
+Chức năng của màn hình dùng để xem danh sách hóa đơn.
+Mô tả: 
+Xem tổng số hóa đơn và doanh thu.
+Tìm hóa đơn theo mã hoặc đơn đặt.
+Lọc hóa đơn theo thời gian.
+Xem chi tiết từng hóa đơn.
+3.4.7 Màn hình Thống kê
+Chức năng của màn hình dùng để xem thống kê doanh thu.
+Mô tả: 
+Lọc thống kê theo thời gian.
+Tùy chọn xem thống kê theo doanh thu hay loại phòng.
+Xuất ra file báo cáo.
+Xem các loại thống kê sẵn.
+Biểu đồ thể hiện doanh thu.
+3.4.8 Màn hình nhận phòng
+Chức năng của màn hình dùng để nhận phòng:
+Mô tả: 
+Hiện danh sách các đơn đang chờ nhận phòng trong ngày.
+Thanh tìm kiếm các đơn đặt phòng theo mã đặt, họ tên khách, số điện thoại , CCCD.
+Thông tin đặt phòng và nút xác nhận nhận phòng
+Danh sách phòng đã gán cho sách khi đặt phòng
+3.4.9 Màn hình sử dụng dịch vụ
+Chức năng của màn hình dùng để gán dịch vụ sử dụng cho phòng.
+Mô tả:
+Hiện danh sách các phòng đang sử dụng
+Bộ lọc theo từng loại dịch vụ
+Danh mục các dịch vụ theo từng loại đã chọn với các thông tin (giá với x1, tên dịch vụ, số lượng)
+Hiển thị các dịch vụ đã thêm vào hóa đơn của phòng đang chọn với thông tin (giá, số lượng, tên dịch vụ)
+Nút hủy
+Nút xác nhận
+3.4.10 Màn hình quản lý dịch vụ
+Chức năng của màn hình dùng để quản lý dịch vụ.
+Mô tả:
+Thêm một dịch vụ mới vào hệ thống
+Tìm kiếm các thông tin: mã dịch vụ, tên dịch vụ 
+Bộ lọc theo loại dịch vụ
+Hiển thị danh sách các dịch vụ
+Chỉnh sửa hoặc xóa dịch đang chọn
+Để ứng dụng hoạt động mượt mà và thực hiện các kịch bản kiểm thử (đặc biệt là khi xử lý dữ liệu từ cơ sở dữ liệu, hiển thị biểu đồ thống kê và kết xuất file báo cáo), cấu hình phần cứng của máy tính kiểm thử được đề xuất như sau:
+Thành phần
+Yêu cầu tối thiểu
+Khuyến nghị
+CPU
+Intel Core i3 (hoặc AMD tương đương), tốc độ 2.0 GHz trở lên
+Intel Core i5 / i7 (hoặc AMD Ryzen 5) để xử lý đa luồng tốt hơn, giúp ứng dụng không bị đứng khi thực hiện các truy vấn dữ liệu phức tạp
+Bộ nhớ trong (RAM)
+4 GB
+8 GB hoặc 16 GB để đảm bảo khả năng chạy song song ứng dụng, hệ quản trị CSDL cục bộ và các công cụ ghi nhận lỗi (bug tracking)
+Ổ cứng
+Trống tối thiểu 2 GB để lưu trữ mã nguồn, thư viện và tệp CSDL
+Ổ cứng SSD để tối ưu hóa tốc độ truy xuất dữ liệu (Read/Write) khi thao tác với Database
+Màn hình
+Độ phân giải 1024×768 pixels
+Full HD (1920×1080) để đảm bảo giao diện JavaFX được hiển thị đầy đủ, sắc nét, không bị vỡ bố cục hay che khuất các nút chức năng
+Thiết bị ngoại vi
+Bàn phím và chuột chuẩn
+Bàn phím và chuột chuẩn để thực hiện các thao tác nhập liệu, điều hướng và tương tác với giao diện người dùng
+3.5.1.2 Phần mềm
+Môi trường phần mềm của máy kiểm thử cần được thiết lập đúng với các công nghệ nền tảng mà dự án đang sử dụng để tránh các lỗi phát sinh do không tương thích:
+Hạng mục
+Thành phần
+Phiên bản / Mô tả
+Hệ điều hành
+Windows
+Windows 10, Windows 11 (64-bit) hoặc macOS/Linux có hỗ trợ môi trường chạy Java
+Môi trường thực thi
+Java Development Kit (JDK)
+JDK 21 (phù hợp với phiên bản đang được dùng để biên dịch dự án)
+JavaFX SDK
+Phiên bản 21 để render các thành phần giao diện một cách chính xác
+Hệ quản trị CSDL
+Microsoft SQL Server
+Phiên bản 2019 hoặc 2022 (lưu trữ thông tin phòng, nhân viên, khách hàng, hóa đơn...)
+Công cụ quản trị CSDL
+SQL Server Management Studio (SSMS) hoặc Azure Data Studio — đối chiếu, xác minh dữ liệu thực tế so với dữ liệu hiển thị trên ứng dụng
+Thư viện phụ thuộc
+Trình điều khiển kết nối CSDL
+mssql-jdbc (Driver kết nối SQL Server)
+Giao diện và Biểu đồ
+atlantafx-base (giao diện hiện đại), jfreechart (vẽ biểu đồ doanh thu)
+Xử lý tệp tin
+Apache POI (xuất báo cáo Excel/CSV)
+Công cụ hỗ trợ
+IDE (kiểm thử hộp trắng / debug)
+Eclipse, Antigravity hoặc Visual Studio Code
+ 
+3.5.2 Danh sách các tình huống để kiểm tra ứng dụng
+Tình huống 1
+Thêm nhân viên mới với dữ liệu hợp lệ
+CHƯƠNG 4: KẾT LUẬN
+4.1 Kết quả đạt được
+Sau quá trình phân tích, thiết kế và hiện thực, nhóm đã xây dựng thành công hệ thống phần mềm quản lý khách sạn Lucia Star Hotel – một ứng dụng Desktop hoàn chỉnh được phát triển trên nền tảng Java/JavaFX kết hợp cơ sở dữ liệu Microsoft SQL Server. Hệ thống đáp ứng đầy đủ các yêu cầu chức năng và phi chức năng đã đề ra trong giai đoạn phân tích.
+ 
+4.1.1 Kết quả về chức năng
+Hệ thống đã hiện thực thành công toàn bộ các nhóm chức năng cốt lõi, bao gồm:
+Đăng nhập và phân quyền: Chức năng xác thực người dùng hoạt động ổn định với 3 cấp độ quyền hạn rõ ràng – Admin, Quản lý và Nhân viên. Mỗi tài khoản chỉ được phép thao tác đúng với phạm vi nhiệm vụ được giao, đảm bảo an toàn thông tin nội bộ. Mật khẩu được mã hóa trước khi lưu vào cơ sở dữ liệu.
+Quản lý phòng: Module Quản lý Phòng cho phép theo dõi trạng thái toàn bộ phòng theo thời gian thực (Còn trống / Đã có khách / Bẩn / Bảo trì). Hệ thống hiển thị sơ đồ phòng trực quan theo từng tầng ngay trên màn hình Trang chủ, giúp nhân viên lễ tân nắm bắt tình trạng nhanh chóng. Chức năng thêm, sửa, xóa thông tin phòng và loại phòng được tích hợp đầy đủ.
+Quản lý khách hàng: Module lưu trữ và quản lý thông tin khách hàng bao gồm họ tên, số điện thoại, ngày sinh và số CCCD/Hộ chiếu. Hệ thống hỗ trợ tra cứu, thêm mới và chỉnh sửa thông tin khách hàng cũng như theo dõi lịch sử đặt phòng của từng khách.
+Quản lý đặt phòng (Đặt phòng – Check-in – Check-out): Đây là nhóm nghiệp vụ trung tâm của hệ thống. Luồng xử lý bao gồm: tạo đơn đặt phòng (có thể đặt nhiều phòng trong cùng một đơn), xác nhận đặt phòng và ghi nhận tiền cọc, thực hiện Check-in khi khách đến (cập nhật trạng thái phòng sang "Đã có khách"), và thực hiện Check-out khi khách trả phòng (tự động tính toán và xuất hóa đơn). Hệ thống xử lý được cả trường hợp trả phòng từng phần cho khách đoàn.
+Quản lý dịch vụ: Hệ thống cho phép quản lý danh mục dịch vụ đa dạng theo loại (Thực phẩm, Giải trí, Sức khỏe, Tiện ích). Nhân viên có thể ghi nhận việc sử dụng dịch vụ cho từng phòng trong suốt thời gian lưu trú. Chi phí dịch vụ được tự động tổng hợp vào hóa đơn khi trả phòng.
+Quản lý bảng giá dịch vụ: Module BangGiaDichVuView cho phép tạo và quản lý các bảng giá dịch vụ theo từng thời kỳ (có ngày áp dụng và ngày hết hiệu lực), phục vụ nhu cầu điều chỉnh giá linh hoạt theo mùa hoặc chiến lược kinh doanh.
+Quản lý hóa đơn: Module hóa đơn tự động tính toán đầy đủ các khoản: tiền phòng (theo số đêm thực tế), tiền dịch vụ đã sử dụng, thuế VAT (10%), khấu trừ tiền cọc đã thu, và tổng tiền phải thanh toán. Hỗ trợ 4 phương thức thanh toán: Tiền mặt, Thẻ tín dụng, Chuyển khoản và Ví điện tử. Tính năng xuất hóa đơn HTML chuyên nghiệp cho phép in trực tiếp hoặc chuyển đổi sang PDF.
+Quản lý nhân viên: Admin và Quản lý có thể quản lý toàn bộ hồ sơ nhân viên bao gồm thông tin cá nhân, trình độ học vấn, ngày vào làm, chức vụ và trạng thái làm việc. Chức năng thêm, sửa, xóa và thay đổi trạng thái nhân viên được phân quyền chặt chẽ.
+Thống kê và Báo cáo: Hệ thống tích hợp module thống kê đa chiều sử dụng biểu đồ cột (BarChart) và biểu đồ đường (LineChart) thông qua thư viện JFreeChart. Người dùng có thể xem thống kê doanh thu tổng hợp theo thời gian (tuần/tháng/năm) và thống kê chi tiết theo từng loại phòng, giúp quản lý nắm bắt được loại phòng nào đang mang lại doanh thu cao nhất. Ngoài ra, hệ thống hỗ trợ xuất báo cáo hóa đơn ra file Excel thông qua thư viện Apache POI, thuận tiện cho việc lưu trữ và đối soát kế toán.
+ 
+4.1.2 Kết quả về kỹ thuật và giao diện
+Về mặt kỹ thuật, nhóm đã xây dựng được một kiến trúc phần mềm có cấu trúc rõ ràng và tách biệt theo các lớp trách nhiệm:
+Lớp GUI (gui.*): Các màn hình giao diện được xây dựng bằng JavaFX, mang lại giao diện hiện đại với bảng màu xanh navy chuyên nghiệp. Hệ thống Sidebar điều hướng có khả năng mở rộng menu con (sub-menu) cho nhóm chức năng dịch vụ.
+Lớp DAO (dao.*): Toàn bộ các thao tác với cơ sở dữ liệu được đóng gói trong 11 lớp DAO riêng biệt (PhongDAO, KhachHangDAO, DatPhongDAO, HoaDonDAO,...), sử dụng PreparedStatement để ngăn chặn SQL Injection.
+Lớp Model (model.entities.*, model.enums.*): Định nghĩa rõ ràng 13 entity tương ứng với cấu trúc cơ sở dữ liệu và các tập enum chuẩn hóa cho trạng thái phòng, trạng thái đặt phòng, phương thức thanh toán, chức vụ nhân viên,...
+Kết nối cơ sở dữ liệu: Sử dụng mẫu Singleton cho ConnectDatabase.java, đảm bảo chỉ duy trì một kết nối dùng chung trong toàn ứng dụng, tối ưu hiệu suất và tránh rò rỉ kết nối.
+ 
+Về giao diện, nhóm đã hiện thực thành công kỹ thuật Dim Overlay – một lớp phủ tối mờ tự động xuất hiện khi mở các hộp thoại quan trọng, mang lại trải nghiệm người dùng mượt mà và tập trung, thường chỉ thấy trên các ứng dụng web hoặc di động cao cấp.
+ 
+4.1.3 Kết quả về cơ sở dữ liệu
+Cơ sở dữ liệu LuciaHT được thiết kế trên Microsoft SQL Server với cấu trúc chuẩn hóa gồm 10 bảng, phân tầng rõ ràng:
+Master Data: KH (Khách hàng), NV (Nhân viên), LoaiPhong, DV (Dịch vụ)
+Transaction Data: Phong, DatPhong, ChiTietDatPhong, HoaDon, ChiTietHoaDon, DichVuSuDung
+Pricing Data: BangGiaDV_Header, BangGiaDV_Detail
+Hệ thống áp dụng đầy đủ các ràng buộc toàn vẹn: khóa chính, khóa ngoại, ràng buộc CHECK cho các trường trạng thái và DEFAULT cho các trường giá trị mặc định.
+ 
+4.1.4 Tổng hợp kết quả theo bảng
+Bảng 4.1 tổng hợp mức độ hoàn thành của các chức năng trong hệ thống:
+ 
+STT
+Tên chức năng
+Trạng thái
+Ghi chú
+1
+Đăng nhập / Đăng xuất
+Hoàn thành
+Phân quyền 3 cấp: Admin, Quản lý, Nhân viên
+2
+Quản lý Phòng & Loại phòng
+Hoàn thành
+Sơ đồ phòng theo tầng, cập nhật trạng thái thời gian thực
+3
+Quản lý Khách hàng
+Hoàn thành
+Lưu trữ và tra cứu lịch sử đặt phòng
+4
+Đặt phòng (Booking)
+Hoàn thành
+Đặt nhiều phòng/đơn, ghi nhận cọc
+5
+Check-in
+Hoàn thành
+Cập nhật trạng thái phòng tự động
+6
+Check-out & Hóa đơn
+Hoàn thành
+Xử lý hóa đơn khách đoàn, tách/gộp hóa đơn
+7
+Quản lý Dịch vụ
+Hoàn thành
+4 loại dịch vụ, ghi nhận sử dụng theo phòng
+8
+Bảng giá Dịch vụ
+Hoàn thành
+Quản lý nhiều bảng giá theo thời kỳ
+9
+Quản lý Nhân viên
+Hoàn thành
+Đầy đủ CRUD, quản lý trạng thái làm việc
+10
+Xuất hóa đơn HTML/PDF
+Hoàn thành
+Bố cục chuyên nghiệp, hỗ trợ in ấn trực tiếp
+11
+Thống kê doanh thu & theo loại phòng
+Hoàn thành
+Biểu đồ cột & đường, lọc theo tuần/tháng/năm, phân tích theo loại phòng
+12
+Xuất báo cáo hóa đơn ra file Excel
+Hoàn thành
+Sử dụng Apache POI, hỗ trợ lưu trữ và đối soát kế toán
+13
+Thông tin cá nhân nhân viên
+Hoàn thành
+Xem và cập nhật thông tin tài khoản đang đăng nhập
+ 
+Bảng 4.1 – Tổng hợp mức độ hoàn thành các chức năng
+4.2 Hạn chế của đồ án
+Bên cạnh các kết quả tích cực, nhóm cũng thẳng thắn nhìn nhận một số hạn chế còn tồn tại trong phiên bản hiện tại của hệ thống:
+ 
+Chưa có giao diện web cho nhân viên làm việc từ xa: Hệ thống hiện tại chỉ chạy dưới dạng ứng dụng Desktop, nghĩa là nhân viên phải có mặt tại máy tính được cài đặt phần mềm mới thao tác được. Quản lý chưa thể theo dõi tình trạng phòng hay doanh thu từ xa thông qua trình duyệt hoặc điện thoại di động.
+Chưa tích hợp cổng thanh toán điện tử: Mặc dù hệ thống có ghi nhận phương thức "Ví điện tử" và "Chuyển khoản", việc xác nhận thanh toán vẫn được thực hiện thủ công bởi nhân viên sau khi kiểm tra giao dịch bên ngoài. Chưa có cơ chế tích hợp với các cổng thanh toán (VNPay, Momo,...) để hệ thống tự động cập nhật trạng thái thanh toán khi nhận được tiền.
+Chưa có chức năng sao lưu và phục hồi dữ liệu (Backup/Restore): Hệ thống hiện không tích hợp công cụ backup/restore tự động. Việc sao lưu dữ liệu phải thực hiện thủ công thông qua SQL Server Management Studio, gây bất tiện và tiềm ẩn rủi ro mất dữ liệu.
+Giao diện người dùng chưa hoàn toàn đồng nhất: Một số màn hình phụ (như ThongKeDoanhThuPanel) vẫn sử dụng Java Swing thay vì JavaFX, dẫn đến sự không đồng nhất về phong cách giao diện. Đây là hệ quả của quá trình chuyển đổi từ Swing sang JavaFX trong quá trình phát triển.
+Chưa hỗ trợ đa ngôn ngữ: Hệ thống hiện tại chỉ hỗ trợ tiếng Việt. Việc mở rộng sang tiếng Anh hoặc các ngôn ngữ khác để phục vụ khách sạn đón tiếp nhiều khách quốc tế chưa được triển khai.
+Hiệu suất với dữ liệu lớn chưa được kiểm thử kỹ: Các truy vấn cơ sở dữ liệu chưa được tối ưu hóa chỉ mục (index) một cách toàn diện. Hệ thống chưa được kiểm thử tải với lượng dữ liệu lớn (hàng nghìn đơn đặt phòng), nên hiệu suất trong môi trường vận hành thực tế lâu dài cần được đánh giá thêm.
+ 
+4.3 Hướng phát triển
+Dựa trên các hạn chế đã xác định và định hướng thương mại hóa sản phẩm trong khuôn khổ dự án khởi nghiệp, nhóm hoạch định các hướng phát triển sau cho các phiên bản tiếp theo:
+ 
+4.3.1 Ngắn hạn (Phiên bản 2.0 – Nâng cấp cơ bản)
+Chuẩn hóa giao diện JavaFX toàn phần: Chuyển đổi hoàn toàn các màn hình còn sử dụng Java Swing (ThongKeDoanhThuPanel, LichSuGiaoDichPanel) sang JavaFX để đảm bảo sự đồng nhất về giao diện và trải nghiệm người dùng.
+Mở rộng thêm chiều phân tích thống kê: Bổ sung thêm các góc nhìn phân tích chuyên sâu như tỷ lệ lấp đầy phòng (Occupancy Rate) theo từng tháng, báo cáo top khách hàng thường xuyên, và thống kê doanh thu theo nhân viên phụ trách – giúp ban quản lý có cái nhìn toàn diện hơn về hiệu quả vận hành.
+Tích hợp tính năng Backup/Restore: Xây dựng chức năng sao lưu và phục hồi cơ sở dữ liệu trực tiếp trong giao diện ứng dụng, giúp quản trị viên thực hiện backup định kỳ mà không cần thao tác trên SSMS.
+Tối ưu hóa hiệu suất cơ sở dữ liệu: Đánh giá và bổ sung các chỉ mục (index) phù hợp cho các cột thường xuyên được dùng để tìm kiếm và lọc dữ liệu, cải thiện thời gian phản hồi của ứng dụng.
+ 
+4.3.2 Trung hạn (Phiên bản 3.0 – Mở rộng nền tảng)
+Phát triển giao diện Web cho nhân viên: Xây dựng phiên bản web (Spring Boot + ReactJS) để nhân viên và quản lý có thể truy cập hệ thống từ bất kỳ thiết bị nào, phù hợp cho các khách sạn có nhiều ca làm hoặc quản lý muốn giám sát từ xa mà không cần cài phần mềm.
+Tích hợp cổng thanh toán điện tử: Kết nối với các cổng thanh toán phổ biến tại Việt Nam (VNPay, Momo, ZaloPay) để tự động hóa quy trình xác nhận thanh toán và giảm thiểu sai sót thủ công.
+Hệ thống thông báo nội bộ cho nhân viên: Tích hợp thông báo tự động trong ứng dụng nhắc nhở nhân viên lễ tân về lịch check-in sắp tới, các phòng quá giờ check-out, hoặc các đơn đặt phòng chờ xác nhận – giúp giảm thiểu bỏ sót công việc trong ca làm.
+Quản lý đa chi nhánh: Nâng cấp kiến trúc để hỗ trợ vận hành đồng thời nhiều cơ sở lưu trú của cùng một chủ sở hữu, với giao diện quản lý tập trung.
+ 
+4.3.3 Dài hạn (Phiên bản 4.0 – Ứng dụng Trí tuệ Nhân tạo)
+Đề xuất giá phòng động (Dynamic Pricing): Áp dụng thuật toán Machine Learning để phân tích dữ liệu lịch sử đặt phòng, dự đoán nhu cầu theo mùa và tự động đề xuất mức giá tối ưu nhằm tối đa hóa doanh thu.
+Chatbot hỗ trợ khách hàng: Tích hợp chatbot AI vào kênh website/Zalo/Messenger để tự động trả lời các câu hỏi thường gặp, hỗ trợ tra cứu thông tin phòng và hướng dẫn đặt phòng 24/7.
+Phân tích cảm xúc và đánh giá: Thu thập và phân tích đánh giá của khách hàng từ nhiều nguồn (Google Reviews, Booking.com,...) bằng kỹ thuật NLP để cung cấp báo cáo phân tích chất lượng dịch vụ cho ban quản lý.
+CHƯƠNG 5: KHỞI NGHIỆP
+5.1 Giải thích kế hoạch phát triển dự án khởi nghiệp
+5.1.1 Bối cảnh và lý do khởi nghiệp
+Là những sinh viên chuyên ngành Khoa học Máy tính, nhóm nhận thức rõ rằng làn sóng chuyển đổi số đang trở thành yêu cầu thiết yếu và cấp bách trong mọi lĩnh vực, đặc biệt là ngành dịch vụ lưu trú. Qua quá trình khảo sát thị trường, nhóm nhận thấy một thực trạng phổ biến: nhiều khách sạn và cơ sở lưu trú quy mô vừa và nhỏ tại Việt Nam vẫn đang vận hành theo phương thức thủ công – nhân viên lễ tân quản lý bằng sổ sách, giấy tờ hoặc các công cụ rời rạc như Microsoft Excel.
+Phương thức quản lý thủ công này đặt gánh nặng rất lớn lên đội ngũ nhân viên vận hành: dễ xảy ra trùng lịch đặt phòng do thiếu công cụ đồng bộ trạng thái, sai sót trong tính toán hóa đơn khi khách gọi thêm dịch vụ, bảo mật thông tin kém, và nhân viên phải mất rất nhiều thời gian cho các công việc đối soát thủ công thay vì tập trung vào phục vụ khách. Những "nỗi đau" thực tế của đội ngũ vận hành này chính là cơ hội thị trường mà nhóm quyết định khai thác.
+Từ đó, nhóm quyết định thành lập dự án khởi nghiệp nhằm cung cấp một công cụ nghiệp vụ chuyên biệt cho nhân viên khách sạn, với sản phẩm mũi nhọn là hệ thống phần mềm quản lý Lucia Star Hotel – ứng dụng Desktop nội bộ giúp nhân viên làm việc nhanh hơn, chính xác hơn và bảo mật hơn.
+ 
+5.1.2 Mục tiêu và định hướng sản phẩm
+Kế hoạch khởi nghiệp của nhóm không đơn thuần là xây dựng một phần mềm quản lý cơ bản, mà hướng đến việc thương mại hóa một giải pháp quản lý tập trung, tự động hóa cao và đặc biệt thân thiện với người dùng nội bộ. Sản phẩm Lucia Star Hotel được định vị là một công cụ nghiệp vụ dành cho đội ngũ vận hành khách sạn – từ nhân viên lễ tân đến quản lý cấp cao – chứ không phải hệ thống để khách hàng tự thao tác. Cụ thể:
+Ứng dụng Desktop nội bộ (Back-office): Được cài đặt và chạy trực tiếp tại quầy lễ tân hoặc văn phòng quản lý. Nhân viên là người duy nhất thao tác hệ thống; mọi nghiệp vụ đặt phòng, check-in, check-out đều do nhân viên thực hiện thay mặt khách hàng.
+Phân quyền theo vai trò rõ ràng: Nhân viên lễ tân chỉ thao tác được các nghiệp vụ cơ bản. Quản lý và Admin mới có quyền truy cập các chức năng nhạy cảm như quản lý nhân sự, xem thống kê doanh thu và cấu hình hệ thống.
+Tối ưu hóa luồng thao tác cho nhân viên: Giao diện được thiết kế để nhân viên có thể xử lý nhanh từng ca làm việc – từ nhận phòng, ghi nhận dịch vụ phát sinh đến xuất hóa đơn – mà không cần phải mở nhiều ứng dụng hay tra cứu thủ công.
+Giá cả phù hợp với phân khúc SME: Định giá cạnh tranh, hướng đến các khách sạn và homestay có quy mô từ 10 đến 50 phòng, vốn chưa đủ ngân sách đầu tư các giải pháp enterprise đắt tiền.
+ 
+5.1.3 Chiến lược phát triển
+Kế hoạch phát triển được hoạch định thành 3 giai đoạn trong tổng thời gian 15 tuần, mỗi giai đoạn có mục tiêu cụ thể và sản phẩm đầu ra đo lường được:
+ 
+Giai đoạn
+Thời gian
+Nội dung
+Mục tiêu
+Giai đoạn 1 – MVP
+Tuần 1 – 5
+Xây dựng CSDL vững chắc, hoàn thiện các module nghiệp vụ cơ bản (đặt phòng, check-in/out, hóa đơn) để nhân viên lễ tân có thể sử dụng ngay
+Có bản chạy được đầy đủ luồng nghiệp vụ chính
+Giai đoạn 2 – UI/UX
+Tuần 6 – 10
+Nâng cấp toàn diện giao diện JavaFX, tối ưu trải nghiệm nhân viên sử dụng, chuẩn hóa luồng thao tác cho từng vai trò
+Giao diện hoàn chỉnh, nhân viên thao tác trơn tru không cần hướng dẫn nhiều
+Giai đoạn 3 – Hoàn thiện
+Tuần 11 – 15
+Bổ sung tính năng nâng cao (thống kê, phân quyền đa cấp), kiểm thử toàn diện, sửa lỗi và hoàn thiện tài liệu
+Sản phẩm ổn định, sẵn sàng trình bày và bàn giao
+ 
+Bảng 5.1 – Lộ trình phát triển dự án trong 15 tuần
+5.2 Dự án của nhóm là gì? Trình bày kế hoạch cho dự án
+5.2.1 Tổng quan dự án
+Dự án của nhóm là xây dựng và thương mại hóa hệ thống phần mềm quản lý khách sạn mang tên Lucia Star Hotel – một ứng dụng Desktop nội bộ được phát triển trên nền tảng Java/JavaFX kết hợp cơ sở dữ liệu Microsoft SQL Server. Đây là công cụ dành cho đội ngũ nhân viên vận hành khách sạn (lễ tân, quản lý, admin), không phải ứng dụng self-service cho khách hàng cuối. Toàn bộ dự án được xây dựng trong vòng 15 tuần, từ giai đoạn phân tích yêu cầu đến sản phẩm hoàn chỉnh.
+ 
+5.2.2 Nhận diện thị trường mục tiêu
+Phân khúc thị trường mục tiêu của Lucia Star Hotel là các khách sạn mini, khách sạn boutique, và homestay có quy mô từ 10 đến 50 phòng tại Việt Nam. Đây là phân khúc:
+Đủ lớn về số lượng: Theo số liệu thống kê, Việt Nam có hàng chục nghìn cơ sở lưu trú quy mô nhỏ đang hoạt động và chưa được số hóa.
+Có nhu cầu rõ ràng: Chủ cơ sở nhận thức được sự cần thiết phải chuyển đổi số nhưng bị giới hạn bởi ngân sách và nhân lực kỹ thuật.
+Chưa được phục vụ tốt: Các giải pháp phần mềm quản lý khách sạn enterprise có giá cao (từ vài chục đến hàng trăm triệu đồng/năm) không phù hợp với quy mô và nguồn lực của phân khúc này. Trong khi đó, các giải pháp giá rẻ thường thiếu tính chuyên nghiệp và nhiều tính năng quan trọng.
+ 
+5.2.3 Mô hình kinh doanh (Business Model)
+Nhóm định hướng theo mô hình kinh doanh kết hợp giữa bán giấy phép một lần và dịch vụ hỗ trợ định kỳ:
+ 
+Gói dịch vụ
+Chi phí
+Nội dung
+Gói Cơ bản (Basic)
+2.500.000 đ – Một lần
+Bản quyền phần mềm, cài đặt, hướng dẫn sử dụng cơ bản (1 buổi online)
+Gói Chuyên nghiệp (Pro)
+4.500.000 đ – Một lần + 500.000 đ/tháng
+Bản quyền, cài đặt, tùy chỉnh theo yêu cầu, hỗ trợ kỹ thuật ưu tiên, nâng cấp miễn phí trong 1 năm
+Gói Doanh nghiệp (Enterprise)
+Tùy chỉnh – Báo giá riêng
+Giải pháp đa chi nhánh, tích hợp hệ thống có sẵn, đào tạo tại chỗ, hỗ trợ 24/7
+ 
+Bảng 5.2 – Các gói dịch vụ của Lucia Star Hotel
+5.2.4 Chiến lược tiếp thị và phân phối
+Trong giai đoạn đầu, nhóm sẽ tập trung vào các kênh tiếp cận khách hàng chi phí thấp nhưng hiệu quả cao:
+Mạng xã hội và cộng đồng: Xây dựng trang Facebook/Zalo OA để chia sẻ nội dung hữu ích về quản lý khách sạn, video demo sản phẩm thực tế do nhân viên thao tác và các case study triển khai thành công. Tham gia các nhóm cộng đồng chủ khách sạn/homestay trên mạng xã hội.
+Tiếp cận trực tiếp chủ cơ sở (Direct B2B Sales): Liên hệ và demo sản phẩm trực tiếp cho chủ khách sạn/homestay, nhấn mạnh vào việc giải phóng nhân viên khỏi công việc thủ công và giảm sai sót trong ca làm. Đây là kênh ưu tiên trong giai đoạn đầu.
+Demo thực tế tại chỗ: Cử thành viên đến cài đặt và hướng dẫn nhân viên của khách hàng dùng thử miễn phí 30 ngày. Mô hình "nhân viên dùng trước – chủ mua sau" giúp quyết định mua diễn ra nhanh hơn vì đội ngũ vận hành đã quen tay.
+Hợp tác với đối tác chiến lược: Hợp tác với các đơn vị cung cấp thiết bị khách sạn (hệ thống camera, khóa thẻ từ,...) để giới thiệu chéo sản phẩm, vì đây là những đơn vị thường xuyên tiếp xúc với chủ cơ sở lưu trú.
+ 
+5.2.5 Dự báo tài chính năm đầu tiên
+Dựa trên giả định tiếp cận được 20 khách hàng trả phí trong năm đầu tiên (kết hợp gói Basic và Pro), dự báo tài chính sơ bộ như sau:
+ 
+Hạng mục
+Số tiền (VNĐ)
+Ghi chú
+DOANH THU
+ 
+ 
+Doanh thu bán giấy phép (12 gói Basic + 8 gói Pro)
+66.000.000
+12 × 2.500.000 + 8 × 4.500.000
+Doanh thu hỗ trợ định kỳ (8 gói Pro × 12 tháng)
+48.000.000
+8 × 500.000 × 12 tháng
+Tổng doanh thu dự kiến
+114.000.000
+ 
+CHI PHÍ
+ 
+ 
+Chi phí phát triển sản phẩm (nâng cấp, bug fix)
+20.000.000
+Ước tính
+Chi phí tiếp thị (mạng xã hội, tài liệu marketing)
+15.000.000
+Ước tính
+Chi phí vận hành (hosting demo, công cụ)
+5.000.000
+Ước tính
+Tổng chi phí dự kiến
+40.000.000
+ 
+LỢI NHUẬN DỰ KIẾN NĂM ĐẦU
+74.000.000
+Tỷ lệ lợi nhuận ~65%
+ 
+Bảng 5.3 – Dự báo tài chính năm đầu tiên (ước tính)
+5.3 Điểm khác biệt và sáng tạo của dự án
+5.3.1 Xuất hóa đơn điện tử chuyên nghiệp định dạng HTML/CSS
+Thay vì xuất hóa đơn ra console hoặc file văn bản thô như các đồ án thông thường, nhóm đã xây dựng một cơ chế xuất hóa đơn điện tử chuyên nghiệp. Hóa đơn được kết xuất thành file HTML được nhúng sẵn CSS với bố cục chia cột khoa học, bảng biểu rõ ràng, font chữ và màu sắc được trình bày đẹp mắt – giống hệt các hệ thống hóa đơn điện tử thực tế.
+Người dùng chỉ cần mở file HTML bằng trình duyệt web thông thường, sau đó dùng tính năng "In" (Ctrl+P) để xuất sang PDF và gửi cho khách hàng. Cách tiếp cận này không chỉ mang tính thực tiễn cao mà còn thể hiện tư duy phát triển sản phẩm bám sát yêu cầu thực tế của thị trường, đặc biệt trong bối cảnh quy định về hóa đơn điện tử tại Việt Nam ngày càng được thắt chặt.
+ 
+5.3.2 Kỹ thuật Dim Overlay – Nâng tầm trải nghiệm người dùng
+Giao diện ứng dụng Desktop viết bằng Java thường bị đánh giá là cứng nhắc và kém thẩm mỹ. Để phá vỡ định kiến này, nhóm đã nghiên cứu và tự lập trình tiện ích DimOverlay – một lớp phủ đen mờ tự động xuất hiện trên toàn bộ giao diện chính khi người dùng mở các hộp thoại quan trọng (thêm mới, chỉnh sửa, thanh toán).
+Đây là một mẫu thiết kế UX hiện đại (Modal Overlay pattern) vốn phổ biến trên các ứng dụng web và di động, nhưng rất hiếm khi được triển khai trong môi trường Java Desktop. Kỹ thuật này giúp điều hướng sự tập trung của người dùng vào tác vụ hiện tại, tránh thao tác nhầm lẫn và mang lại cảm giác mượt mà, chuyên nghiệp đặc biệt.
+ 
+5.3.3 Logic thanh toán linh hoạt cho khách đoàn
+Đây là điểm kỹ thuật phức tạp nhất và cũng là lợi thế cạnh tranh quan trọng nhất của hệ thống. Trong khi hầu hết các đồ án quản lý khách sạn chỉ xử lý bài toán thanh toán đơn giản (một phòng – một hóa đơn), Lucia Star Hotel giải quyết được nghiệp vụ phức tạp hơn nhiều: trả phòng cho khách đi theo đoàn.
+Cụ thể, hệ thống hỗ trợ hai luồng xử lý:
+Thanh toán gộp toàn đoàn: Lễ tân có thể gom tất cả các phòng trong cùng một đơn đặt, tự động tổng hợp toàn bộ chi phí phòng và dịch vụ, khấu trừ chính xác số tiền cọc đã thu (theo từng phòng) và tính thuế VAT một lần duy nhất, xuất một hóa đơn tổng cho cả đoàn.
+Thanh toán từng phần (tách hóa đơn): Phục vụ cho khách hàng trong đoàn muốn tự thanh toán phòng của mình và rời đi sớm. Hệ thống xử lý việc tách hóa đơn một cách chính xác, đảm bảo logic tiền cọc không bị trừ âm và không ảnh hưởng đến các phòng còn lại của đoàn.
+Việc xây dựng thuật toán xử lý đúng hai trường hợp phức tạp này, đặc biệt là đảm bảo tính nhất quán của dữ liệu trong CSDL, đòi hỏi nhóm phải nghiên cứu sâu các nghiệp vụ thực tế của ngành khách sạn.
+ 
+5.3.4 So sánh với các giải pháp hiện có trên thị trường
+ 
+Tiêu chí so sánh
+Lucia Star Hotel
+Phần mềm Enterprise
+Excel/Sổ tay
+Đối tượng sử dụng chính
+Nhân viên nội bộ (Back-office)
+Nhân viên nội bộ
+Nhân viên thủ công
+Chi phí đầu tư ban đầu
+Thấp (< 5 triệu)
+Cao (50-200 triệu+)
+Gần như miễn phí
+Phù hợp SME (10-50 phòng)
+Tối ưu
+Quá phức tạp
+Không hiệu quả
+Tự động hóa nghiệp vụ nhân viên
+Cao
+Rất cao
+Không có
+Xuất hóa đơn điện tử
+HTML/PDF chuyên nghiệp
+Có
+Không
+Giao diện thân thiện nhân viên
+Modern JavaFX
+Khác nhau
+Không
+Xử lý khách đoàn
+Linh hoạt tách/gộp
+Có
+Thủ công
+Thời gian triển khai & đào tạo NV
+Nhanh (1-2 ngày)
+Chậm (tuần-tháng)
+Ngay lập tức
+Bảo mật & Phân quyền nhân viên
+3 cấp rõ ràng
+Đa cấp
+Không
+ 
+Bảng 5.4 – So sánh Lucia Star Hotel với các giải pháp hiện có
+5.4 Tính khả thi và cam kết của nhóm
+Dự án khởi nghiệp Lucia Star Hotel được nhóm đánh giá là có tính khả thi cao dựa trên ba trụ cột:
+Sản phẩm hoàn chỉnh sau 15 tuần phát triển: Trong vòng 15 tuần, nhóm đã xây dựng được một hệ thống phần mềm chạy ổn định, đầy đủ nghiệp vụ và đã qua kiểm thử thực tế. Đây là lợi thế lớn so với các startup chỉ mới ở giai đoạn ý tưởng, giúp rút ngắn đáng kể thời gian từ concept đến doanh thu đầu tiên.
+Thị trường rõ ràng và đúng trọng tâm: Phân khúc khách sạn SME đang cần một công cụ cho nhân viên vận hành là thị trường thực sự tồn tại và dễ tiếp cận. Bằng cách tập trung vào trải nghiệm của nhân viên sử dụng hàng ngày thay vì xây dựng cổng khách hàng phức tạp, sản phẩm có thể triển khai nhanh và thu hồi vốn sớm.
+Đội ngũ chuyên môn và đam mê: Các thành viên trong nhóm đều là sinh viên CNTT với nền tảng kỹ thuật vững, có khả năng tự phát triển và bảo trì sản phẩm mà không cần thuê ngoài trong giai đoạn đầu, giúp kiểm soát chi phí tốt.
+Nhóm cam kết tiếp tục phát triển Lucia Star Hotel vượt ra ngoài khuôn khổ đồ án 15 tuần, hướng đến việc đăng ký doanh nghiệp và triển khai thương mại thực sự sau khi tốt nghiệp, đóng góp một giải pháp công nghệ Việt thiết thực cho đội ngũ vận hành trong ngành du lịch và dịch vụ lưu trú.
+TÀI LIỆU THAM KHẢO
+﻿Tài liệu tham khảo: được xếp theo nhóm ngôn ngữ với thứ tự tiếng: Việt, Anh, Pháp, Đức, Nga, Trung, Nhật; giữ nguyên văn tiếng nước ngoài, không phiên dịch. Những tài liệu trình bày với thứ tiếng có ít người biết có thể thêm phần dịch tiếng Việt kèm theo.
+Danh mục tài liệu tham khảo được xếp theo thứ tự bảng chữ cái (alphabet) về họ hoặc tên tác giả theo thông lệ từng nước:
+- Tác giả là người nước ngoài: xếp thứ tự bảng chữ cái đối với họ;
+- Tác giả là người Việt Nam: xếp thứ tự bảng chữ cái theo tên, không đảo tên trước họ;
+- Tài liệu không có tên tác giả: xếp thứ tự theo bảng chữ cái đối với từ đầu tiên của tên cơ quan đã ấn hành tài liệu, ví dụ: Viện Khoa học Việt nam xếp vào vần V, Trung tâm Chọn Giống Lúa vần T,..
+Nếu tài liệu tham khảo là bài báo đăng ở tạp chí, bài viết trong kỷ yếu hay một cuốn sách thì ghi theo thứ tự và đầy đủ các mục sau đây:
+- tên các tác giả (có dấu phẩy ngăn cách giữa các tên tác giả)
+- (năm công bố), (đặt trong ngoặc đơn, có dấu phẩy sau ngoặc đơn)
+- “tên bài báo”, (trong ngoặc kép, không in nghiêng, dấu phẩy ngay sau đóng ngoặc kép)
+- tên tạp chí (in nghiêng, cuối tên không có dấu phẩy) hoặc tên sách, (in nghiêng, dấu phẩy cuối tên)
+- tập (không có dấu ngăn cách)
+- (số), (đặt trong ngoặc đơn, dấu phẩy sau ngoặc đơn)
+- các số trang. (gạch ngang giữa hai chữ số, và dấu chấm để kết thúc)
+(thí dụ: xem tài liệu ở mục 1 hoặc 11 trình bày dưới đây).
+Nếu tài liệu tham khảo là sách, BCKH, báo cáo ghi đầy đủ các thông tin sau:
+- tên các tác giả hoặc cơ quan ban hành (có dấu phẩy ngăn cách giữa các tên)
+- (năm xuất bản), (đặt trong ngoặc đơn, dấu phẩy sau ngoặc đơn)
+- tên sách, BCKH hoặc báo cáo, (in nghiêng, dấu phẩy cuối tên)
+- nhà xuất bản, (dấu phẩy cuối tên nhà xuất bản)
+- nơi xuất bản. (có dấu chấm kết thúc mục tài liệu)
+(thí dụ: tài liệu ở mục 5, 15 trình bày dưới đây)
+Nếu tài liệu tham khảo là trang web ghi đầy đủ các thông tin sau:
+- tên trang web (có dấu phẩy ngăn cách giữa các tên)
+- (tháng-năm xuất bản), (đặt trong ngoặc đơn, dấu phẩy sau ngoặc đơn)
+- địa chỉ trang web (không cần dấu chấm kết thúc) 
+Ví dụ
+PHỤ LỤC

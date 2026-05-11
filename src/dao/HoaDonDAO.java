@@ -3,6 +3,9 @@ package dao;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.time.LocalDate;
 
 import connectDatabase.ConnectDatabase;
 import model.entities.DatPhong;
@@ -340,5 +343,29 @@ public class HoaDonDAO {
 
         hd.setDoanhThu(doanhThu);
         return doanhThu;
+    }
+
+    public Map<String, Double> getSoNgaySuDungTheoLoaiPhong(LocalDate start, LocalDate end) {
+        Map<String, Double> result = new LinkedHashMap<>();
+        String sql = "SELECT p.loaiPhong, ISNULL(SUM(cthd.thoiGianLuuTru), 0) as totalDays " +
+                     "FROM ChiTietHoaDon cthd " +
+                     "JOIN HoaDon hd ON cthd.maHD = hd.maHD " +
+                     "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
+                     "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                     "WHERE CAST(hd.ngayTaoHD AS DATE) >= ? AND CAST(hd.ngayTaoHD AS DATE) <= ? " +
+                     "GROUP BY p.loaiPhong";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setDate(1, java.sql.Date.valueOf(start));
+            ps.setDate(2, java.sql.Date.valueOf(end));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.put(rs.getString("loaiPhong"), rs.getDouble("totalDays"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 }
