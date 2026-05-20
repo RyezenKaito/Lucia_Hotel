@@ -487,6 +487,8 @@ public class BangGiaDichVuDAO {
      */
     public void syncActivePricesToDB() {
         java.util.Map<String, Double> activePrices = getActivePriceMap();
+        String resetSql = "UPDATE DV SET gia = NULL";
+        String updateSql = "UPDATE DV SET gia = ? WHERE maDV = ?";
 
         try (Connection conn = ConnectDatabase.getInstance().getConnection()) {
             conn.setAutoCommit(false);
