@@ -1,6 +1,9 @@
 package gui;
 
+import dao.BangGiaDichVuDAO;
 import dao.DichVuDAO;
+import java.util.HashMap;
+import java.util.Map;
 import dao.LoaiDichVuDAO;
 import model.entities.DichVu;
 import model.entities.LoaiDichVu;
@@ -45,6 +48,8 @@ public class QuanLyDichVuView extends BorderPane {
 
     /* ── Dữ liệu & DAO ─────────────────────────────────────────────── */
     private final DichVuDAO dao = new DichVuDAO();
+    private final BangGiaDichVuDAO bgDAO = new BangGiaDichVuDAO();
+    private Map<String, Double> activePriceMap = new HashMap<>();
     private ObservableList<DichVu> masterData = FXCollections.observableArrayList();
     private FilteredList<DichVu> filteredData;
 
@@ -52,6 +57,7 @@ public class QuanLyDichVuView extends BorderPane {
     private TableView<DichVu> table;
     private TextField txtSearch;
     private ComboBox<String> cbCategory;
+    private String selectedStatusFilter = "Tất cả trạng thái";
     private final boolean isAdmin;
 
     public QuanLyDichVuView(boolean isAdmin) {
@@ -186,8 +192,9 @@ public class QuanLyDichVuView extends BorderPane {
                 + C_BLUE + ";");
         colGia.setCellValueFactory(p -> {
             DichVu dv = p.getValue();
-            if (dv.getGia() != null) {
-                return new SimpleStringProperty(String.format("%,.0f đ", dv.getGia()));
+            Double activePrice = activePriceMap.get(dv.getMaDV());
+            if (activePrice != null) {
+                return new SimpleStringProperty(String.format("%,.0f đ", activePrice));
             } else {
                 return new SimpleStringProperty("Chưa thiết lập");
             }
@@ -228,11 +235,38 @@ public class QuanLyDichVuView extends BorderPane {
         colDonVi.setStyle("-fx-alignment: CENTER;");
         colDonVi.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getDonVi()));
 
-        // 7. Cột Trạng thái
-        TableColumn<DichVu, String> colTrangThai = new TableColumn<>("Trạng thái");
-        colTrangThai.setPrefWidth(150);
+        // 7. Cột Trạng thái (Tích hợp bộ lọc vào Header)
+        TableColumn<DichVu, String> colTrangThai = new TableColumn<>();
+        colTrangThai.setPrefWidth(160);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTrangThaiLabel()));
+
+        // Thiết kế Header có nút lọc
+        Label lblHeader = new Label("Trạng thái ▼");
+        lblHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblHeader.setTextFill(Color.web(C_TEXT_DARK));
+        lblHeader.setCursor(Cursor.HAND);
+        colTrangThai.setGraphic(lblHeader);
+
+        ContextMenu filterMenu = new ContextMenu();
+        filterMenu.getStyleClass().add("filter-menu");
+
+        RadioMenuItem miAll = new RadioMenuItem("Tất cả trạng thái");
+        RadioMenuItem miActive = new RadioMenuItem("Đang phục vụ");
+        RadioMenuItem miSuspended = new RadioMenuItem("Tạm ngưng phục vụ");
+        ToggleGroup group = new ToggleGroup();
+        miAll.setToggleGroup(group);
+        miActive.setToggleGroup(group);
+        miSuspended.setToggleGroup(group);
+        miAll.setSelected(true);
+
+        miAll.setOnAction(e -> { selectedStatusFilter = "Tất cả trạng thái"; lblHeader.setText("Trạng thái ▼"); applyFilter(); });
+        miActive.setOnAction(e -> { selectedStatusFilter = "Đang phục vụ"; lblHeader.setText("Trạng thái (Lọc) ▼"); applyFilter(); });
+        miSuspended.setOnAction(e -> { selectedStatusFilter = "Tạm ngưng phục vụ"; lblHeader.setText("Trạng thái (Lọc) ▼"); applyFilter(); });
+
+        filterMenu.getItems().addAll(miAll, miActive, miSuspended);
+        lblHeader.setOnMouseClicked(e -> filterMenu.show(lblHeader, Side.BOTTOM, 0, 5));
+
         colTrangThai.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -244,24 +278,23 @@ public class QuanLyDichVuView extends BorderPane {
                     String bg = item.equals("Đang phục vụ") ? "#d1fae5" : "#fee2e2";
                     String text = item.equals("Đang phục vụ") ? "#065f46" : "#991b1b";
 
-                    // Sử dụng Utility đồng nhất
                     HBox badge = BadgeUtils.createStatusBadge(item, bg, text, true);
 
-                    // Context Menu cho việc đổi trạng thái nhanh
-                    ContextMenu menu = new ContextMenu();
-                    MenuItem miActive = new MenuItem("✅  Đang phục vụ");
-                    miActive.setOnAction(
-                            e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.DANG_PHUC_VU));
-                    MenuItem miSuspended = new MenuItem("🚫  Tạm ngưng phục vụ");
-                    miSuspended
-                            .setOnAction(e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.TAM_NGUNG));
-                    menu.getItems().addAll(miActive, miSuspended);
+                    // Menu phụ để đổi trạng thái nhanh (nếu là Admin)
+                    if (isAdmin) {
+                        ContextMenu quickMenu = new ContextMenu();
+                        MenuItem qActive = new MenuItem("✅  Đang phục vụ");
+                        qActive.setOnAction(e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.DANG_PHUC_VU));
+                        MenuItem qSuspended = new MenuItem("🚫  Tạm ngưng phục vụ");
+                        qSuspended.setOnAction(e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.TAM_NGUNG));
+                        quickMenu.getItems().addAll(qActive, qSuspended);
 
-                    badge.setOnMouseClicked(e -> {
-                        if (e.getButton() == MouseButton.PRIMARY) {
-                            menu.show(badge, Side.BOTTOM, 0, 0);
-                        }
-                    });
+                        badge.setOnMouseClicked(e -> {
+                            if (e.getButton() == MouseButton.PRIMARY) {
+                                quickMenu.show(badge, Side.BOTTOM, 0, 0);
+                            }
+                        });
+                    }
 
                     setGraphic(badge);
                 }
@@ -324,6 +357,8 @@ public class QuanLyDichVuView extends BorderPane {
 
     /* ══════════════════ LOGIC ══════════════════ */
     public void loadData() {
+        bgDAO.syncActivePricesToDB(); // Sync prices first
+        activePriceMap = bgDAO.getActivePriceMap(); // Update local map
         List<DichVu> list = dao.getAll();
         masterData.setAll(list);
 
@@ -349,7 +384,11 @@ public class QuanLyDichVuView extends BorderPane {
                 }
             }
 
-            return matchesText && matchesCategory;
+            String statusFilter = selectedStatusFilter;
+            boolean matchesStatus = statusFilter.equals("Tất cả trạng thái")
+                    || (dv.getTrangThaiLabel() != null && dv.getTrangThaiLabel().equals(statusFilter));
+
+            return matchesText && matchesCategory && matchesStatus;
         });
     }
 

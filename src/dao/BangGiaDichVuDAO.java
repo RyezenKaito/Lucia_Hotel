@@ -422,14 +422,17 @@ public class BangGiaDichVuDAO {
         java.util.Map<String, Double> map = new java.util.LinkedHashMap<>();
         // Tìm bảng giá có trangThai = 0 (Đang áp dụng) và hôm nay nằm trong
         // [ngayApDung, ngayHetHieuLuc]
-        String sql = "SELECT d.maDV, d.giaDV FROM BangGiaDV_Detail d " +
+        String sql = "SELECT d.maDV, d.giaDV, h.maBangGia, h.tenBangGia FROM BangGiaDV_Detail d " +
                 "INNER JOIN BangGiaDV_Header h ON d.maBangGia = h.maBangGia " +
-                "WHERE h.trangThai = 0 AND CAST(GETDATE() AS DATE) BETWEEN h.ngayApDung AND h.ngayHetHieuLuc";
+                "WHERE h.trangThai = 0 AND ? >= h.ngayApDung AND ? < h.ngayHetHieuLuc";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                map.put(rs.getString("maDV"), rs.getDouble("giaDV"));
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, new java.sql.Date(System.currentTimeMillis()));
+            ps.setDate(2, new java.sql.Date(System.currentTimeMillis()));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    map.put(rs.getString("maDV"), rs.getDouble("giaDV"));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -485,9 +488,6 @@ public class BangGiaDichVuDAO {
     public void syncActivePricesToDB() {
         java.util.Map<String, Double> activePrices = getActivePriceMap();
 
-        String resetSql = "UPDATE DV SET gia = NULL";
-        String updateSql = "UPDATE DV SET gia = ? WHERE maDV = ?";
-
         try (Connection conn = ConnectDatabase.getInstance().getConnection()) {
             conn.setAutoCommit(false);
 
@@ -512,4 +512,23 @@ public class BangGiaDichVuDAO {
         }
     }
 
+    /**
+     * Lấy giá hiện tại của một dịch vụ từ bảng giá đang hiệu lực.
+     */
+    public double getGiaHienTai(String maDV) {
+        String sql = "SELECT d.giaDV FROM BangGiaDV_Detail d " +
+                "INNER JOIN BangGiaDV_Header h ON d.maBangGia = h.maBangGia " +
+                "WHERE h.trangThai = 0 AND CAST(GETDATE() AS DATE) >= h.ngayApDung AND CAST(GETDATE() AS DATE) < h.ngayHetHieuLuc " +
+                "AND d.maDV = ?";
+        try (Connection conn = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maDV);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getDouble("giaDV");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

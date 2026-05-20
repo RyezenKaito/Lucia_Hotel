@@ -311,23 +311,21 @@ public class BangGiaDichVuView extends BorderPane {
         if (list == null)
             return;
 
-        Date now = new Date();
+        java.time.LocalDate today = java.time.LocalDate.now();
         int countDangAD = 0, countNgung = 0;
 
         for (BangGiaDichVu bg : list) {
             String trangThaiText;
+            java.time.LocalDate ad = bg.getNgayApDung().toLocalDate();
+            java.time.LocalDate hh = bg.getNgayHetHieuLuc().toLocalDate();
 
-            // Logic hiển thị trạng thái:
-            // 1. Ưu tiên kiểm tra xem người dùng có nốt "Ngưng áp dụng" thủ công không
-            // (trangThai = 1)
             if (bg.getTrangThai() == 1) {
                 trangThaiText = "Ngưng áp dụng";
             } else {
-                // 2. Nếu trangThai = 0 (Hoạt động), thì mới xét đến yếu tố thời gian
-                if (now.after(bg.getNgayHetHieuLuc())) {
-                    trangThaiText = "Ngưng áp dụng"; // Đã hết hạn
-                } else if (now.before(bg.getNgayApDung())) {
-                    trangThaiText = "Chờ áp dụng"; // Chưa đến ngày
+                if (!today.isBefore(hh)) {
+                    trangThaiText = "Ngưng áp dụng";
+                } else if (today.isBefore(ad)) {
+                    trangThaiText = "Chờ áp dụng";
                 } else {
                     trangThaiText = "Đang áp dụng";
                 }
