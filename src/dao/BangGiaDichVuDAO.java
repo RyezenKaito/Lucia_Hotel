@@ -173,6 +173,7 @@ public class BangGiaDichVuDAO {
             }
 
             con.commit();
+            syncActivePricesToDB();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -220,6 +221,7 @@ public class BangGiaDichVuDAO {
             }
 
             con.commit();
+            syncActivePricesToDB();
             return true;
         } catch (Exception e) {
             e.printStackTrace();

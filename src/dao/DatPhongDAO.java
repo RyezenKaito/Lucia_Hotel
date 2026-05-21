@@ -428,7 +428,7 @@ public class DatPhongDAO {
         }
     }
 
-    private String getMaCTDPDangSuDungByMaPhong(String maPhong) {
+    public String getMaCTDPDangSuDungByMaPhong(String maPhong) {
         String sql = "SELECT ctdp.maCTDP FROM ChiTietDatPhong ctdp " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
                 "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +

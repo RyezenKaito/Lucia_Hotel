@@ -94,11 +94,14 @@ public class MainFrameView {
                     default -> "NHÂN VIÊN";
                 } : "HỆ THỐNG"));
         primaryStage.setScene(scene);
+
         primaryStage.setMaximized(true);
         primaryStage.setOnCloseRequest(e -> {
             e.consume();
             confirmExit();
         });
+        Image logoImg = new Image("file:src/icon/logo.png");
+        primaryStage.getIcons().add(logoImg);
         primaryStage.show();
     }
 

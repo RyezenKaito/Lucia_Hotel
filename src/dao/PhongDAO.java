@@ -269,4 +269,22 @@ public class PhongDAO {
         } catch (Exception e) { e.printStackTrace(); }
         return map;
     }
+
+    /**
+     * Lấy danh sách phòng theo trạng thái Enum.
+     */
+    public List<Phong> getPhongByTrangThai(TrangThaiPhong ttp) {
+        List<Phong> ds = new ArrayList<>();
+        String statusStr = trangThaiToString(ttp);
+        String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
+                     "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
+                     "WHERE p.tinhTrang = ? AND p.is_deleted = 0";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, statusStr);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) ds.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return ds;
+    }
 }

@@ -13,12 +13,7 @@ public class ConnectDatabase {
 	private final String PASSWORD = "sapassword";
 
 	private ConnectDatabase() {
-		try {
-			con = DriverManager.getConnection(URL, USER, PASSWORD);
-		} catch (SQLException e) {
-			// TODO: handle exception
-			System.err.println("Lỗi kết nối Database: " + e.getMessage());
-		}
+		// Constructor remains empty as connections are managed per request in getConnection()
 	}
 
 	public static ConnectDatabase getInstance() {

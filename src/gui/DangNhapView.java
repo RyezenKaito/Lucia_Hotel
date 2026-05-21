@@ -27,21 +27,21 @@ public class DangNhapView extends Application {
     private CheckBox chkShowPassword;
     private Button btnLogin;
     private Label lblError;
-    private Stage primaryStage;          // Lưu stage để dùng trong các method
+    private Stage primaryStage; // Lưu stage để dùng trong các method
     private NhanVienDAO nvDAO = new NhanVienDAO();
 
     // ===== MÀU SẮC =====
     private static final String BLUE_600 = "#2563EB";
     private static final String BLUE_700 = "#1D4ED8";
-    private static final String RED_500  = "#EF4444";
+    private static final String RED_500 = "#EF4444";
 
     // =========================================================
     // START
     // =========================================================
     @Override
     public void start(Stage stage) {
-    	javafx.application.Platform.setImplicitExit(false); // Ngăn javaFX tắt cửa sổ ẩn
-        this.primaryStage = stage;  // Gán stage vào field để các method khác dùng
+        javafx.application.Platform.setImplicitExit(false); // Ngăn javaFX tắt cửa sổ ẩn
+        this.primaryStage = stage; // Gán stage vào field để các method khác dùng
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
 
         // ROOT
@@ -51,11 +51,10 @@ public class DangNhapView extends Application {
         // BACKGROUND gradient fallback
         Pane gradientBg = new Pane();
         gradientBg.setBackground(new Background(new BackgroundFill(
-            new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.web("#0F172A")),
-                new Stop(1, Color.web("#1E3A5F"))
-            ), CornerRadii.EMPTY, Insets.EMPTY
-        )));
+                new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                        new Stop(0, Color.web("#0F172A")),
+                        new Stop(1, Color.web("#1E3A5F"))),
+                CornerRadii.EMPTY, Insets.EMPTY)));
         gradientBg.prefWidthProperty().bind(root.widthProperty());
         gradientBg.prefHeightProperty().bind(root.heightProperty());
 
@@ -63,7 +62,8 @@ public class DangNhapView extends Application {
         ImageView bgImg = new ImageView();
         try {
             bgImg.setImage(new Image("file:src/background/background.png"));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         bgImg.fitWidthProperty().bind(root.widthProperty());
         bgImg.fitHeightProperty().bind(root.heightProperty());
         bgImg.setPreserveRatio(false);
@@ -76,20 +76,18 @@ public class DangNhapView extends Application {
 
         // ===== CARD =====
         VBox card = new VBox(0);
-        card.setPrefWidth(380); 
+        card.setPrefWidth(380);
         card.setMinWidth(380);
         card.setMaxWidth(380);
         card.setPrefHeight(500);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 40, 40, 40));
         card.setBackground(new Background(new BackgroundFill(
-            Color.rgb(255, 255, 255, 0.12), new CornerRadii(16), Insets.EMPTY
-        )));
+                Color.rgb(255, 255, 255, 0.12), new CornerRadii(16), Insets.EMPTY)));
         card.setStyle(
-            "-fx-border-color: rgba(255,255,255,0.2);" +
-            "-fx-border-radius: 16;" +
-            "-fx-border-width: 1;"
-        );
+                "-fx-border-color: rgba(255,255,255,0.2);" +
+                        "-fx-border-radius: 16;" +
+                        "-fx-border-width: 1;");
         DropShadow shadow = new DropShadow();
         shadow.setColor(Color.rgb(0, 0, 0, 0.4));
         shadow.setRadius(40);
@@ -150,12 +148,12 @@ public class DangNhapView extends Application {
         String placeholder = "Ví dụ: LUCIA001";
         VBox fieldUser = buildGlassField("Mã nhân viên", placeholder, "👤");
         txtUsername = (TextField) ((StackPane) fieldUser.getChildren().get(1)).getChildren().get(0);
-        
+
         // Buộc in hoa khi nhập
         txtUsername.textProperty().addListener((obs, oldVal, newVal) -> {
-        	if (newVal != null && !newVal.equals(newVal.toUpperCase())) {
-        		txtUsername.setText(newVal.toUpperCase());
-        	}
+            if (newVal != null && !newVal.equals(newVal.toUpperCase())) {
+                txtUsername.setText(newVal.toUpperCase());
+            }
         });
 
         VBox.setMargin(fieldUser, new Insets(0, 0, 16, 0));
@@ -174,7 +172,7 @@ public class DangNhapView extends Application {
         chkRow.setAlignment(Pos.CENTER_RIGHT);
         VBox.setMargin(chkRow, new Insets(0, 0, 20, 0));
 
-     // ===== ERROR LABEL — bọc trong StackPane cố định chiều cao =====
+        // ===== ERROR LABEL — bọc trong StackPane cố định chiều cao =====
         lblError = new Label("");
         lblError.setFont(Font.font("Segoe UI", 12));
         lblError.setTextFill(Color.WHITE);
@@ -182,8 +180,7 @@ public class DangNhapView extends Application {
         lblError.setMaxWidth(Double.MAX_VALUE);
         lblError.setPadding(new Insets(10, 14, 10, 14));
         lblError.setBackground(new Background(new BackgroundFill(
-            Color.web(RED_500, 0.65), new CornerRadii(8), Insets.EMPTY
-        )));
+                Color.web(RED_500, 0.65), new CornerRadii(8), Insets.EMPTY)));
         lblError.setVisible(false);
 
         // Bọc trong StackPane cố định 44px — không bao giờ thay đổi chiều cao
@@ -213,10 +210,9 @@ public class DangNhapView extends Application {
 
         // ===== ASSEMBLE CARD =====
         card.getChildren().addAll(
-            iconCircle, lblTitle, lblSub,
-            fieldUser, fieldPass, chkRow,
-           errorWrapper, btnLogin
-        );
+                iconCircle, lblTitle, lblSub,
+                fieldUser, fieldPass, chkRow,
+                errorWrapper, btnLogin);
 
         // CENTER BOX — giữ card không bị stretch
         HBox centerBox = new HBox(card);
@@ -231,15 +227,17 @@ public class DangNhapView extends Application {
         card.setOpacity(0);
         card.setTranslateY(20);
         FadeTransition ft = new FadeTransition(Duration.millis(500), card);
-        ft.setFromValue(0); ft.setToValue(1);
+        ft.setFromValue(0);
+        ft.setToValue(1);
         TranslateTransition tt = new TranslateTransition(Duration.millis(500), card);
-        tt.setFromY(20); tt.setToY(0);
+        tt.setFromY(20);
+        tt.setToY(0);
         tt.setInterpolator(Interpolator.EASE_OUT);
         new ParallelTransition(ft, tt).play();
 
         // ===== SCENE & STAGE =====
         Scene scene = new Scene(root, 850, 600);
-         scene.setUserData(this);
+        scene.setUserData(this);
         stage.setTitle("Lucia Star Hotel - Đăng nhập");
         // Set icon cửa sổ
         Image logoImg = new Image("file:src/icon/logo.png");
@@ -247,12 +245,12 @@ public class DangNhapView extends Application {
         stage.getIcons().add(logoImg);
         stage.setScene(scene);
         stage.setOnCloseRequest(e -> {
-        	javafx.application.Platform.exit();
-        	System.exit(0);
+            javafx.application.Platform.exit();
+            System.exit(0);
         });
         stage.setResizable(false);
         stage.show();
-        
+
         txtUsername.requestFocus(); // Mặc định là trỏ field tên đăng nhập
     }
 
@@ -325,10 +323,12 @@ public class DangNhapView extends Application {
 
         // Sync nội dung 2 field
         txtPassword.textProperty().addListener((obs, o, n) -> {
-            if (!txtPasswordVisible.getText().equals(n)) txtPasswordVisible.setText(n);
+            if (!txtPasswordVisible.getText().equals(n))
+                txtPasswordVisible.setText(n);
         });
         txtPasswordVisible.textProperty().addListener((obs, o, n) -> {
-            if (!txtPassword.getText().equals(n)) txtPassword.setText(n);
+            if (!txtPassword.getText().equals(n))
+                txtPassword.setText(n);
         });
 
         StackPane stack = new StackPane();
@@ -345,14 +345,12 @@ public class DangNhapView extends Application {
     private void applyGlassFieldStyle(TextField f, boolean focused) {
         String border = focused ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)";
         f.setBackground(new Background(new BackgroundFill(
-            Color.rgb(255, 255, 255, focused ? 0.28 : 0.18),
-            new CornerRadii(8), Insets.EMPTY
-        )));
+                Color.rgb(255, 255, 255, focused ? 0.28 : 0.18),
+                new CornerRadii(8), Insets.EMPTY)));
         f.setStyle(String.format(
-            "-fx-border-color: %s; -fx-border-radius: 8; -fx-border-width: 1.5;" +
-            "-fx-text-fill: white; -fx-prompt-text-fill: rgba(255,255,255,0.6);",
-            border
-        ));
+                "-fx-border-color: %s; -fx-border-radius: 8; -fx-border-width: 1.5;" +
+                        "-fx-text-fill: white; -fx-prompt-text-fill: rgba(255,255,255,0.6);",
+                border));
     }
 
     // =========================================================
@@ -375,8 +373,10 @@ public class DangNhapView extends Application {
         txtPassword.setManaged(!show);
         txtPasswordVisible.setVisible(show);
         txtPasswordVisible.setManaged(show);
-        if (show) txtPasswordVisible.requestFocus();
-        else txtPassword.requestFocus();
+        if (show)
+            txtPasswordVisible.requestFocus();
+        else
+            txtPassword.requestFocus();
     }
 
     // =========================================================
@@ -385,8 +385,8 @@ public class DangNhapView extends Application {
     private void handleLogin() {
         String user = txtUsername.getText().trim();
         String pass = chkShowPassword.isSelected()
-            ? txtPasswordVisible.getText()
-            : txtPassword.getText();
+                ? txtPasswordVisible.getText()
+                : txtPassword.getText();
 
         // 1. Không nhập cả 2
         if (user.isEmpty() && pass.isEmpty()) {
@@ -405,8 +405,10 @@ public class DangNhapView extends Application {
         // 3. Chưa nhập mật khẩu
         if (pass.isEmpty()) {
             showError("Chưa nhập mật khẩu!");
-            if (chkShowPassword.isSelected()) txtPasswordVisible.requestFocus();
-            else txtPassword.requestFocus();
+            if (chkShowPassword.isSelected())
+                txtPasswordVisible.requestFocus();
+            else
+                txtPassword.requestFocus();
             return;
         }
 
@@ -424,20 +426,22 @@ public class DangNhapView extends Application {
             showError("Mật khẩu không chính xác!");
             txtPassword.clear();
             txtPasswordVisible.clear();
-            if (chkShowPassword.isSelected()) txtPasswordVisible.requestFocus();
-            else txtPassword.requestFocus();
+            if (chkShowPassword.isSelected())
+                txtPasswordVisible.requestFocus();
+            else
+                txtPassword.requestFocus();
             shakeError();
             return;
         }
 
         // 6. ĐĂNG NHẬP THÀNH CÔNG
         lblError.setVisible(false);
-        primaryStage.hide();  // Ẩn màn hình login
+        primaryStage.hide(); // Ẩn màn hình login
 
         // MainFrameView -> chạy trên JavaFx Application Thread
         Platform.runLater(() -> {
-        	Stage mainStage = new Stage();
-        	new MainFrameView(mainStage, staff, primaryStage);
+            Stage mainStage = new Stage();
+            new MainFrameView(mainStage, staff, primaryStage);
         });
     }
 
@@ -464,7 +468,7 @@ public class DangNhapView extends Application {
         shake.setOnFinished(e -> btnLogin.setTranslateX(0));
         shake.play();
     }
-    
+
     // =========================================================
     // RESET LẠI FORM KHI ĐĂNG XUẤT TỪ MÀN HÌNH CHÍNH
     // =========================================================
@@ -475,12 +479,12 @@ public class DangNhapView extends Application {
         lblError.setVisible(false);
         txtUsername.requestFocus(); // Đưa con trỏ chuột về ô tài khoản
     }
-    
+
     // =========================================================
     // XỬ LÝ ẨN/HIỆN CHỮ GỢI Ý KHI CLICK (FOCUS)
     // =========================================================
     private void setupPromptTextBehavior(TextField textField, String originalPrompt) {
         // Đặt chữ gợi ý ban đầu
         textField.setPromptText(originalPrompt);
-    }  
+    }
 }
