@@ -441,35 +441,50 @@ public class HoaDonView extends BorderPane {
                 roomContainer.setStyle(
                         "-fx-background-color: #f9fafb; -fx-background-radius: 6; -fx-border-color: #e5e7eb; -fx-border-radius: 6;");
 
+                java.util.List<model.entities.DichVuSuDung> dvList = dvsdDAO.findByMaCTDP(maCTDP);
+                double roomTienDV = 0;
+                for (model.entities.DichVuSuDung dv : dvList) {
+                    roomTienDV += dv.getThanhTien();
+                    dynamicTienDV += dv.getThanhTien();
+                }
+
                 HBox r = new HBox();
                 r.setPadding(new Insets(8, 12, 8, 12));
                 r.setStyle("-fx-cursor: hand;");
-                Label lblP = new Label("🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
-                        + "  •  " + (int) sodem + " đêm  ▼");
+                
+                String textRoom = "🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
+                        + "  •  " + (int) sodem + " đêm  ▼";
+                
+                Label lblP = new Label(textRoom);
                 lblP.setFont(Font.font("Segoe UI", 13));
                 lblP.setWrapText(true);
                 HBox.setHgrow(lblP, Priority.ALWAYS);
-                Label lblAmt = new Label(String.format("%,.0f đ", thanhTien));
+                
+                double tongPhong = thanhTien;
+                Label lblAmt = new Label(String.format("%,.0f đ", tongPhong));
                 lblAmt.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
                 lblAmt.setTextFill(Color.web(C_BLUE));
                 r.getChildren().addAll(lblP, lblAmt);
 
-                VBox dvBox = new VBox(4);
+                VBox dvBox = new VBox(6);
                 dvBox.setPadding(new Insets(0, 12, 10, 32));
                 dvBox.setManaged(false);
                 dvBox.setVisible(false);
 
-                java.util.List<model.entities.DichVuSuDung> dvList = dvsdDAO.findByMaCTDP(maCTDP);
                 if (dvList.isEmpty()) {
                     Label lblEmpty = new Label("— Không sử dụng dịch vụ");
                     lblEmpty.setTextFill(Color.web(C_TEXT_GRAY));
                     lblEmpty.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 12));
                     dvBox.getChildren().add(lblEmpty);
                 } else {
+                    Label lblPhuThuDV = new Label("Tiền dịch vụ: " + String.format("%,.0f đ", roomTienDV));
+                    lblPhuThuDV.setTextFill(Color.web(C_TEXT_DARK));
+                    lblPhuThuDV.setFont(Font.font("Segoe UI", 12));
+                    dvBox.getChildren().add(lblPhuThuDV);
+
                     for (model.entities.DichVuSuDung dv : dvList) {
-                        dynamicTienDV += dv.getThanhTien();
                         HBox dvRow = new HBox();
-                        Label dvName = new Label("🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
+                        Label dvName = new Label("   🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
                         dvName.setTextFill(Color.web(C_TEXT_GRAY));
                         dvName.setFont(Font.font("Segoe UI", 12));
                         dvName.setWrapText(true);
@@ -509,14 +524,21 @@ public class HoaDonView extends BorderPane {
         double tienDV = dynamicTienDV > 0 ? dynamicTienDV : hd.getTienDV();
         double tienCoc = tongCoc > 0 ? tongCoc : hd.getTienCoc();
 
-        // VAT tính trên tổng tiền phòng + DV, sau đó trừ cọc
+        double phuPhiTraMuon = hd.getPhuPhiTraMuon();
+        double phuThu = hd.getPhuThu();
         double vatRate = hd.getThueVAT();
-        double vatAmount = (tongTienPhong + tienDV) * vatRate;
-        double tongTT = Math.max(0, (tongTienPhong + tienDV + vatAmount) - tienCoc);
+        // VAT tính trên tổng tiền phòng + DV + phụ thu + phụ phí, sau đó trừ cọc
+        double vatAmount = (tongTienPhong + tienDV + phuPhiTraMuon + phuThu) * vatRate;
+        double tongTT = Math.max(0, (tongTienPhong + tienDV + phuPhiTraMuon + phuThu + vatAmount) - tienCoc);
 
         sumBox.getChildren().addAll(
                 makeSumRow("Tiền phòng:", String.format("%,.0f đ", tongTienPhong), Color.web(C_TEXT_DARK)),
-                makeSumRow("Tiền dịch vụ:", String.format("%,.0f đ", tienDV), Color.web(C_TEXT_DARK)),
+                makeSumRow("Tiền dịch vụ:", String.format("%,.0f đ", tienDV), Color.web(C_TEXT_DARK)));
+        
+        sumBox.getChildren().add(makeSumRow("Phụ phí trả muộn:", String.format("%,.0f đ", phuPhiTraMuon), Color.web("#ef4444")));
+        sumBox.getChildren().add(makeSumRow("Phí phụ thu:", String.format("%,.0f đ", phuThu), Color.web(C_TEXT_DARK)));
+
+        sumBox.getChildren().addAll(
                 makeSumRow("Tiền cọc (đã khấu trừ):", String.format("- %,.0f đ", tienCoc), Color.web(C_GREEN)),
                 makeSumRow(String.format("Thuế VAT (%.0f%%):", vatRate * 100), String.format("%,.0f đ", vatAmount),
                         Color.web(C_TEXT_DARK)));
@@ -607,10 +629,12 @@ public class HoaDonView extends BorderPane {
             java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
 
-            double vatAmount = (currentSumPhong + totalTienDV) * hd.getThueVAT();
+            double phuPhiTraMuon = hd.getPhuPhiTraMuon();
+            double phuThu = hd.getPhuThu();
+            double vatAmount = (currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu) * hd.getThueVAT();
             
             // 2. Tổng chi phí (Trước khi trừ cọc)
-            double tcp = currentSumPhong + totalTienDV + vatAmount;
+            double tcp = currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu + vatAmount;
             
             // 3. Tổng thanh toán (Thực tế khách phải trả thêm sau khi trừ cọc)
             double ttt = Math.max(0, tcp - hd.getTienCoc());

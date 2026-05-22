@@ -1049,8 +1049,8 @@ public class CheckOutView extends BorderPane {
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
             hd.setTienPhong(sumPhong);
             hd.setTienDV(tienDV);
-            hd.setPhuThu(currentPhuThu);
-            hd.setPhuPhiTraMuon(currentLateFee);
+            hd.setPhuThu(hd.getPhuThu() + currentPhuThu);
+            hd.setPhuPhiTraMuon(hd.getPhuPhiTraMuon() + currentLateFee);
             hd.setThueVAT(VAT_RATE);
             hd.setNgayTaoHD(now);
             
