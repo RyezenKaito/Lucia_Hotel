@@ -1186,8 +1186,8 @@ public class CheckOutView extends BorderPane {
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
             
             List<model.entities.ChiTietHoaDon> cthdList = cthdDAO.getByMaHD(hd.getMaHD());
-            double sumPhuThu = cthdList.stream().mapToDouble(model.entities.ChiTietHoaDon::getPhuThu).sum();
-            double sumLateFee = cthdList.stream().mapToDouble(model.entities.ChiTietHoaDon::getPhuPhiTraMuon).sum();
+            double sumPhuThu = cthdList.stream().mapToDouble(c -> c.getPhuThu()).sum();
+            double sumLateFee = cthdList.stream().mapToDouble(c -> c.getPhuPhiTraMuon()).sum();
             double tongCoc = cthdDAO.getTongCocByMaHD(hd.getMaHD());
             
             hd.setTienPhong(sumPhong);
