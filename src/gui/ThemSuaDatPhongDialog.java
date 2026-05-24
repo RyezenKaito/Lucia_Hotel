@@ -73,6 +73,7 @@ public class ThemSuaDatPhongDialog extends Stage {
     private TextField txtTienCoc; // readonly – tự tính
     private DatePicker dpCheckIn, dpCheckOut, dpNgaySinh;
     private Label errTen, errSDT, errCCCD, errNgayIn, errNgayOut, errSoNguoi, errNS;
+    private Label errLoaiPhong, errPhong; // Error labels cho loại phòng và phòng
     private Label lblGopY; // Gợi ý số phòng
     private CheckBox cbDaThanhToanCoc; // Checkbox xác nhận đã nhận cọc
 
@@ -210,6 +211,7 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         // ── CCCD + Tên ──────────────────────────────────────────────────
         txtCCCD = makeField("", "Nhập CCCD (12 số)");
+        txtCCCD.setMaxWidth(Double.MAX_VALUE);
         try {
             ValidationUtils.applyNumericOnlyFilter(txtCCCD, 12);
         } catch (Exception ignored) {
@@ -261,6 +263,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         });
 
         txtHoTen = makeField("", "Nhập họ và tên khách hàng");
+        txtHoTen.setMaxWidth(Double.MAX_VALUE);
         errTen = errLabel();
 
         HBox rowCCCD_Ten = new HBox(16);
@@ -273,11 +276,14 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         // ── Ngày sinh + SĐT ─────────────────────────────────────────────
         dpNgaySinh = new DatePicker(curYear - 100, curYear + 25);
-        dpNgaySinh.setPromptText("Chọn ngày sinh khách hàng");
+        dpNgaySinh.setPromptText("dd/MM/yyyy");
         dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(dpNgaySinh, Priority.ALWAYS);
         errNS = errLabel();
 
         txtSoDT = makeField("", "Nhập số điện thoại");
+        txtSoDT.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(txtSoDT, Priority.ALWAYS);
         try {
             ValidationUtils.applyNumericOnlyFilter(txtSoDT, 10);
         } catch (Exception ignored) {
@@ -290,26 +296,36 @@ public class ThemSuaDatPhongDialog extends Stage {
                 model.entities.KhachHang kh = khachHangDAO.findBySDT(newVal);
                 if (kh != null) {
                     khFoundBySDT = kh;
-                    validateSDT(); // Trigger validation to show error if CCCD doesn't match
+                    validateSDT();
                 } else {
                     khFoundBySDT = null;
-                    errSDT.setText("");
+                    clearErrorField(txtSoDT, errSDT);
                 }
             } else {
                 khFoundBySDT = null;
                 if (newVal != null && newVal.length() < 10) {
-                    errSDT.setText("");
+                    clearErrorField(txtSoDT, errSDT);
                 }
             }
         });
 
         HBox rowNS_SDT = new HBox(16);
-        VBox colNS = fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)");
+        VBox colNS = fieldBlock("Ngày sinh *", dpNgaySinh, errNS, null);
         VBox colSDT = fieldBlock("Số điện thoại *", txtSoDT, errSDT, null);
+        colNS.setMinWidth(0);
+        colSDT.setMinWidth(0);
+        colNS.setPrefWidth(0);
+        colSDT.setPrefWidth(0);
         HBox.setHgrow(colNS, Priority.ALWAYS);
         HBox.setHgrow(colSDT, Priority.ALWAYS);
         rowNS_SDT.getChildren().addAll(colNS, colSDT);
-        form.getChildren().add(rowNS_SDT);
+
+        // Hint ngày sinh đặt ngoài HBox để 2 cột cùng chiều cao
+        Label hintNS = new Label("Nhập ngày sinh dạng dd/MM/yyyy hoặc chọn từ lịch (từ đủ 16 tuổi)");
+        hintNS.setFont(Font.font("Segoe UI", 11));
+        hintNS.setTextFill(Color.web(C_TEXT_GRAY));
+
+        form.getChildren().addAll(rowNS_SDT, hintNS);
 
         // ── Ngày check-in / out ──────────────────────────────────────────
         dpCheckIn = new DatePicker(curYear, curYear + 2);
@@ -380,37 +396,78 @@ public class ThemSuaDatPhongDialog extends Stage {
         form.getChildren().add(colNguoi);
 
         // ── Chọn loại phòng (multi CheckBox) ────────────────────────────
-        Label lblLoaiPhongHeader = new Label("Loại phòng *  (có thể chọn nhiều)");
-        lblLoaiPhongHeader.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-        lblLoaiPhongHeader.setTextFill(Color.web("#374151"));
+        HBox loaiPhongLabelRow = new HBox(4);
+        loaiPhongLabelRow.setAlignment(Pos.CENTER_LEFT);
+        Label lblLPText = new Label("Loại phòng");
+        lblLPText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+        lblLPText.setTextFill(Color.web("#374151"));
+        Label lblLPStar = new Label(" *");
+        lblLPStar.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblLPStar.setTextFill(Color.web(C_ERROR));
+        Label lblLPSub = new Label("  (có thể chọn nhiều)");
+        lblLPSub.setFont(Font.font("Segoe UI", 13));
+        lblLPSub.setTextFill(Color.web(C_TEXT_GRAY));
+        loaiPhongLabelRow.getChildren().addAll(lblLPText, lblLPStar, lblLPSub);
 
         loaiPhongCheckBoxArea = new VBox(6);
         loaiPhongCheckBoxArea.setPadding(new Insets(8, 12, 8, 12));
         loaiPhongCheckBoxArea.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 8;"
                 + " -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8;");
 
-        List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
+List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
         for (LoaiPhong lp : allLoaiPhong) {
             String displayName = lp.toString() + " — " + DF.format(lp.getGia()) + " đ/đêm"
                     + " (Sức chứa: " + lp.getSucChua() + " người)";
             CheckBox cb = new CheckBox(displayName);
             cb.setFont(Font.font("Segoe UI", 13));
             cb.setTextFill(Color.web("#374151"));
+            cb.setMaxWidth(Double.MAX_VALUE); // Ép CheckBox chiếm toàn bộ chiều ngang
+            cb.setPadding(new Insets(6, 8, 6, 8)); // Thêm khoảng không gian bên trong để hover đẹp hơn
+
+            // Định nghĩa các trạng thái Style
+            String normalStyle = "-fx-background-color: transparent; -fx-background-radius: 6;";
+            String hoverFocusStyle = "-fx-background-color: #e5e7eb; -fx-background-radius: 6; -fx-cursor: hand;";
+            
+            cb.setStyle(normalStyle);
+
+            // Xử lý hiệu ứng khi Hover chuột
+            cb.setOnMouseEntered(e -> { if (!cb.isFocused()) cb.setStyle(hoverFocusStyle); });
+            cb.setOnMouseExited(e -> { if (!cb.isFocused()) cb.setStyle(normalStyle); });
+
+            // Xử lý hiệu ứng khi dùng phím Tab (Focus)
+            cb.focusedProperty().addListener((obs, oldVal, isFocused) -> {
+                cb.setStyle(isFocused ? hoverFocusStyle : (cb.isHover() ? hoverFocusStyle : normalStyle));
+            });
+
             cb.selectedProperty().addListener((obs, o, n) -> {
                 reloadPhongTrong();
                 updateGopY();
                 updateTongTien();
+                // Xóa lỗi loại phòng khi có chọn
+                if (getSelectedLoaiPhong().size() > 0 && errLoaiPhong != null) {
+                    errLoaiPhong.setText("");
+                    loaiPhongCheckBoxArea.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 8;"
+                            + " -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8;");
+                }
             });
             loaiPhongCheckBoxes.put(lp.getMaLoaiPhong(), cb);
             loaiPhongCheckBoxArea.getChildren().add(cb);
         }
 
-        form.getChildren().addAll(lblLoaiPhongHeader, loaiPhongCheckBoxArea);
+        errLoaiPhong = errLabel();
+        form.getChildren().addAll(loaiPhongLabelRow, loaiPhongCheckBoxArea, errLoaiPhong);
 
         // ── Chọn phòng cụ thể ───────────────────────────────────────────
-        Label lblPhongHeader = new Label("Chọn phòng cụ thể *");
-        lblPhongHeader.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-        lblPhongHeader.setTextFill(Color.web("#374151"));
+        HBox phongLabelRow = new HBox(4);
+        phongLabelRow.setAlignment(Pos.CENTER_LEFT);
+        Label lblPhText = new Label("Chọn phòng cụ thể");
+        lblPhText.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
+        lblPhText.setTextFill(Color.web("#374151"));
+        Label lblPhStar = new Label(" *");
+        lblPhStar.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblPhStar.setTextFill(Color.web(C_ERROR));
+
+        phongLabelRow.getChildren().addAll(lblPhText, lblPhStar);
 
         Label lblPhongHint = new Label("Hệ thống sẽ tự tải danh sách phòng trống theo loại và ngày đã chọn");
         lblPhongHint.setFont(Font.font("Segoe UI", 11));
@@ -428,7 +485,8 @@ public class ThemSuaDatPhongDialog extends Stage {
         lblCapacityWarning.setTextFill(Color.web(C_ERROR));
         lblCapacityWarning.setWrapText(true);
 
-        form.getChildren().addAll(lblPhongHeader, lblPhongHint, phongSelectFlow, lblCapacityWarning);
+        errPhong = errLabel();
+        form.getChildren().addAll(phongLabelRow, lblPhongHint, phongSelectFlow, errPhong, lblCapacityWarning);
 
         // ── Ghi chú ─────────────────────────────────────────────────────
         txtGhiChu = makeField("", "Ghi chú (không bắt buộc)");
@@ -474,6 +532,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         form.getChildren().add(totalBox);
 
         setupValidation();
+        if (!isReadOnly) setupInputEnableListeners();
         Platform.runLater(this::reloadPhongTrong);
 
         ScrollPane scroll = new ScrollPane(form);
@@ -501,17 +560,6 @@ public class ThemSuaDatPhongDialog extends Stage {
         footerWrap.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
                 + " transparent transparent transparent; -fx-border-width: 1 0 0 0;");
 
-        // Checkbox xác nhận cọc
-        cbDaThanhToanCoc = new CheckBox("Xác nhận: Khách đã thanh toán tiền cọc");
-        cbDaThanhToanCoc.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 13));
-        cbDaThanhToanCoc.setTextFill(Color.web(C_GREEN));
-        cbDaThanhToanCoc.setTooltip(
-                new Tooltip("Đánh dấu nếu đã thu tiền cọc.\nTrạng thái đơn sẽ được đặt là 'Đã xác nhận'."));
-
-        Label lblCocHint = new Label("Trống -> Chờ xác nhận | Đã chọn -> Đã xác nhận");
-        lblCocHint.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 11));
-        lblCocHint.setTextFill(Color.web(C_TEXT_GRAY));
-
         HBox btnRow = new HBox(12);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
         Button btnCancel = makeFooterBtn("Hủy", "white", "#374151", C_BORDER, "#f3f4f6");
@@ -519,9 +567,10 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         btnSave = makeFooterBtn("💾 Thêm mới", C_SIDEBAR, "white", "transparent", C_ACTIVE);
         btnSave.setOnAction(e -> handleSave());
+        btnSave.setDisable(true); // Disabled cho đến khi user bắt đầu nhập
 
         btnRow.getChildren().addAll(btnCancel, btnSave);
-        footerWrap.getChildren().addAll(cbDaThanhToanCoc, lblCocHint, btnRow);
+        footerWrap.getChildren().add(btnRow);
         return footerWrap;
     }
 
@@ -548,11 +597,11 @@ public class ThemSuaDatPhongDialog extends Stage {
     private boolean validateNS() {
         LocalDate ns = dpNgaySinh.getValue();
         if (ns == null) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh.");
+            showErrorField(dpNgaySinh, errNS, "Chưa chọn ngày sinh.");
             return false;
         }
         if (LocalDate.now().minusYears(16).isBefore(ns)) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Khách hàng phải từ đủ 16 tuổi.");
+            showErrorField(dpNgaySinh, errNS, "Khách hàng phải từ đủ 16 tuổi.");
             return false;
         }
         clearErrorField(dpNgaySinh, errNS);
@@ -562,18 +611,18 @@ public class ThemSuaDatPhongDialog extends Stage {
     private boolean validateTen() {
         String ten = txtHoTen.getText().trim().replaceAll("\\s+", " ");
         if (ten.isEmpty()) {
-            showErrorField(txtHoTen, errTen, "⚠ Vui lòng nhập họ và tên.");
+            showErrorField(txtHoTen, errTen, "Chưa nhập họ và tên.");
             return false;
         }
         if (!ten.matches(ValidationUtils.REGEX_NAME)) {
             showErrorField(txtHoTen, errTen,
-                    "⚠ Chỉ được chứa chữ cái, khoảng trắng và dấu . - '");
+                    "Chỉ được chứa chữ cái, khoảng trắng và dấu . - '");
             return false;
         }
         // [MỚI] Không cho 2 ký tự đặc biệt liên tiếp: --, .., .-, -., '., ...
         if (!ValidationUtils.isValidNameStructure(ten)) {
             showErrorField(txtHoTen, errTen,
-                    "⚠ Không được có 2 ký tự đặc biệt liên tiếp (VD: --, .., .-)");
+                    "Không được có 2 ký tự đặc biệt liên tiếp (VD: --, .., .-)");
             return false;
         }
         clearErrorField(txtHoTen, errTen);
@@ -584,17 +633,17 @@ public class ThemSuaDatPhongDialog extends Stage {
         String sdt = txtSoDT.getText().trim();
         String cccd = txtCCCD.getText().trim();
         if (sdt.isEmpty()) {
-            showErrorField(txtSoDT, errSDT, "⚠ Vui lòng nhập số điện thoại.");
+            showErrorField(txtSoDT, errSDT, "Chưa nhập số điện thoại.");
             return false;
         }
         if (!sdt.matches(ValidationUtils.REGEX_PHONE_VN)) {
-            showErrorField(txtSoDT, errSDT, "⚠ Sai đầu số nhà mạng Việt Nam.");
+            showErrorField(txtSoDT, errSDT, "Sai đầu số nhà mạng Việt Nam.");
             return false;
         }
 
         // Kiểm tra xem SĐT này có thuộc về khách hàng khác không
         if (khFoundBySDT != null && !cccd.equals(khFoundBySDT.getSoCCCD())) {
-            showErrorField(txtSoDT, errSDT, "⚠ SĐT này thuộc về KH khác (" + khFoundBySDT.getTenKH() + ").");
+            showErrorField(txtSoDT, errSDT, "SĐT này thuộc KH khác (" + khFoundBySDT.getTenKH() + ").");
             return false;
         }
 
@@ -606,33 +655,33 @@ public class ThemSuaDatPhongDialog extends Stage {
         String cccd = txtCCCD.getText().trim();
         LocalDate ns = dpNgaySinh.getValue();
         if (cccd.isEmpty()) {
-            errCCCD.setText("⚠ Vui lòng nhập số CCCD.");
+            errCCCD.setText("Chưa nhập số CCCD.");
             return false;
         }
         if (!cccd.matches(ValidationUtils.REGEX_CCCD_FORMAT)) {
-            errCCCD.setText("⚠ Phải gồm đúng 12 chữ số.");
+            errCCCD.setText("Phải gồm đúng 12 chữ số.");
             return false;
         }
         if (!ValidationUtils.isValidProvinceCode(cccd)) {
-            errCCCD.setText("⚠ Mã tỉnh/thành phố không hợp lệ.");
+            errCCCD.setText("Mã tỉnh/thành phố không hợp lệ.");
             return false;
         }
 
         // Kiểm tra CCCD khớp với SĐT đã tồn tại trong hệ thống (như yêu cầu)
         if (khFoundBySDT != null && khFoundBySDT.getSoCCCD() != null
                 && !cccd.equals(khFoundBySDT.getSoCCCD())) {
-            errCCCD.setText("⚠ CCCD sai! SĐT này là của KH có CCCD: " + khFoundBySDT.getSoCCCD());
+            errCCCD.setText("CCCD sai! SĐT này của KH có CCCD: " + khFoundBySDT.getSoCCCD());
             return false;
         }
 
         if (ns != null) {
             int namSinh = ns.getYear();
             if (!ValidationUtils.isValidCCCDCenturyAndGender(cccd, namSinh)) {
-                errCCCD.setText("⚠ 1 số không khớp (dưới 2000 0:nam 1:nữ, từ 2000 2:nam 3:nữ).");
+                errCCCD.setText("Số thứ 3 không khớp (dưới 2000: 0=nam,1=nữ; từ 2000: 2=nam,3=nữ).");
                 return false;
             }
             if (!ValidationUtils.isValidCCCDBirthYear(cccd, namSinh)) {
-                errCCCD.setText("⚠ 2 số năm sinh trên CCCD bị sai.");
+                errCCCD.setText("2 số năm sinh trên CCCD bị sai.");
                 return false;
             }
         }
@@ -692,23 +741,51 @@ public class ThemSuaDatPhongDialog extends Stage {
             return;
         }
 
-        for (Phong p : phongs) {
+for (Phong p : phongs) {
             VBox card = new VBox(4);
             card.setPadding(new Insets(8, 12, 8, 12));
-            card.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 8;"
-                    + " -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8;");
 
             CheckBox cb = new CheckBox(p.getMaPhong());
             cb.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
             cb.setTextFill(Color.web("#1e3a8a"));
+
+            // Định nghĩa các trạng thái Style cho Card phòng
+            String styleNormal = "-fx-background-color: #f9fafb; -fx-background-radius: 8; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8; -fx-cursor: hand;";
+            String styleHoverFocus = "-fx-background-color: #e5e7eb; -fx-background-radius: 8; -fx-border-color: #9ca3af; -fx-border-radius: 8; -fx-cursor: hand;";
+            String styleSelected = "-fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-border-color: " + C_ACTIVE + "; -fx-border-radius: 8; -fx-border-width: 1.5; -fx-cursor: hand;";
+
+            // Hàm tự động đổi màu Card dựa trên trạng thái (Được chọn / Hover / Tab focus)
+            Runnable updateCardStyle = () -> {
+                if (cb.isSelected()) {
+                    card.setStyle(styleSelected);
+                } else if (card.isHover() || cb.isFocused()) {
+                    card.setStyle(styleHoverFocus); // Hiện viền xám đậm và nền xám nhạt khi Hover/Focus
+                } else {
+                    card.setStyle(styleNormal);
+                }
+            };
+
+            // Set style ban đầu
+            updateCardStyle.run();
+
+            // Cho phép người dùng CLICK VÀO CARD để tick CheckBox (UX ngon hơn)
+            card.setOnMouseClicked(e -> {
+                cb.setSelected(!cb.isSelected());
+                cb.requestFocus(); // Focus phím vào CheckBox khi click vào thẻ
+            });
+
+            // Lắng nghe sự kiện di chuột
+            card.setOnMouseEntered(e -> updateCardStyle.run());
+            card.setOnMouseExited(e -> updateCardStyle.run());
+
+            // Lắng nghe sự kiện bàn phím (khi bấm Tab nhảy trúng CheckBox bên trong thẻ)
+            cb.focusedProperty().addListener((obs, o, n) -> updateCardStyle.run());
+
             cb.selectedProperty().addListener((obs, o, n) -> {
-                card.setStyle(n
-                        ? "-fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-border-color: " + C_ACTIVE
-                                + "; -fx-border-radius: 8; -fx-border-width: 1.5;"
-                        : "-fx-background-color: #f9fafb; -fx-background-radius: 8; -fx-border-color: " + C_BORDER
-                                + "; -fx-border-radius: 8;");
+                updateCardStyle.run(); // Cập nhật màu lại ngay sau khi tick
                 updateTongTien();
                 updateCapacityWarning();
+                if (n) clearAreaError(phongSelectFlow, errPhong);
                 if (btnSave != null)
                     btnSave.setDisable(false);
             });
@@ -724,6 +801,9 @@ public class ThemSuaDatPhongDialog extends Stage {
             Label lblGia = new Label(DF.format(p.getLoaiPhong().getGia()) + " đ/đêm");
             lblGia.setFont(Font.font("Segoe UI", 11));
             lblGia.setTextFill(Color.web(C_TEXT_GRAY));
+
+            // Chặn sự kiện click trên các Label/Checkbox để nó không nổi bubble lên Card click lần 2
+            cb.setOnMouseClicked(e -> e.consume());
 
             card.getChildren().addAll(cb, lblLoai, lblGia);
             phongCheckBoxes.put(p.getMaPhong(), cb);
@@ -834,7 +914,7 @@ public class ThemSuaDatPhongDialog extends Stage {
     }
 
     /* ── SAVE ───────────────────────────────────────────────────────── */
-    private void handleSave() {
+private void handleSave() {
         boolean ok = true;
         if (!validateTen())
             ok = false;
@@ -846,38 +926,66 @@ public class ThemSuaDatPhongDialog extends Stage {
             ok = false;
 
         if (dpCheckIn.getValue() == null) {
-            errNgayIn.setText("⚠ Chọn ngày nhận phòng");
+            errNgayIn.setText("Chưa chọn ngày nhận phòng");
             ok = false;
         } else
             errNgayIn.setText("");
         if (dpCheckOut.getValue() == null) {
-            errNgayOut.setText("⚠ Chọn ngày trả phòng");
+            errNgayOut.setText("Chưa chọn ngày trả phòng");
             ok = false;
         } else if (dpCheckIn.getValue() != null && !dpCheckOut.getValue().isAfter(dpCheckIn.getValue())) {
-            errNgayOut.setText("⚠ Ngày trả phải sau ngày nhận");
+            errNgayOut.setText("Ngày trả phải sau ngày nhận");
             ok = false;
         } else
             errNgayOut.setText("");
 
         String soNguoiStr = txtSoNguoi.getText().trim();
         if (soNguoiStr.isEmpty() || Integer.parseInt(soNguoiStr) < 1) {
-            errSoNguoi.setText("⚠ Tối thiểu 1 người");
+            errSoNguoi.setText("Cần nhập số người (tối thiểu 1)");
             ok = false;
         } else
             errSoNguoi.setText("");
 
         List<Phong> selectedPhongs = getSelectedPhongs();
-        if (selectedPhongs.isEmpty()) {
+
+        // ── Validate loại phòng ──────────────────────────────────────────
+        if (getSelectedLoaiPhong().isEmpty()) {
+            showAreaError(loaiPhongCheckBoxArea, errLoaiPhong, "Chưa chọn loại phòng.");
             ok = false;
+        } else {
+            clearAreaError(loaiPhongCheckBoxArea, errLoaiPhong);
         }
+
+        // ── Validate phòng cụ thể ────────────────────────────────────────
+        if (selectedPhongs.isEmpty()) {
+            showAreaError(phongSelectFlow, errPhong, "Chưa chọn phòng cụ thể.");
+            ok = false;
+        } else {
+            clearAreaError(phongSelectFlow, errPhong);
+        }
+
         // Capacity check đã hiện real-time qua lblCapacityWarning
         if (lblCapacityWarning != null && !lblCapacityWarning.getText().isEmpty()) {
             ok = false;
         }
 
-        final boolean daThanhToanCoc = cbDaThanhToanCoc != null && cbDaThanhToanCoc.isSelected();
-        if (!ok || !daThanhToanCoc) {
-            showError("⚠ Vui lòng điền đầy đủ thông tin và thanh toán cọc để xác nhận đặt phòng.");
+        if (!ok) {
+            // [ĐÃ SỬA]: Thêm vùng chứa Loại phòng và Phòng cụ thể vào mảng để trỏ chuột
+            javafx.scene.Node[] errorFields = {
+                    txtCCCD, txtHoTen, dpNgaySinh, txtSoDT,
+                    dpCheckIn, dpCheckOut, txtSoNguoi,
+                    loaiPhongCheckBoxArea, // <--- Thêm VBox chứa loại phòng
+                    phongSelectFlow        // <--- Thêm FlowPane chứa phòng cụ thể
+            };
+            Label[] errorLabels = {
+                    errCCCD, errTen, errNS, errSDT,
+                    errNgayIn, errNgayOut, errSoNguoi,
+                    errLoaiPhong,          // <--- Thêm Label lỗi loại phòng
+                    errPhong               // <--- Thêm Label lỗi phòng cụ thể
+            };
+            
+            // Gọi hàm EventUtils đã được cập nhật đệ quy để trỏ đúng vào CheckBox bên trong
+            model.utils.EventUtils.focusFirstError(errorFields, errorLabels);
             return;
         }
 
@@ -914,7 +1022,7 @@ public class ThemSuaDatPhongDialog extends Stage {
                 con.setAutoCommit(false);
                 try {
                     String maKH = khachHangDAO.findOrCreate(con, hoTen, soDT, cccd, ngaySinh, preGenMaKH);
-                    String trangThaiMoi = "DA_XACNHAN";
+                    String trangThaiMoi = "DA_XACNHAN"; // Always DA_XACNHAN because we force deposit
                     datPhongDAO.insertWithConnection(con, preGenMaDat, maKH, checkIn, checkOut, trangThaiMoi, soNguoi);
 
                     // Parse base number cho maCTDP
@@ -955,18 +1063,10 @@ public class ThemSuaDatPhongDialog extends Stage {
                     hd.setDatPhong(new model.entities.DatPhong(preGenMaDat));
                     hd.setNhanVien(new model.entities.NhanVien("ADMIN"));
                     hd.setNgayTaoHD(LocalDateTime.now());
-                    long rawDays = java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut);
-                    final long days = rawDays <= 0 ? 1 : rawDays;
-                    double tongPhong = finalPhongs.stream().mapToDouble(p -> p.getLoaiPhong().getGia() * days).sum();
-                    double vatAmount = tongPhong * 0.1;
-                    double tongTien = Math.max(0, (tongPhong + vatAmount) - tienCoc);
-
-                    hd.setTienPhong(tongPhong);
+                    hd.setTienPhong(0);
                     hd.setTienDV(0);
                     hd.setTienCoc(tienCoc);
-                    hd.setThueVAT(vatAmount);
-                    hd.setDoanhThu(tongPhong + vatAmount);
-                    hd.setTongTien(tongTien);
+                    hd.setTongTien(0);
                     hd.setLoaiHD("HOA_DON_PHONG");
                     hd.setTrangThaiThanhToan("DA_THANH_TOAN_COC");
                     hdDAO.insertWithConnection(con, hd);
@@ -1065,6 +1165,36 @@ public class ThemSuaDatPhongDialog extends Stage {
             b.getChildren().add(h);
         }
         return b;
+    }
+
+    /**
+     * Khi user bắt đầu nhập bất kỳ trường nào → kích hoạt nút Thêm mới.
+     */
+    private void setupInputEnableListeners() {
+        Runnable enable = () -> { if (btnSave != null) btnSave.setDisable(false); };
+        if (txtCCCD   != null) txtCCCD.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
+        if (txtHoTen  != null) txtHoTen.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
+        if (txtSoDT   != null) txtSoDT.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
+        if (txtSoNguoi!= null) txtSoNguoi.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
+        if (dpNgaySinh!= null) dpNgaySinh.valueProperty().addListener((o,ov,nv) -> { if (nv!=null) enable.run(); });
+    }
+
+    /** Hiện viền đỏ + label lỗi cho vùng chọn (loại phòng / phòng cụ thể). */
+    private void showAreaError(javafx.scene.layout.Region area, Label errLabel, String msg) {
+        if (errLabel != null) errLabel.setText(msg);
+        if (area != null) {
+            String base = area.getStyle().replaceAll("-fx-border-color:[^;]*;", "");
+            area.setStyle(base + " -fx-border-color: " + C_ERROR + ";");
+        }
+    }
+
+    /** Xóa viền đỏ + label lỗi cho vùng chọn. */
+    private void clearAreaError(javafx.scene.layout.Region area, Label errLabel) {
+        if (errLabel != null) errLabel.setText("");
+        if (area != null) {
+            String base = area.getStyle().replaceAll("-fx-border-color:[^;]*;", "");
+            area.setStyle(base + " -fx-border-color: " + C_BORDER + ";");
+        }
     }
 
     private void showErrorField(javafx.scene.Node tf, Label errLabel, String msg) {

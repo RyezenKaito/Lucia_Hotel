@@ -8,6 +8,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -20,12 +21,14 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * SmartDatePicker – DatePicker custom với ComboBox chọn nhanh tháng/năm.
  *
  * Trông như một ô nhập ngày duy nhất (giống DatePicker gốc).
- * Khi click → mở popup:
+ * Hỗ trợ nhập tay theo dạng dd/MM/yyyy với tự động thêm dấu "/".
+ * Khi click nút 📅 → mở popup:
  * ┌─────────────────────────────────────┐
  * │ [< ] [Tháng ▾] [Năm ▾] [ >] │
  * ├─────────────────────────────────────┤
@@ -68,6 +71,9 @@ public class DatePicker extends HBox {
     private final int maxYear;
     private LocalDate minDate;
 
+    // Cờ để tránh vòng lặp khi setValue cập nhật text
+    private boolean updatingFromCode = false;
+
     /*
      * ══════════════════════════════════════════════════════════════════
      * CONSTRUCTOR
@@ -91,11 +97,11 @@ public class DatePicker extends HBox {
         setAlignment(Pos.CENTER_LEFT);
         setCursor(Cursor.HAND);
 
-        /* ── Text field hiển thị ─────────────────────────────────── */
+        /* ── Text field hiển thị – cho phép nhập tay ─────────────── */
         txtDisplay = new TextField();
-        txtDisplay.setPromptText("Chọn ngày sinh");
-        txtDisplay.setEditable(false);
-        txtDisplay.setCursor(Cursor.HAND);
+        txtDisplay.setPromptText("dd/MM/yyyy");
+        txtDisplay.setEditable(true);
+        txtDisplay.setCursor(Cursor.TEXT);
         txtDisplay.setPrefHeight(40);
         HBox.setHgrow(txtDisplay, Priority.ALWAYS);
         txtDisplay.setStyle(
@@ -105,6 +111,10 @@ public class DatePicker extends HBox {
                         "-fx-background-radius: 8 0 0 8;" +
                         "-fx-font-size: 13px;" +
                         "-fx-padding: 8 12 8 12;");
+
+        // TextFormatter để chỉ cho nhập số và tự thêm dấu "/"
+        setupDateTextFormatter();
+
         txtDisplay.focusedProperty().addListener((obs, o, focused) -> {
             if (focused) {
                 txtDisplay.setStyle(
@@ -123,6 +133,10 @@ public class DatePicker extends HBox {
                                 "-fx-background-radius: 8 0 0 8;" +
                                 "-fx-font-size: 13px;" +
                                 "-fx-padding: 8 12 8 12;");
+                // Khi mất focus, thử parse ngày nhập tay
+                if (!updatingFromCode) {
+                    parseManualInput();
+                }
             }
         });
 
@@ -155,9 +169,206 @@ public class DatePicker extends HBox {
 
         getChildren().addAll(txtDisplay, btnOpen);
 
-        /* ── Click → toggle popup ────────────────────────────────── */
-        txtDisplay.setOnMouseClicked(e -> togglePopup());
+        /* ── Click nút → toggle popup ────────────────────────────── */
         btnOpen.setOnAction(e -> togglePopup());
+    }
+
+    /**
+     * TextFormatter + listener: chỉ cho nhập số/"/", tự pad "0", tự thêm "/" và clamp ngày/tháng.
+     */
+    private void setupDateTextFormatter() {
+        txtDisplay.setTextFormatter(new TextFormatter<>(change -> {
+            if (updatingFromCode) return change;
+            if (!change.isContentChange()) return change;
+            String newText = change.getControlNewText();
+            // Cho phép xóa
+            if (newText.length() < change.getControlText().length()) return change;
+            // Chỉ nhập số và "/"
+            String addedText = change.getText();
+            if (!addedText.isEmpty() && !addedText.matches("[0-9/]*")) return null;
+            // Tối đa 10 ký tự
+            if (newText.length() > 10) return null;
+            return change;
+        }));
+
+        txtDisplay.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (updatingFromCode) return;
+            if (newVal == null) return;
+            // Chỉ xử lý khi đang thêm ký tự
+            if (oldVal != null && newVal.length() <= oldVal.length()) return;
+
+            // ── CASE 1: user gõ 1 chữ số rồi bấm "/" cho NGÀY (vd "1/") ─────
+            // → pad thành "01/"
+            if (newVal.length() == 2 && newVal.charAt(1) == '/'
+                    && Character.isDigit(newVal.charAt(0))) {
+                int day = safeParseInt(String.valueOf(newVal.charAt(0)), 1);
+                if (day < 1) day = 1;
+                updatingFromCode = true;
+                txtDisplay.setText(String.format("%02d/", day));
+                txtDisplay.positionCaret(3);
+                updatingFromCode = false;
+                return;
+            }
+
+            // ── CASE 2: user gõ đủ 2 chữ số ngày (vd "13") → thêm "/" ───────
+            if (newVal.length() == 2 && !newVal.contains("/")) {
+                int day = safeParseInt(newVal, 1);
+                if (day < 1) day = 1;
+                if (day > 31) day = 31;
+                updatingFromCode = true;
+                txtDisplay.setText(String.format("%02d/", day));
+                txtDisplay.positionCaret(3);
+                updatingFromCode = false;
+                return;
+            }
+
+            // ── CASE 3: user gõ 1 chữ số rồi bấm "/" cho THÁNG (vd "01/3/") ─
+            // pattern: \d{2}/\d/ (length 5)
+            if (newVal.length() == 5 && newVal.charAt(4) == '/'
+                    && newVal.matches("\\d{2}/\\d/")) {
+                int month = safeParseInt(String.valueOf(newVal.charAt(3)), 1);
+                if (month < 1) month = 1;
+                if (month > 12) month = 12;
+                String dayPart = newVal.substring(0, 2);
+                // Clamp ngày theo tháng (tạm dùng năm hiện tại)
+                int day = safeParseInt(dayPart, 1);
+                int maxDay = maxDaysInMonth(month, LocalDate.now().getYear());
+                if (day > maxDay) day = maxDay;
+                updatingFromCode = true;
+                txtDisplay.setText(String.format("%02d/%02d/", day, month));
+                txtDisplay.positionCaret(6);
+                updatingFromCode = false;
+                return;
+            }
+
+            // ── CASE 4: user gõ đủ 2 chữ số tháng (vd "01/05") → thêm "/" ───
+            if (newVal.length() == 5 && newVal.charAt(2) == '/'
+                    && !newVal.substring(3).contains("/")) {
+                String mmPart = newVal.substring(3);
+                if (mmPart.length() == 2 && mmPart.matches("\\d{2}")) {
+                    int month = safeParseInt(mmPart, 1);
+                    if (month < 1) month = 1;
+                    if (month > 12) month = 12;
+                    String dayPart = newVal.substring(0, 2);
+                    int day = safeParseInt(dayPart, 1);
+                    int maxDay = maxDaysInMonth(month, LocalDate.now().getYear());
+                    if (day > maxDay) day = maxDay;
+                    updatingFromCode = true;
+                    txtDisplay.setText(String.format("%02d/%02d/", day, month));
+                    txtDisplay.positionCaret(6);
+                    updatingFromCode = false;
+                }
+                return;
+            }
+
+            // ── CASE 5: đủ 10 ký tự dd/MM/yyyy → validate + clamp đầy đủ ────
+            if (newVal.length() == 10) {
+                validateAndClampDate(newVal);
+            }
+        });
+    }
+
+    /**
+     * Validate và tự động clamp ngày khi nhập đủ dd/MM/yyyy.
+     * VD: "31/04/2024" → "30/04/2024" vì tháng 4 chỉ có 30 ngày.
+     */
+    private void validateAndClampDate(String text) {
+        if (text == null || text.length() != 10) return;
+        String[] parts = text.split("/");
+        if (parts.length != 3) return;
+        try {
+            int day   = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]);
+            int year  = Integer.parseInt(parts[2]);
+
+            if (month < 1)  month = 1;
+            if (month > 12) month = 12;
+            int maxDay = maxDaysInMonth(month, year);
+            if (day < 1)      day = 1;
+            if (day > maxDay) day = maxDay;
+
+            String corrected = String.format("%02d/%02d/%04d", day, month, year);
+            if (!corrected.equals(text)) {
+                updatingFromCode = true;
+                txtDisplay.setText(corrected);
+                txtDisplay.positionCaret(10);
+                updatingFromCode = false;
+            }
+
+            if (year < minYear || year > maxYear) return;
+            LocalDate parsed = LocalDate.of(year, month, day);
+            if (minDate != null && parsed.isBefore(minDate)) return;
+
+            updatingFromCode = true;
+            this.value.set(parsed);
+            viewMonth = YearMonth.from(parsed);
+            updatingFromCode = false;
+        } catch (Exception ignored) {}
+    }
+
+    /** Số ngày tối đa trong tháng, có xét năm nhuận. */
+    private int maxDaysInMonth(int month, int year) {
+        return switch (month) {
+            case 1, 3, 5, 7, 8, 10, 12 -> 31;
+            case 4, 6, 9, 11            -> 30;
+            case 2                      -> isLeapYear(year) ? 29 : 28;
+            default                     -> 31;
+        };
+    }
+
+    /** Kiểm tra năm nhuận. */
+    private boolean isLeapYear(int year) {
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    }
+
+    /** Parse int an toàn. */
+    private int safeParseInt(String s, int defaultVal) {
+        try { return Integer.parseInt(s); } catch (Exception e) { return defaultVal; }
+    }
+
+    /**
+     * Parse ngày từ text nhập tay khi mất focus — delegate sang validateAndClampDate.
+     */
+    private void parseManualInput() {
+        String text = txtDisplay.getText();
+        if (text == null || text.isEmpty()) return;
+        if (text.length() == 10) {
+            validateAndClampDate(text);
+        } else {
+            try {
+                LocalDate parsed = LocalDate.parse(text, FMT);
+                if (minDate != null && parsed.isBefore(minDate)) return;
+                if (parsed.getYear() < minYear || parsed.getYear() > maxYear) return;
+                updatingFromCode = true;
+                this.value.set(parsed);
+                viewMonth = YearMonth.from(parsed);
+                updatingFromCode = false;
+            } catch (DateTimeParseException ignored) {}
+        }
+    }
+
+    /**
+     * Override requestFocus: trỏ focus vào ô text bên trong (dùng cho focusFirstError).
+     */
+    @Override
+    public void requestFocus() {
+        if (txtDisplay != null) txtDisplay.requestFocus();
+        else super.requestFocus();
+    }
+
+    /**
+     * Gắn handler khi user nhấn Enter bên trong DatePicker.
+     * Dùng thay cho EventUtils.setupEnterToSave vì key event nằm trong txtDisplay.
+     */
+    public void setOnEnterPressed(Runnable action) {
+        if (txtDisplay != null && action != null) {
+            txtDisplay.setOnKeyPressed(e -> {
+                if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                    e.consume();
+                    action.run();
+                }
+            });
+        }
     }
 
     /**
@@ -178,6 +389,7 @@ public class DatePicker extends HBox {
     }
 
     public void setValue(LocalDate date) {
+        updatingFromCode = true;
         this.value.set(date);
         if (date != null) {
             txtDisplay.setText(date.format(FMT));
@@ -185,6 +397,7 @@ public class DatePicker extends HBox {
         } else {
             txtDisplay.setText("");
         }
+        updatingFromCode = false;
     }
 
     public ObjectProperty<LocalDate> valueProperty() {
