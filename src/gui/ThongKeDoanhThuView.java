@@ -61,7 +61,7 @@ public class ThongKeDoanhThuView extends BorderPane {
 
     // Lưu lại dữ liệu hiện tại để xuất báo cáo
     private Map<String, Double> currentExportData = new LinkedHashMap<>();
-    
+
     private NhanVien currentStaff;
 
     public ThongKeDoanhThuView(NhanVien currentStaff) {
@@ -144,23 +144,27 @@ public class ThongKeDoanhThuView extends BorderPane {
         lblMonth.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblMonth.setTextFill(Color.web("#475569"));
         cbMonth = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
-        cbMonth.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
+        cbMonth.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
 
         lblQuarter = new Label("Quý:");
         lblQuarter.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblQuarter.setTextFill(Color.web("#475569"));
         cbQuarter = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3, 4));
-        cbQuarter.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
+        cbQuarter.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
 
         lblYear = new Label("Năm:");
         lblYear.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblYear.setTextFill(Color.web("#475569"));
         ObservableList<Integer> years = FXCollections.observableArrayList();
         int currentYear = LocalDate.now().getYear();
-        for (int i = currentYear - 5; i <= currentYear; i++) years.add(i);
+        for (int i = currentYear - 5; i <= currentYear; i++)
+            years.add(i);
         cbYear = new ComboBox<>(years);
-        cbYear.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
-        
+        cbYear.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
+
         cbMonth.setValue(LocalDate.now().getMonthValue());
         cbQuarter.setValue((LocalDate.now().getMonthValue() - 1) / 3 + 1);
         cbYear.setValue(currentYear);
@@ -170,15 +174,17 @@ public class ThongKeDoanhThuView extends BorderPane {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         // Các nút chuyển trang
-        btnThoiGian = new ToggleButton("Doanh thu");
+        btnThoiGian = new ToggleButton("Thời gian");
         btnPhong = new ToggleButton("Loại phòng");
         ToggleGroup tg = new ToggleGroup();
         btnThoiGian.setToggleGroup(tg);
         btnPhong.setToggleGroup(tg);
         btnThoiGian.setSelected(true);
 
-        String tbStyleActive = "-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand; -fx-background-color: " + C_NAVY + "; -fx-text-fill: white;";
-        String tbStyleInactive = "-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand; -fx-background-color: transparent; -fx-text-fill: " + C_NAVY + "; -fx-border-color: " + C_NAVY + "; -fx-border-radius: 6;";
+        String tbStyleActive = "-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand; -fx-background-color: "
+                + C_NAVY + "; -fx-text-fill: white;";
+        String tbStyleInactive = "-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand; -fx-background-color: transparent; -fx-text-fill: "
+                + C_NAVY + "; -fx-border-color: " + C_NAVY + "; -fx-border-radius: 6;";
 
         btnThoiGian.setStyle(tbStyleActive);
         btnPhong.setStyle(tbStyleInactive);
@@ -203,7 +209,8 @@ public class ThongKeDoanhThuView extends BorderPane {
                 viewPhong.setVisible(true);
                 viewPhong.setManaged(true);
             }
-            if (!isAdjustingDate) updateDashboard();
+            if (!isAdjustingDate)
+                updateDashboard();
         });
 
         HBox toggleBox = new HBox(8, btnThoiGian, btnPhong);
@@ -216,12 +223,13 @@ public class ThongKeDoanhThuView extends BorderPane {
                 "-fx-background-color: #10b981; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;");
         btnExport.setOnAction(e -> exportReport());
 
-        filterBox.getChildren().addAll(lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter, cbQuarter, lblYear, cbYear, spacer, toggleBox, btnExport);
+        filterBox.getChildren().addAll(lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth,
+                lblQuarter, cbQuarter, lblYear, cbYear, spacer, toggleBox, btnExport);
         topBox.getChildren().addAll(title, filterBox);
         BorderPane.setMargin(topBox, new Insets(0, 0, 24, 0));
-        
+
         updateFilterUI(cbGroupBy.getValue());
-        
+
         return topBox;
     }
 
@@ -243,17 +251,20 @@ public class ThongKeDoanhThuView extends BorderPane {
             if (!isAdjustingDate)
                 updateDashboard();
         });
-        
+
         cbMonth.valueProperty().addListener((obs, oldV, newV) -> {
-            if (!isAdjustingDate) updateDashboard();
+            if (!isAdjustingDate)
+                updateDashboard();
         });
-        
+
         cbQuarter.valueProperty().addListener((obs, oldV, newV) -> {
-            if (!isAdjustingDate) updateDashboard();
+            if (!isAdjustingDate)
+                updateDashboard();
         });
-        
+
         cbYear.valueProperty().addListener((obs, oldV, newV) -> {
-            if (!isAdjustingDate) updateDashboard();
+            if (!isAdjustingDate)
+                updateDashboard();
         });
     }
 
@@ -356,7 +367,7 @@ public class ThongKeDoanhThuView extends BorderPane {
         yAxisBar.setTickLabelGap(15);
 
         barChart = new BarChart<>(xAxisBar, yAxisBar);
-        barChart.setAnimated(false); 
+        barChart.setAnimated(false);
         barChart.setLegendVisible(false);
         barChart.setPadding(new Insets(5, 10, 5, 30));
 
@@ -371,7 +382,8 @@ public class ThongKeDoanhThuView extends BorderPane {
 
         lineChart.getStylesheets().add("data:text/css," +
                 ".chart-plot-background { -fx-background-color: transparent; }" +
-                ".axis { -fx-tick-label-fill: transparent; -fx-tick-mark-visible: false; -fx-minor-tick-visible: false; }" +
+                ".axis { -fx-tick-label-fill: transparent; -fx-tick-mark-visible: false; -fx-minor-tick-visible: false; }"
+                +
                 ".axis-label { -fx-text-fill: transparent; }" +
                 ".chart-vertical-grid-lines { -fx-stroke: transparent; }" +
                 ".chart-horizontal-grid-lines { -fx-stroke: transparent; }" +
@@ -380,7 +392,8 @@ public class ThongKeDoanhThuView extends BorderPane {
 
         StackPane chartContainer1 = new StackPane(barChart, lineChart);
         chartContainer1.setStyle(
-                "-fx-background-color: white; -fx-padding: 24 24 24 40; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12;");
+                "-fx-background-color: white; -fx-padding: 24 24 24 40; -fx-background-radius: 12; -fx-border-color: "
+                        + C_BORDER + "; -fx-border-radius: 12;");
         chartContainer1.setEffect(new DropShadow(10, 0, 4, Color.web("#0000000A")));
         VBox.setVgrow(chartContainer1, Priority.ALWAYS);
         viewThoiGian.getChildren().add(chartContainer1);
@@ -388,32 +401,33 @@ public class ThongKeDoanhThuView extends BorderPane {
         // --- View 2: Theo Loại Phòng ---
         viewPhong = new VBox(24);
         HBox phongChartsBox = new HBox(24);
-        
+
         CategoryAxis xAxisPhong = new CategoryAxis();
         xAxisPhong.setLabel("Loại phòng");
         xAxisPhong.setTickLabelFont(Font.font("Segoe UI", 12));
-        
+
         NumberAxis yAxisPhong = new NumberAxis();
         yAxisPhong.setLabel("Số đêm");
         yAxisPhong.setTickLabelFont(Font.font("Segoe UI", 12));
         yAxisPhong.setMinorTickVisible(false);
         yAxisPhong.setTickLabelGap(10);
-        
+
         barChartPhong = new BarChart<>(xAxisPhong, yAxisPhong);
         barChartPhong.setAnimated(false);
         barChartPhong.setLegendVisible(false);
         HBox.setHgrow(barChartPhong, Priority.ALWAYS);
-        
+
         pieChartPhong = new PieChart();
         pieChartPhong.setAnimated(false);
         pieChartPhong.setLegendVisible(true);
         pieChartPhong.setLabelsVisible(false); // Tắt label bên trong để tránh đè chữ
         pieChartPhong.setLegendSide(javafx.geometry.Side.BOTTOM);
         HBox.setHgrow(pieChartPhong, Priority.ALWAYS);
-        
+
         phongChartsBox.getChildren().addAll(barChartPhong, pieChartPhong);
         phongChartsBox.setStyle(
-                "-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 12; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 12;");
+                "-fx-background-color: white; -fx-padding: 24; -fx-background-radius: 12; -fx-border-color: " + C_BORDER
+                        + "; -fx-border-radius: 12;");
         phongChartsBox.setEffect(new DropShadow(10, 0, 4, Color.web("#0000000A")));
         VBox.setVgrow(phongChartsBox, Priority.ALWAYS);
         viewPhong.getChildren().add(phongChartsBox);
@@ -483,7 +497,7 @@ public class ThongKeDoanhThuView extends BorderPane {
     private void loadData() {
         new Thread(() -> {
             allHoaDon = hoaDonDAO.getAllWithKhachHang();
-            
+
             dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
             for (HoaDon hd : allHoaDon) {
                 double currentSumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
@@ -523,8 +537,10 @@ public class ThongKeDoanhThuView extends BorderPane {
         } else {
             startDate = dpFrom.getValue();
             endDate = dpTo.getValue();
-            if (startDate == null) startDate = LocalDate.of(2000, 1, 1);
-            if (endDate == null) endDate = LocalDate.now();
+            if (startDate == null)
+                startDate = LocalDate.of(2000, 1, 1);
+            if (endDate == null)
+                endDate = LocalDate.now();
         }
 
         final LocalDate fStart = startDate;
@@ -630,11 +646,13 @@ public class ThongKeDoanhThuView extends BorderPane {
 
         // --- ĐỒNG BỘ TRỤC Y CHO BAR VÀ LINE ---
         double upperBound = maxValue + (maxValue * 0.2); // Tăng 20% để không bị che số
-        if (upperBound == 0) upperBound = 1000;
-        
+        if (upperBound == 0)
+            upperBound = 1000;
+
         // Cố định tickUnit là số nguyên tròn trịa
         double tickUnit = Math.ceil(upperBound / 5.0);
-        if (tickUnit == 0) tickUnit = 100;
+        if (tickUnit == 0)
+            tickUnit = 100;
         upperBound = tickUnit * 5;
 
         ((NumberAxis) barChart.getYAxis()).setAutoRanging(false);
@@ -653,11 +671,13 @@ public class ThongKeDoanhThuView extends BorderPane {
                 StackPane sp = (StackPane) data.getNode();
                 sp.setStyle(
                         "-fx-background-color: linear-gradient(to top, #1e3a8a, #3b82f6); -fx-background-radius: 4 4 0 0;");
-                // Thay thế Text bằng Label có nền trắng mờ để đường đỏ (LineChart) đi ngang qua không bị đè che mất số
+                // Thay thế Text bằng Label có nền trắng mờ để đường đỏ (LineChart) đi ngang qua
+                // không bị đè che mất số
                 Label dataLabel = new Label(String.format("%,.0f", data.getYValue()));
                 dataLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 dataLabel.setTextFill(Color.web("#1e3a8a"));
-                dataLabel.setStyle("-fx-background-color: rgba(255,255,255,0.85); -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
+                dataLabel.setStyle(
+                        "-fx-background-color: rgba(255,255,255,0.85); -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
                 dataLabel.setTranslateY(-20);
                 StackPane.setAlignment(dataLabel, Pos.TOP_CENTER);
                 sp.getChildren().removeIf(n -> n instanceof javafx.scene.text.Text || n instanceof Label);
@@ -673,55 +693,59 @@ public class ThongKeDoanhThuView extends BorderPane {
                         "-fx-background-color: linear-gradient(to top, #1e3a8a, #3b82f6); -fx-background-radius: 4 4 0 0;"));
             }
         }
-        
+
         // --- CẬP NHẬT VIEW THEO LOẠI PHÒNG (SỐ ĐÊM SỬ DỤNG) ---
         Map<String, Double> soNgaySuDungPhong = hoaDonDAO.getSoNgaySuDungTheoLoaiPhong(fStart, fEnd);
-        
+
         // Sắp xếp theo số đêm tăng dần
         List<Map.Entry<String, Double>> sortedEntries = new ArrayList<>(soNgaySuDungPhong.entrySet());
         sortedEntries.sort(Map.Entry.comparingByValue());
-        
+
         // Tính tổng số đêm để tính %
         double tongSoDem = sortedEntries.stream().mapToDouble(Map.Entry::getValue).sum();
 
         XYChart.Series<String, Number> barPhongSeries = new XYChart.Series<>();
         ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
         ObservableList<String> sortedCategories = FXCollections.observableArrayList();
-        
+
         double maxPhongValue = 0;
         for (Map.Entry<String, Double> entry : sortedEntries) {
-            // Làm tròn số đêm để tránh bị lẻ (do CSDL lưu thời gian lưu trú là số thực do phụ thu checkin/out)
+            // Làm tròn số đêm để tránh bị lẻ (do CSDL lưu thời gian lưu trú là số thực do
+            // phụ thu checkin/out)
             double val = Math.round(entry.getValue());
-            if (val > maxPhongValue) maxPhongValue = val;
-            
+            if (val > maxPhongValue)
+                maxPhongValue = val;
+
             sortedCategories.add(entry.getKey());
             barPhongSeries.getData().add(new XYChart.Data<>(entry.getKey(), val));
-            
+
             // Tính %
             double percent = (tongSoDem > 0) ? (val / tongSoDem * 100) : 0;
             String pieLabel = String.format("%s (%.1f%%)", entry.getKey(), percent);
             pieData.add(new PieChart.Data(pieLabel, val));
         }
-        
+
         CategoryAxis xAxisPhong = (CategoryAxis) barChartPhong.getXAxis();
         xAxisPhong.setCategories(sortedCategories);
-        
+
         barChartPhong.getData().clear();
         barChartPhong.getData().add(barPhongSeries);
-        
+
         pieChartPhong.setData(pieData);
-        
+
         double upperBoundPhong = Math.ceil(maxPhongValue + (maxPhongValue * 0.2));
-        if (upperBoundPhong == 0) upperBoundPhong = 10;
+        if (upperBoundPhong == 0)
+            upperBoundPhong = 10;
         double tickUnitPhong = Math.ceil(upperBoundPhong / 5.0);
-        if (tickUnitPhong == 0) tickUnitPhong = 1;
+        if (tickUnitPhong == 0)
+            tickUnitPhong = 1;
         upperBoundPhong = tickUnitPhong * 5;
 
         ((NumberAxis) barChartPhong.getYAxis()).setAutoRanging(false);
         ((NumberAxis) barChartPhong.getYAxis()).setLowerBound(0);
         ((NumberAxis) barChartPhong.getYAxis()).setUpperBound(upperBoundPhong);
         ((NumberAxis) barChartPhong.getYAxis()).setTickUnit(tickUnitPhong);
-        
+
         for (XYChart.Data<String, Number> data : barPhongSeries.getData()) {
             if (data.getNode() != null && data.getNode() instanceof StackPane) {
                 StackPane sp = (StackPane) data.getNode();
@@ -730,7 +754,8 @@ public class ThongKeDoanhThuView extends BorderPane {
                 Label dataLabel = new Label(String.format("%,.0f", data.getYValue()));
                 dataLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 dataLabel.setTextFill(Color.web("#047857"));
-                dataLabel.setStyle("-fx-background-color: rgba(255,255,255,0.85); -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
+                dataLabel.setStyle(
+                        "-fx-background-color: rgba(255,255,255,0.85); -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
                 dataLabel.setTranslateY(-20);
                 StackPane.setAlignment(dataLabel, Pos.TOP_CENTER);
                 sp.getChildren().removeIf(n -> n instanceof javafx.scene.text.Text || n instanceof Label);
@@ -739,14 +764,14 @@ public class ThongKeDoanhThuView extends BorderPane {
                 Tooltip tooltip = new Tooltip(String.format("%,.0f đêm", data.getYValue()));
                 tooltip.setFont(Font.font("Segoe UI", 14));
                 Tooltip.install(sp, tooltip);
-                
+
                 sp.setOnMouseEntered(e -> sp.setStyle(
                         "-fx-background-color: linear-gradient(to top, #065f46, #6ee7b7); -fx-background-radius: 4 4 0 0;"));
                 sp.setOnMouseExited(e -> sp.setStyle(
                         "-fx-background-color: linear-gradient(to top, #047857, #34d399); -fx-background-radius: 4 4 0 0;"));
             }
         }
-        
+
         // Tooltip for PieChart
         for (PieChart.Data data : pieChartPhong.getData()) {
             Tooltip tooltip = new Tooltip(data.getName() + "\n" + String.format("%,.0f đêm", data.getPieValue()));
@@ -769,7 +794,8 @@ public class ThongKeDoanhThuView extends BorderPane {
             fileChooser.setInitialFileName("BaoCaoDoanhThu_" + LocalDate.now().toString() + ".csv");
             File file = fileChooser.showSaveDialog(this.getScene().getWindow());
 
-            if (file == null) return;
+            if (file == null)
+                return;
 
             DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
             symbols.setGroupingSeparator('.');
@@ -790,7 +816,8 @@ public class ThongKeDoanhThuView extends BorderPane {
 
                 writer.println();
 
-                writer.println("Mã Hóa Đơn,Mã Đặt Phòng,Khách Hàng,Nhân Viên,Thời Gian,Tiền Phòng (VND),Tiền Dịch Vụ (VND),Thuế VAT (VND),Tiền Cọc (VND),Doanh Thu (VND)");
+                writer.println(
+                        "Mã Hóa Đơn,Mã Đặt Phòng,Khách Hàng,Nhân Viên,Thời Gian,Tiền Phòng (VND),Tiền Dịch Vụ (VND),Thuế VAT (VND),Tiền Cọc (VND),Doanh Thu (VND)");
 
                 double tongDoanhThu = 0;
                 double tongTienPhong = 0;
@@ -804,8 +831,10 @@ public class ThongKeDoanhThuView extends BorderPane {
 
                     LocalDate ngayHD = hd.getNgayTaoHD().toLocalDate();
 
-                    if (dpFrom.getValue() != null && ngayHD.isBefore(dpFrom.getValue())) continue;
-                    if (dpTo.getValue() != null && ngayHD.isAfter(dpTo.getValue())) continue;
+                    if (dpFrom.getValue() != null && ngayHD.isBefore(dpFrom.getValue()))
+                        continue;
+                    if (dpTo.getValue() != null && ngayHD.isAfter(dpTo.getValue()))
+                        continue;
 
                     String trangThai = hd.getTrangThaiThanhToan();
 
@@ -825,8 +854,8 @@ public class ThongKeDoanhThuView extends BorderPane {
 
                     String tenNV = (hd.getNhanVien() != null
                             && hd.getNhanVien().getHoTen() != null)
-                            ? hd.getNhanVien().getHoTen()
-                            : "N/A";
+                                    ? hd.getNhanVien().getHoTen()
+                                    : "N/A";
 
                     String thoiGian = (hd.getNgayTaoHD() != null)
                             ? ("=\"" + hd.getNgayTaoHD().format(dtf) + "\"")
@@ -834,15 +863,15 @@ public class ThongKeDoanhThuView extends BorderPane {
 
                     double giaTriDoanhThu = model.utils.RevenueCalculator.calculateActualRevenue(hd);
 
-                    if (giaTriDoanhThu <= 0) continue;
+                    if (giaTriDoanhThu <= 0)
+                        continue;
 
                     double tienPhong = hd.getTienPhong();
                     double tienDV = hd.getTienDV();
 
-                    double thueVATPercent =
-                            (hd.getThueVAT() > 0)
-                                    ? hd.getThueVAT()
-                                    : 0.10;
+                    double thueVATPercent = (hd.getThueVAT() > 0)
+                            ? hd.getThueVAT()
+                            : 0.10;
 
                     double tienThue = (tienPhong + tienDV) * thueVATPercent;
                     double tienCoc = hd.getTienCoc();
@@ -861,16 +890,15 @@ public class ThongKeDoanhThuView extends BorderPane {
 
                     writer.println(
                             maHD + "," +
-                            maDat + "," +
-                            tenKH + "," +
-                            tenNV + "," +
-                            thoiGian + "," +
-                            tpStr + "," +
-                            tdvStr + "," +
-                            thueStr + "," +
-                            tcStr + "," +
-                            doanhThuStr
-                    );
+                                    maDat + "," +
+                                    tenKH + "," +
+                                    tenNV + "," +
+                                    thoiGian + "," +
+                                    tpStr + "," +
+                                    tdvStr + "," +
+                                    thueStr + "," +
+                                    tcStr + "," +
+                                    doanhThuStr);
                 }
 
                 writer.println();
@@ -881,14 +909,12 @@ public class ThongKeDoanhThuView extends BorderPane {
                                 "=\"" + df.format(tongTienDV) + "\"," +
                                 "=\"" + df.format(tongTienThue) + "\"," +
                                 "=\"" + df.format(tongTienCoc) + "\"," +
-                                "=\"" + df.format(tongDoanhThu) + "\""
-                );
+                                "=\"" + df.format(tongDoanhThu) + "\"");
 
                 hienThongBao(
                         Alert.AlertType.INFORMATION,
                         "Thành công",
-                        "Xuất file báo cáo thành công!"
-                );
+                        "Xuất file báo cáo thành công!");
             }
 
         } catch (Exception e) {
@@ -897,15 +923,14 @@ public class ThongKeDoanhThuView extends BorderPane {
             hienThongBao(
                     Alert.AlertType.ERROR,
                     "Lỗi",
-                    "Lỗi hệ thống: " + e.getMessage()
-            );
+                    "Lỗi hệ thống: " + e.getMessage());
         }
     }
 
     // Hàm hiển thị thông báo
     private void hienThongBao(Alert.AlertType type,
-                              String title,
-                              String content) {
+            String title,
+            String content) {
 
         Alert alert = new Alert(type);
 

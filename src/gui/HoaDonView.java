@@ -643,6 +643,13 @@ public class HoaDonView extends BorderPane {
 
         dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
         for (HoaDon hd : list) {
+            // Nếu đơn đã được check-in thì hóa đơn có cọc sẽ được tính là chưa thanh toán
+            if ("DA_THANH_TOAN_COC".equals(hd.getTrangThaiThanhToan()) &&
+                hd.getDatPhong() != null &&
+                "DA_CHECKIN".equals(hd.getDatPhong().getTrangThai())) {
+                hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
+            }
+
             double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
             java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();

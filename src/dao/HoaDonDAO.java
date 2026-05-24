@@ -227,7 +227,7 @@ public class HoaDonDAO {
      */
     public List<HoaDon> getAllWithKhachHang() {
         List<HoaDon> dsHoaDon = new ArrayList<>();
-        String sql = "SELECT h.*, kh.tenKH, kh.soDT, kh.soCCCD FROM HoaDon h " +
+        String sql = "SELECT h.*, kh.tenKH, kh.soDT, kh.soCCCD, dp.trangThai AS dp_trangThai FROM HoaDon h " +
                 "JOIN DatPhong dp ON h.maDat = dp.maDat " +
                 "JOIN KH kh ON dp.maKH = kh.maKH " +
                 "ORDER BY h.maHD ASC";
@@ -241,6 +241,9 @@ public class HoaDonDAO {
                 kh.setSoDT(rs.getString("soDT"));
                 kh.setSoCCCD(rs.getString("soCCCD"));
                 hd.getDatPhong().setKhachHang(kh);
+                try {
+                    hd.getDatPhong().setTrangThai(rs.getString("dp_trangThai"));
+                } catch (SQLException ignored) {}
                 dsHoaDon.add(hd);
             }
         } catch (Exception e) {
