@@ -29,7 +29,7 @@ public class NhanVien {
         this.matKhau = "123";
         this.cccd = "000000000000";
         this.role = ChucVu.NHAN_VIEN;
-        this.trinhDo = trinhDo.THCS;
+        this.trinhDo = trinhDo.THPT;
         this.trangThai = TrangThaiNV.CON_LAM;
         this.ngaySinh = LocalDate.now().minusYears(19); // Đảm bảo > 18 tuổi
         this.ngayVaoLamDate = LocalDate.now();
