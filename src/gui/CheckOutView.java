@@ -340,6 +340,22 @@ public class CheckOutView extends BorderPane {
             "-fx-font-size:12px;"
         );
 
+        TableColumn<DichVuSuDung,String> colPhong = new TableColumn<>("Phòng");
+        colPhong.setCellValueFactory(p -> {
+            if (p.getValue().getChiTietDatPhong() != null) {
+                String maCTDP = p.getValue().getChiTietDatPhong().getMaCTDP();
+                if (currentRoomList != null) {
+                    for(Object[] r : currentRoomList) {
+                        if(maCTDP.equals((String)r[0])) return new SimpleStringProperty((String)r[1]);
+                    }
+                }
+            }
+            return new SimpleStringProperty("");
+        });
+        colPhong.setMinWidth(60);
+        colPhong.setMaxWidth(80);
+        colPhong.setStyle("-fx-alignment:CENTER; -fx-font-weight:bold; -fx-text-fill:" + C_NAVY + ";");
+
         TableColumn<DichVuSuDung,String> colNgay = new TableColumn<>("Ngày");
         colNgay.setCellValueFactory(p -> new SimpleStringProperty(
             p.getValue().getNgaySuDung() != null ? p.getValue().getNgaySuDung().toString() : ""));
@@ -368,7 +384,7 @@ public class CheckOutView extends BorderPane {
         colTT.setCellValueFactory(p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getThanhTien())));
         colTT.setStyle("-fx-alignment:CENTER-RIGHT;-fx-font-weight:bold;");
 
-        serviceTable.getColumns().addAll(colNgay, colTen, colDonVi, colSl, colGia, colTT);
+        serviceTable.getColumns().addAll(colPhong, colNgay, colTen, colDonVi, colSl, colGia, colTT);
         for (TableColumn<DichVuSuDung,?> c : serviceTable.getColumns()) {
             c.setReorderable(false);
             c.setSortable(false);
@@ -812,7 +828,16 @@ public class CheckOutView extends BorderPane {
         for (Object[] room : currentRoomList) {
             String maCTDP = (String) room[0];
             List<DichVuSuDung> dvRoom = dvsdDAO.findByMaCTDP(maCTDP);
-            if (dvRoom != null) allDV.addAll(dvRoom);
+            if (dvRoom != null) {
+                for (DichVuSuDung dv : dvRoom) {
+                    if (dv.getChiTietDatPhong() == null) {
+                        model.entities.ChiTietDatPhong ctdp = new model.entities.ChiTietDatPhong();
+                        ctdp.setMaCTDP(maCTDP);
+                        dv.setChiTietDatPhong(ctdp);
+                    }
+                }
+                allDV.addAll(dvRoom);
+            }
         }
         serviceTable.setItems(FXCollections.observableArrayList(allDV));
         currentTienDV = allDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
@@ -932,10 +957,23 @@ public class CheckOutView extends BorderPane {
         header.setTextFill(Color.web(C_NAVY));
         section.getChildren().add(header);
 
+        // Khung viền chứa Header + List (tạo hiệu ứng table đẹp hơn)
+        VBox tableBox = new VBox(0);
+        tableBox.setStyle(
+            "-fx-border-color:" + C_BORDER + ";" +
+            "-fx-border-radius:8;" +
+            "-fx-background-radius:8;" +
+            "-fx-background-color:white;"
+        );
+
         // Column header row
         GridPane gridHeader = new GridPane();
         gridHeader.setHgap(8);
-        gridHeader.setPadding(new Insets(4, 0, 2, 0));
+        gridHeader.setPadding(new Insets(8, 12, 8, 12));
+        gridHeader.setStyle(
+            "-fx-background-color:" + C_BORDER_SOFT + ";" +
+            "-fx-background-radius:8 8 0 0;"
+        );
         ColumnConstraints cc1 = new ColumnConstraints(); cc1.setMinWidth(60); cc1.setPrefWidth(70);
         ColumnConstraints cc2 = new ColumnConstraints(); cc2.setHgrow(Priority.ALWAYS);
         ColumnConstraints cc3 = new ColumnConstraints(); cc3.setMinWidth(100); cc3.setPrefWidth(110);
@@ -945,9 +983,15 @@ public class CheckOutView extends BorderPane {
         Label h2 = new Label("Phí phụ thu");  h2.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11)); h2.setTextFill(Color.web(C_TEXT_GRAY));
         Label h3 = new Label("Phí trả muộn"); h3.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11)); h3.setTextFill(Color.web(C_TEXT_GRAY));
         gridHeader.add(h1, 0, 0); gridHeader.add(h2, 1, 0); gridHeader.add(h3, 2, 0);
-        section.getChildren().add(gridHeader);
+        
+        tableBox.getChildren().add(gridHeader);
+
+        // Body container
+        VBox rowsContainer = new VBox();
+        rowsContainer.setPadding(new Insets(0));
 
         // Each room row
+        boolean isEven = false;
         for (Object[] room : currentRoomList) {
             String maCTDP = (String) room[0];
             String maPhong = (String) room[1];
@@ -955,13 +999,20 @@ public class CheckOutView extends BorderPane {
 
             GridPane rowGrid = new GridPane();
             rowGrid.setHgap(8);
-            rowGrid.setPadding(new Insets(2, 0, 2, 0));
+            rowGrid.setPadding(new Insets(6, 12, 6, 12));
             rowGrid.getColumnConstraints().addAll(cc1, cc2, cc3);
+            
+            if (isEven) {
+                rowGrid.setStyle("-fx-background-color: #fafbfc;");
+            } else {
+                rowGrid.setStyle("-fx-background-color: white;");
+            }
+            isEven = !isEven;
 
             // Cột 1: Mã phòng
             Label lblRoom = new Label(maPhong);
             lblRoom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-            lblRoom.setTextFill(Color.web(C_BLUE));
+            lblRoom.setTextFill(Color.web(C_NAVY));
 
             // Cột 2: Phí phụ thu (TextField - cho nhập tay)
             TextField txtPT = new TextField(String.format("%.0f", roomPhuThuMap.getOrDefault(maCTDP, 0.0)));
@@ -969,16 +1020,27 @@ public class CheckOutView extends BorderPane {
             txtPT.setStyle(
                 "-fx-alignment:CENTER-RIGHT;" +
                 "-fx-font-size:12px;" +
+                "-fx-font-weight:bold;" +
+                "-fx-text-fill:" + C_TEXT_DARK + ";" +
                 "-fx-border-color:" + C_BORDER + ";" +
                 "-fx-border-radius:6;" +
                 "-fx-background-radius:6;" +
-                "-fx-padding:3 6;"
+                "-fx-padding:4 8;"
             );
             txtPT.setTextFormatter(new TextFormatter<>(change -> {
                 String t = change.getControlNewText();
                 if (t.isEmpty() || t.matches("[0-9]+")) return change;
                 return null;
             }));
+            
+            txtPT.focusedProperty().addListener((obs, oldV, newV) -> {
+                if (newV) {
+                    txtPT.setStyle(txtPT.getStyle().replace("-fx-border-color:" + C_BORDER, "-fx-border-color:" + C_BLUE));
+                } else {
+                    txtPT.setStyle(txtPT.getStyle().replace("-fx-border-color:" + C_BLUE, "-fx-border-color:" + C_BORDER));
+                }
+            });
+
             final String key = maCTDP;
             txtPT.textProperty().addListener((obs, o, n) -> {
                 try {
@@ -997,8 +1059,26 @@ public class CheckOutView extends BorderPane {
             rowGrid.add(lblRoom, 0, 0);
             rowGrid.add(txtPT, 1, 0);
             rowGrid.add(lblLate, 2, 0);
-            section.getChildren().add(rowGrid);
+            
+            rowsContainer.getChildren().add(rowGrid);
         }
+
+        ScrollPane scroll = new ScrollPane(rowsContainer);
+        scroll.setFitToWidth(true);
+        scroll.setMinHeight(40);
+        scroll.setPrefHeight(120);
+        scroll.setMaxHeight(160);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle(
+            "-fx-background:transparent;" +
+            "-fx-background-color:transparent;" +
+            "-fx-border-color:transparent;" +
+            "-fx-padding:0;"
+        );
+
+        tableBox.getChildren().add(scroll);
+        section.getChildren().add(tableBox);
 
         // Tổng dòng phụ thu
         HBox totalPhuThu = new HBox();
@@ -1078,7 +1158,7 @@ public class CheckOutView extends BorderPane {
                 hd.setNgayTaoHD(now);
                 hd.setTienPhong(0);
                 hd.setTienDV(0);
-                hd.setTienCoc(ctdpDAO.getTongCocByMaDat(currentDatPhong.getMaDat()));
+                hd.setTienCoc(0);
                 hd.setThueVAT(VAT_RATE);
                 hoaDonDAO.tinhTongTien(hd);
                 hoaDonDAO.tinhDoanhThu(hd);
@@ -1104,10 +1184,18 @@ public class CheckOutView extends BorderPane {
             double sumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
             double tienDV = listDV.stream().mapToDouble(DichVuSuDung::getThanhTien).sum();
+            
+            List<model.entities.ChiTietHoaDon> cthdList = cthdDAO.getByMaHD(hd.getMaHD());
+            double sumPhuThu = cthdList.stream().mapToDouble(model.entities.ChiTietHoaDon::getPhuThu).sum();
+            double sumLateFee = cthdList.stream().mapToDouble(model.entities.ChiTietHoaDon::getPhuPhiTraMuon).sum();
+            double tongCoc = cthdDAO.getTongCocByMaHD(hd.getMaHD());
+            
             hd.setTienPhong(sumPhong);
             hd.setTienDV(tienDV);
-            hd.setPhuThu(hd.getPhuThu() + currentPhuThu);
-            hd.setPhuPhiTraMuon(hd.getPhuPhiTraMuon() + currentLateFee);
+            hd.setPhuThu(sumPhuThu);
+            hd.setPhuPhiTraMuon(sumLateFee);
+            hd.setTienCoc(tongCoc);
+            
             hd.setThueVAT(VAT_RATE);
             hd.setNgayTaoHD(now);
             
