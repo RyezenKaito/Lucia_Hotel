@@ -242,7 +242,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             dpNgaySinh.setValue(nvEdit.getNgaySinh());
         }
         errNS = errLabel();
-        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
+        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 18 tuổi)"));
 
         /* ── CCCD ───────────────────────────────────────────────── */
         txtCCCD = makeField(nvEdit != null ? nvl(nvEdit.getCccd()) : "", "Nhập CCCD (12 số)");
@@ -441,8 +441,8 @@ public class ThemSuaNhanVienDialog extends Stage {
             showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh.");
             return false;
         }
-        if (LocalDate.now().minusYears(16).isBefore(ns)) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Nhân viên phải từ đủ 16 tuổi.");
+        if (LocalDate.now().minusYears(18).isBefore(ns)) {
+            showErrorField(dpNgaySinh, errNS, "⚠ Nhân viên phải từ đủ 18 tuổi.");
             return false;
         }
         clearErrorField(dpNgaySinh, errNS);
