@@ -29,7 +29,7 @@ CREATE TABLE NV (
     diaChi      NVARCHAR(200),
     ngaySinh    DATE,
     ngayVaoLam  DATE,
-    trinhDo     NVARCHAR(20)  CHECK (trinhDo IN (N'THCS', N'THPT', N'CAODANG', N'DAIHOC', N'TREN_DAIHOC')),
+    trinhDo     NVARCHAR(20)  CHECK (trinhDo IN (N'THPT', N'TRUNGCAP', N'CAODANG', N'DAIHOC', N'SAU_DAIHOC')),
     mk          VARCHAR(100),
     role        NVARCHAR(20)  CHECK (role IN (N'NHAN_VIEN', N'QUAN_LY', N'ADMIN')),
     trangThai   NVARCHAR(20)  DEFAULT 'CON_LAM' CHECK (trangThai IN ('CON_LAM', 'DA_NGHI')),
