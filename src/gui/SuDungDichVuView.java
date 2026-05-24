@@ -37,6 +37,7 @@ public class SuDungDichVuView extends BorderPane {
     private final DatPhongDAO datPhongDAO = new DatPhongDAO();
     private final BangGiaDichVuDAO bangGiaDAO = new BangGiaDichVuDAO();
     private final dao.LoaiDichVuDAO loaiDVDAO = new dao.LoaiDichVuDAO();
+    private final dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
     private String selectedMaPhong = "";
     private model.entities.LoaiDichVu currentCategory;
     private final Map<DichVu, Integer> cart = new HashMap<>();
