@@ -23,6 +23,8 @@ public class PhongDAO {
             return TrangThaiPhong.DACOKHACH;
         if (text.equals("BAN"))
             return TrangThaiPhong.BAN;
+        if (text.equals("BAOTRI"))
+            return TrangThaiPhong.BAOTRI;
         return TrangThaiPhong.CONTRONG;
     }
 
@@ -34,6 +36,8 @@ public class PhongDAO {
             return "CONTRONG";
         if (ttp == TrangThaiPhong.DACOKHACH)
             return "DANGSUDUNG";
+        if (ttp == TrangThaiPhong.BAOTRI)
+            return "BAOTRI";
         return "BAN";
     }
 
@@ -42,7 +46,7 @@ public class PhongDAO {
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
                 "WHERE p.is_deleted = 0 " +
-                "ORDER BY p.soTang, p.soPhong";
+                "ORDER BY p.soTang, p.maPhong";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();

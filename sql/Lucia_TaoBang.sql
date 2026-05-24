@@ -70,13 +70,13 @@ CREATE TABLE Phong (
     tenPhong  NVARCHAR(50),
     -- Bá» CHECK trÃ¹ng vá»›i FK; LoaiPhong FK Ä‘Ã£ Ä‘áº£m báº£o giÃ¡ trá»‹ há»£p lá»‡
     loaiPhong VARCHAR(20),
-    tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG')),
+    tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG', N'BAOTRI')),
     soPhong   INT,
     soTang    INT,
     is_deleted BIT DEFAULT 0,
     CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (loaiPhong) REFERENCES LoaiPhong(maLoaiPhong)
 );
-
+ALTER
 CREATE TABLE DatPhong (
     maDat        VARCHAR(20)  PRIMARY KEY,
     ngayDat      DATETIME     NOT NULL DEFAULT GETDATE(),
