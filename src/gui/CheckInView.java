@@ -765,7 +765,7 @@ public class CheckInView extends BorderPane {
                     String maCTDP = mapMaCTDP.get(maPhong);
                     if (maCTDP != null && hd != null) {
                         String maCTHD = String.format("CTHD%03d", lastNum++);
-                        cthdDAO.insertWithConnection(con, maCTHD, hd.getMaHD(), maCTDP, 0, 0);
+                        cthdDAO.insertWithConnection(con, maCTHD, hd.getMaHD(), maCTDP, 0, 0, 0, 0);
                     }
                 }
 

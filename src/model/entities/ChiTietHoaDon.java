@@ -9,6 +9,8 @@ public class ChiTietHoaDon {
     private double thoiGianLuuTru;
     private int soLuongPhong;
     private double thanhTien;
+    private double phuThu;
+    private double phuPhiTraMuon;
 
     public ChiTietHoaDon() {
     }
@@ -47,6 +49,12 @@ public class ChiTietHoaDon {
 
     public double getThanhTien() { return thanhTien; }
     public void setThanhTien(double thanhTien) { this.thanhTien = thanhTien; }
+
+    public double getPhuThu() { return phuThu; }
+    public void setPhuThu(double phuThu) { this.phuThu = phuThu; }
+
+    public double getPhuPhiTraMuon() { return phuPhiTraMuon; }
+    public void setPhuPhiTraMuon(double phuPhiTraMuon) { this.phuPhiTraMuon = phuPhiTraMuon; }
 
     @Override
     public String toString() {

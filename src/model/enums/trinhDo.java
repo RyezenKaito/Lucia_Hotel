@@ -1,11 +1,11 @@
 package model.enums;
 
 public enum trinhDo {
-	THCS("Trung học cơ sở"),
 	THPT("Trung học phổ thông"),
+	TRUNGCAP("Trung cấp"),
 	CAODANG("Cao đẳng"),
 	DAIHOC("Đại học"),
-	TREN_DAIHOC("Trên đại học");
+	SAU_DAIHOC("Sau đại học");
 
 	private final String displayName;
 

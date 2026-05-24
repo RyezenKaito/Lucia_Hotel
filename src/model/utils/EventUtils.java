@@ -48,20 +48,8 @@ public final class EventUtils {
      * ══════════════════════════════════════════════════════════════════
      */
 
-    public static boolean focusFirstError(Control[] fields, Label[] errorLabels) {
-        if (fields == null || errorLabels == null)
-            return false;
-
-        int len = Math.min(fields.length, errorLabels.length);
-        for (int i = 0; i < len; i++) {
-            String errText = errorLabels[i].getText();
-            if (errText != null && !errText.isBlank()) {
-                final Control target = fields[i];
-                Platform.runLater(target::requestFocus);
-                return true;
-            }
-        }
-        return false;
+public static boolean focusFirstError(Control[] fields, Label[] errorLabels) {
+        return focusFirstError((Node[]) fields, errorLabels);
     }
 
     public static boolean focusFirstError(Node[] fields, Label[] errorLabels) {
@@ -73,11 +61,60 @@ public final class EventUtils {
             String errText = errorLabels[i].getText();
             if (errText != null && !errText.isBlank()) {
                 final Node target = fields[i];
-                Platform.runLater(target::requestFocus);
+                // Gọi đệ quy để trỏ chuột đúng vào thành phần có thể tương tác
+                Platform.runLater(() -> focusNode(target));
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Helper hỗ trợ focus đệ quy vào các component bên trong (VD: VBox chứa CheckBox)
+     */
+    private static void focusNode(Node n) {
+        if (n == null) return;
+
+        // Ưu tiên DatePicker custom của bạn (do đã override requestFocus trỏ vào txtDisplay)
+        if (n instanceof model.utils.DatePicker) {
+            n.requestFocus();
+            return;
+        }
+
+        // Nếu node là một control nhận focus trực tiếp (TextField, ComboBox, DatePicker chuẩn...)
+        if (n instanceof Control && !(n instanceof ScrollPane)) {
+            n.requestFocus();
+            return;
+        }
+
+        // Nếu là Container (như VBox chứa ds loại phòng, FlowPane chứa ds phòng cụ thể)
+        if (n instanceof javafx.scene.layout.Pane) {
+            for (Node child : ((javafx.scene.layout.Pane) n).getChildren()) {
+                // Focus ngay vào CheckBox hoặc Button đầu tiên tìm thấy bên trong
+                if (child instanceof CheckBox || child instanceof RadioButton || 
+                    child instanceof ComboBox || child instanceof TextInputControl ||
+                    child instanceof Button) {
+                    child.requestFocus();
+                    return;
+                }
+            }
+            // Nếu không có trực tiếp, tìm sâu hơn 1 lớp
+            for (Node child : ((javafx.scene.layout.Pane) n).getChildren()) {
+                if (child instanceof javafx.scene.layout.Pane) {
+                    focusNode(child);
+                    return;
+                }
+            }
+        }
+
+        // Nếu là ScrollPane, đi vào nội dung bên trong
+        if (n instanceof ScrollPane) {
+            focusNode(((ScrollPane) n).getContent());
+            return;
+        }
+
+        // Trường hợp mặc định
+        n.requestFocus();
     }
 
     /*

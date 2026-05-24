@@ -40,11 +40,14 @@ public class ChiTietHoaDonDAO {
      * @param maCTDP Mã chi tiết đặt phòng (1 phòng cụ thể)
      * @param thoiGianLuuTru Số đêm lưu trú
      * @param thanhTien Tổng tiền phòng của dòng này
+     * @param phuThu Phí phụ thu riêng phòng này
+     * @param phuPhiTraMuon Phụ phí trả muộn riêng phòng này
      */
     public boolean insert(String maCTHD, String maHD, String maCTDP,
-                          double thoiGianLuuTru, double thanhTien) {
-        String sql = "INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien) " +
-                     "VALUES (?, ?, ?, ?, ?)";
+                          double thoiGianLuuTru, double thanhTien,
+                          double phuThu, double phuPhiTraMuon) {
+        String sql = "INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien, phu_thu, phu_phi_tra_muon) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maCTHD);
@@ -52,6 +55,8 @@ public class ChiTietHoaDonDAO {
             ps.setString(3, maCTDP);
             ps.setDouble(4, thoiGianLuuTru);
             ps.setDouble(5, thanhTien);
+            ps.setDouble(6, phuThu);
+            ps.setDouble(7, phuPhiTraMuon);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             System.err.println("Lỗi insert ChiTietHoaDon: " + e.getMessage());
@@ -63,15 +68,18 @@ public class ChiTietHoaDonDAO {
      * Insert dùng chung Connection (transaction)
      */
     public boolean insertWithConnection(Connection con, String maCTHD, String maHD,
-                                        String maCTDP, double thoiGianLuuTru, double thanhTien) throws SQLException {
-        String sql = "INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien) " +
-                     "VALUES (?, ?, ?, ?, ?)";
+                                        String maCTDP, double thoiGianLuuTru, double thanhTien,
+                                        double phuThu, double phuPhiTraMuon) throws SQLException {
+        String sql = "INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien, phu_thu, phu_phi_tra_muon) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maCTHD);
             ps.setString(2, maHD);
             ps.setString(3, maCTDP);
             ps.setDouble(4, thoiGianLuuTru);
             ps.setDouble(5, thanhTien);
+            ps.setDouble(6, phuThu);
+            ps.setDouble(7, phuPhiTraMuon);
             return ps.executeUpdate() > 0;
         }
     }
@@ -93,6 +101,10 @@ public class ChiTietHoaDonDAO {
                 c.setMaCTDP(rs.getString("maCTDP"));
                 c.setThoiGianLuuTru(rs.getDouble("thoiGianLuuTru"));
                 c.setThanhTien(rs.getDouble("thanhTien"));
+                try {
+                    c.setPhuThu(rs.getDouble("phu_thu"));
+                    c.setPhuPhiTraMuon(rs.getDouble("phu_phi_tra_muon"));
+                } catch (SQLException ignored) {}
                 list.add(c);
             }
         } catch (Exception e) {
@@ -138,15 +150,18 @@ public class ChiTietHoaDonDAO {
     }
 
     /**
-     * Cập nhật thời gian lưu trú và thành tiền khi trả phòng
+     * Cập nhật thời gian lưu trú, thành tiền, phụ thu và phụ phí trả muộn khi trả phòng
      */
-    public boolean updateLuuTruVaTien(String maCTHD, double thoiGianLuuTru, double thanhTien) {
-        String sql = "UPDATE ChiTietHoaDon SET thoiGianLuuTru = ?, thanhTien = ? WHERE maCTHD = ?";
+    public boolean updateLuuTruVaTien(String maCTHD, double thoiGianLuuTru, double thanhTien,
+                                      double phuThu, double phuPhiTraMuon) {
+        String sql = "UPDATE ChiTietHoaDon SET thoiGianLuuTru = ?, thanhTien = ?, phu_thu = ?, phu_phi_tra_muon = ? WHERE maCTHD = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDouble(1, thoiGianLuuTru);
             ps.setDouble(2, thanhTien);
-            ps.setString(3, maCTHD);
+            ps.setDouble(3, phuThu);
+            ps.setDouble(4, phuPhiTraMuon);
+            ps.setString(5, maCTHD);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -157,13 +172,14 @@ public class ChiTietHoaDonDAO {
     /**
      * Lấy danh sách phòng đã trả trong 1 hóa đơn.
      * Dùng cho popup chi tiết HoaDonView.
-     * Trả về list Object[] = {maPhong, tenPhong, tenLoaiPhong, thoiGianLuuTru, thanhTien, giaCoc}
+     * Trả về list Object[] = {maPhong, tenPhong, tenLoaiPhong, thoiGianLuuTru, thanhTien, giaCoc, maCTDP, phuThu, phuPhiTraMuon}
      */
     public List<Object[]> getDanhSachPhongDaTra(String maHD) {
         List<Object[]> list = new ArrayList<>();
         String sql =
             "SELECT p.maPhong, p.tenPhong, p.loaiPhong, " +
-            "       cthd.thoiGianLuuTru, cthd.thanhTien, ctdp.giaCoc, ctdp.maCTDP " +
+            "       cthd.thoiGianLuuTru, cthd.thanhTien, ctdp.giaCoc, ctdp.maCTDP, " +
+            "       ISNULL(cthd.phu_thu, 0) AS phu_thu, ISNULL(cthd.phu_phi_tra_muon, 0) AS phu_phi_tra_muon " +
             "FROM ChiTietHoaDon cthd " +
             "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
             "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
@@ -186,7 +202,9 @@ public class ChiTietHoaDonDAO {
                     rs.getDouble("thoiGianLuuTru"),
                     rs.getDouble("thanhTien"),
                     rs.getDouble("giaCoc"),
-                    rs.getString("maCTDP")
+                    rs.getString("maCTDP"),
+                    rs.getDouble("phu_thu"),
+                    rs.getDouble("phu_phi_tra_muon")
                 });
             }
         } catch (Exception e) {

@@ -14,9 +14,8 @@ public class DichVuSuDungDAO {
         String sql = "SELECT dv.maDV, dv.soLuong, dv.giaDV, dv.ngaySuDung, d.tenDV, d.donVi " +
                 "FROM DichVuSuDung dv " +
                 "JOIN DV d ON dv.maDV = d.maDV " +
-                "JOIN ChiTietDatPhong ctdp ON dv.maCTDP = ctdp.maCTDP " +
-                "JOIN HoaDon hd ON ctdp.maDat = hd.maDat " +
-                "WHERE hd.maHD = ?";
+                "JOIN ChiTietHoaDon cthd ON dv.maCTDP = cthd.maCTDP " +
+                "WHERE cthd.maHD = ?";
 
         try (java.sql.Connection con = connectDatabase.ConnectDatabase.getInstance().getConnection();
                 java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
