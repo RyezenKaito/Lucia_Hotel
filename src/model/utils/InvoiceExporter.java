@@ -73,13 +73,17 @@ public class InvoiceExporter {
                         html.append("</div>\n</div>\n");
 
                         html.append(
-                                        "<h3>DANH SÁCH PHÒNG</h3>\n<table>\n<thead>\n<tr>\n<th>Phòng</th>\n<th>Loại phòng</th>\n<th>Thời gian</th>\n<th>Tiền phòng</th>\n</tr>\n</thead>\n<tbody>\n");
+                                        "<h3>DANH SÁCH PHÒNG</h3>\n<table>\n<thead>\n<tr>\n<th>Phòng</th>\n<th>Loại phòng</th>\n<th>Thời gian</th>\n<th>Tiền phòng</th>\n<th>Phí phụ thu</th>\n<th>Phí trả muộn</th>\n</tr>\n</thead>\n<tbody>\n");
                         for (Object[] row : dsPhong) {
+                                double roomPhuThu = (double) row[7];
+                                double roomPhuPhiTraMuon = (double) row[8];
                                 html.append("<tr>\n");
                                 html.append("<td>" + row[0] + " - " + row[1] + "</td>\n");
                                 html.append("<td>" + row[2] + "</td>\n");
                                 html.append("<td>" + row[3] + " đêm</td>\n");
                                 html.append("<td>" + String.format("%,.0f đ", (Double) row[4]) + "</td>\n");
+                                html.append("<td>" + String.format("%,.0f đ", roomPhuThu) + "</td>\n");
+                                html.append("<td style='color: #ef4444;'>" + String.format("%,.0f đ", roomPhuPhiTraMuon) + "</td>\n");
                                 html.append("</tr>\n");
                         }
                         html.append("</tbody>\n</table>\n");

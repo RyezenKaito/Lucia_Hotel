@@ -1,6 +1,5 @@
 package main;
 
-
 import gui.DangNhapView;
 import gui.MainFrameView;
 

@@ -155,11 +155,13 @@ CREATE TABLE ChiTietHoaDon (
     maHD           VARCHAR(20),
     maCTDP         VARCHAR(20),
     thoiGianLuuTru DECIMAL(5,2),   -- Sá»‘ Ä‘Ãªm lÆ°u trÃº
-    thanhTien      DECIMAL(18,2),  -- Tiá»n phÃ²ng + dá»‹ch vá»¥ cá»§a dÃ²ng nÃ y
+    thanhTien      DECIMAL(18,2),  -- Tiá» n phÃ²ng + dá»‹ch vá»¥ cá»§a dÃ²ng nÃ y
+    phu_thu        DECIMAL(18,2) DEFAULT 0,  -- Phí phụ thu riêng phòng này
+    phu_phi_tra_muon DECIMAL(18,2) DEFAULT 0,  -- Phụ phí trả muộn riêng phòng này
     CONSTRAINT FK_CTHD_HoaDon FOREIGN KEY (maHD)   REFERENCES HoaDon(maHD),
     CONSTRAINT FK_CTHD_CTDP   FOREIGN KEY (maCTDP) REFERENCES ChiTietDatPhong(maCTDP)
 );
--- LÆ°u Ã½: bá» soLuongPhong vÃ¬ má»—i CTDP Ä‘Ã£ gáº¯n vá»›i 1 phÃ²ng cá»¥ thá»ƒ â†’ Ä‘áº¿m dÃ²ng lÃ  Ä‘á»§
+-- LÆ°u Ã½: bá»  soLuongPhong vÃ¬ má»—i CTDP Ä‘Ã£ gáº¯n vá»›i 1 phÃ²ng cá»¥ thá»ƒ â†’ Ä‘áº¿m dÃ²ng lÃ  Ä‘á»§
 
 CREATE TABLE DichVuSuDung (
     maDV         VARCHAR(20),

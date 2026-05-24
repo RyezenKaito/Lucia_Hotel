@@ -434,7 +434,9 @@ public class HoaDonView extends BorderPane {
                 double thanhTien = (double) row[4];
                 double giaCoc = (double) row[5];
                 String maCTDP = (String) row[6];
-                tongTienPhong += thanhTien;
+                double roomPhuThu = (double) row[7];
+                double roomPhuPhiTraMuon = (double) row[8];
+                tongTienPhong += thanhTien;;
                 tongCoc += giaCoc;
 
                 VBox roomContainer = new VBox();
@@ -471,29 +473,45 @@ public class HoaDonView extends BorderPane {
                 dvBox.setManaged(false);
                 dvBox.setVisible(false);
 
-                if (dvList.isEmpty()) {
-                    Label lblEmpty = new Label("— Không sử dụng dịch vụ");
+                if (dvList.isEmpty() && roomPhuThu == 0 && roomPhuPhiTraMuon == 0) {
+                    Label lblEmpty = new Label("— Không có phụ thu hay dịch vụ");
                     lblEmpty.setTextFill(Color.web(C_TEXT_GRAY));
                     lblEmpty.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 12));
                     dvBox.getChildren().add(lblEmpty);
                 } else {
-                    Label lblPhuThuDV = new Label("Tiền dịch vụ: " + String.format("%,.0f đ", roomTienDV));
-                    lblPhuThuDV.setTextFill(Color.web(C_TEXT_DARK));
-                    lblPhuThuDV.setFont(Font.font("Segoe UI", 12));
-                    dvBox.getChildren().add(lblPhuThuDV);
+                    // Hiển thị phụ thu per-room
+                    if (roomPhuThu > 0) {
+                        Label lblPT = new Label("   💰 Phí phụ thu: " + String.format("%,.0f đ", roomPhuThu));
+                        lblPT.setTextFill(Color.web("#d97706"));
+                        lblPT.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                        dvBox.getChildren().add(lblPT);
+                    }
+                    if (roomPhuPhiTraMuon > 0) {
+                        Label lblLF = new Label("   ⏰ Phụ phí trả muộn: " + String.format("%,.0f đ", roomPhuPhiTraMuon));
+                        lblLF.setTextFill(Color.web("#ef4444"));
+                        lblLF.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                        dvBox.getChildren().add(lblLF);
+                    }
 
-                    for (model.entities.DichVuSuDung dv : dvList) {
-                        HBox dvRow = new HBox();
-                        Label dvName = new Label("   🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
-                        dvName.setTextFill(Color.web(C_TEXT_GRAY));
-                        dvName.setFont(Font.font("Segoe UI", 12));
-                        dvName.setWrapText(true);
-                        HBox.setHgrow(dvName, Priority.ALWAYS);
-                        Label dvPrice = new Label(String.format("%,.0f đ", dv.getThanhTien()));
-                        dvPrice.setTextFill(Color.web(C_TEXT_DARK));
-                        dvPrice.setFont(Font.font("Segoe UI", 12));
-                        dvRow.getChildren().addAll(dvName, dvPrice);
-                        dvBox.getChildren().add(dvRow);
+                    if (!dvList.isEmpty()) {
+                        Label lblPhuThuDV = new Label("Tiền dịch vụ: " + String.format("%,.0f đ", roomTienDV));
+                        lblPhuThuDV.setTextFill(Color.web(C_TEXT_DARK));
+                        lblPhuThuDV.setFont(Font.font("Segoe UI", 12));
+                        dvBox.getChildren().add(lblPhuThuDV);
+
+                        for (model.entities.DichVuSuDung dv : dvList) {
+                            HBox dvRow = new HBox();
+                            Label dvName = new Label("   🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
+                            dvName.setTextFill(Color.web(C_TEXT_GRAY));
+                            dvName.setFont(Font.font("Segoe UI", 12));
+                            dvName.setWrapText(true);
+                            HBox.setHgrow(dvName, Priority.ALWAYS);
+                            Label dvPrice = new Label(String.format("%,.0f đ", dv.getThanhTien()));
+                            dvPrice.setTextFill(Color.web(C_TEXT_DARK));
+                            dvPrice.setFont(Font.font("Segoe UI", 12));
+                            dvRow.getChildren().addAll(dvName, dvPrice);
+                            dvBox.getChildren().add(dvRow);
+                        }
                     }
                 }
 

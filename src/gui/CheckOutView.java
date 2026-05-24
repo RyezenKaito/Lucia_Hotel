@@ -29,7 +29,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CheckOutView extends BorderPane {
@@ -83,6 +85,9 @@ public class CheckOutView extends BorderPane {
     private boolean isLateCheckout   = false;
     private boolean isModeDon        = true;    // mặc định: theo đơn đặt
     private NhanVien staff;
+    // Per-room surcharge maps (key = maCTDP)
+    private Map<String, Double> roomPhuThuMap = new HashMap<>();
+    private Map<String, Double> roomLateFeeMap = new HashMap<>();
 
     // ===== CONSTRUCTORS =====
     public CheckOutView() { this(null); }
@@ -842,14 +847,20 @@ public class CheckOutView extends BorderPane {
         }
 
         currentTienPhong = 0; currentTienCoc = 0; currentLateFee = 0; minLateFee = 0;
+        // Tính phụ phí trả muộn per-room
         for (Object[] room : currentRoomList) {
+            String maCTDP = (String) room[0];
             double giaCoc   = (double) room[2];
             double giaPhong = (double) room[3];
             currentTienPhong += giaPhong * currentSoDem;
             currentTienCoc   += giaCoc;
-            currentLateFee   += giaPhong * currentSoNgayTre;
+            double roomLate = giaPhong * currentSoNgayTre;
+            roomLateFeeMap.put(maCTDP, roomLate);
+            roomPhuThuMap.putIfAbsent(maCTDP, 0.0);
+            currentLateFee += roomLate;
         }
-        minLateFee = currentLateFee; 
+        minLateFee = currentLateFee;
+        currentPhuThu = roomPhuThuMap.values().stream().mapToDouble(Double::doubleValue).sum();
         double base = currentTienPhong + currentLateFee + currentTienDV + currentPhuThu;
         currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
     }
@@ -871,11 +882,8 @@ public class CheckOutView extends BorderPane {
         rows.getChildren().add(billRow(tienPhongLbl, String.format("%,.0f đ", currentTienPhong), Color.web(C_TEXT_DARK)));
         rows.getChildren().add(billRow("Tiền dịch vụ",  String.format("%,.0f đ", currentTienDV),  Color.web(C_TEXT_DARK)));
 
-        // Phụ phí trả muộn (không cho sửa)
-        rows.getChildren().add(buildLateFeeRow());
-
-        // Phí phụ thu (cho nhập tay)
-        rows.getChildren().add(buildPhuThuRow());
+        // ===== PHỤ THU THEO PHÒNG (per-room) =====
+        rows.getChildren().add(buildPerRoomSurchargeSection());
 
         rows.getChildren().add(billRow("Tiền cọc (đã khấu trừ)", String.format("%,.0f đ", -currentTienCoc), Color.web(C_GREEN)));
 
@@ -886,7 +894,7 @@ public class CheckOutView extends BorderPane {
         vatLbl.setTextFill(Color.web(C_TEXT_GRAY));
         vatLbl.setFont(Font.font("Segoe UI", 13));
         Region vatSp = new Region(); HBox.setHgrow(vatSp, Priority.ALWAYS);
-        lblVAT = new Label(String.format("%,.0f đ", (currentTienPhong + currentLateFee + currentTienDV) * VAT_RATE));
+        lblVAT = new Label(String.format("%,.0f đ", (currentTienPhong + currentLateFee + currentTienDV + currentPhuThu) * VAT_RATE));
         lblVAT.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblVAT.setTextFill(Color.web(C_TEXT_DARK));
         vatRow.getChildren().addAll(vatLbl, vatSp, lblVAT);
@@ -910,57 +918,103 @@ public class CheckOutView extends BorderPane {
         billingBox.getChildren().addAll(rows, sep, totalRow);
     }
 
-    private HBox buildLateFeeRow() {
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-        String label = "Phụ phí trả muộn";
-        if (isLateCheckout) label += " (trễ " + currentSoNgayTre + " ngày)";
-        Label lblLF = new Label(label);
-        lblLF.setTextFill(Color.web(C_TEXT_GRAY));
-        lblLF.setFont(Font.font("Segoe UI", 13));
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+    /**
+     * Xây dựng phần nhập phụ thu theo từng phòng.
+     * Gồm header + 1 dòng cho mỗi phòng với 2 ô: Phí phụ thu (TextField) + Phụ phí trả muộn (Label, tự tính).
+     */
+    private VBox buildPerRoomSurchargeSection() {
+        VBox section = new VBox(6);
+        section.setPadding(new Insets(8, 0, 8, 0));
 
-        Label val = new Label(String.format("%,.0f đ", currentLateFee));
-        val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        val.setTextFill(isLateCheckout ? Color.web("#ef4444") : Color.web(C_TEXT_DARK));
-        row.getChildren().addAll(lblLF, sp, val);
-        return row;
-    }
+        // Header
+        Label header = new Label("Phụ thu theo phòng" + (isLateCheckout ? " (trễ " + currentSoNgayTre + " ngày)" : ""));
+        header.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        header.setTextFill(Color.web(C_NAVY));
+        section.getChildren().add(header);
 
-    private HBox buildPhuThuRow() {
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-        Label lbl = new Label("Phí phụ thu");
-        lbl.setTextFill(Color.web(C_TEXT_GRAY));
-        lbl.setFont(Font.font("Segoe UI", 13));
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        // Column header row
+        GridPane gridHeader = new GridPane();
+        gridHeader.setHgap(8);
+        gridHeader.setPadding(new Insets(4, 0, 2, 0));
+        ColumnConstraints cc1 = new ColumnConstraints(); cc1.setMinWidth(60); cc1.setPrefWidth(70);
+        ColumnConstraints cc2 = new ColumnConstraints(); cc2.setHgrow(Priority.ALWAYS);
+        ColumnConstraints cc3 = new ColumnConstraints(); cc3.setMinWidth(100); cc3.setPrefWidth(110);
+        gridHeader.getColumnConstraints().addAll(cc1, cc2, cc3);
 
-        TextField txt = new TextField(String.format("%.0f", currentPhuThu));
-        txt.setPrefWidth(120);
-        txt.setStyle(
-            "-fx-alignment:CENTER-RIGHT;" +
-            "-fx-font-weight:bold;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:6;" +
-            "-fx-background-radius:6;" +
-            "-fx-padding:4 8;"
-        );
-        txt.setTextFormatter(new TextFormatter<>(change -> {
-            String t = change.getControlNewText();
-            if (t.isEmpty() || t.matches("[0-9]+")) return change;
-            return null;
-        }));
-        txt.textProperty().addListener((obs, o, n) -> {
-            try {
-                currentPhuThu = n.isEmpty() ? 0 : Double.parseDouble(n);
-                recalcTotal();
-            } catch (NumberFormatException ignored) {}
-        });
-        Label lblD = new Label("đ");
-        lblD.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        Label h1 = new Label("Phòng");   h1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11)); h1.setTextFill(Color.web(C_TEXT_GRAY));
+        Label h2 = new Label("Phí phụ thu");  h2.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11)); h2.setTextFill(Color.web(C_TEXT_GRAY));
+        Label h3 = new Label("Phí trả muộn"); h3.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11)); h3.setTextFill(Color.web(C_TEXT_GRAY));
+        gridHeader.add(h1, 0, 0); gridHeader.add(h2, 1, 0); gridHeader.add(h3, 2, 0);
+        section.getChildren().add(gridHeader);
 
-        row.getChildren().addAll(lbl, sp, txt, lblD);
-        return row;
+        // Each room row
+        for (Object[] room : currentRoomList) {
+            String maCTDP = (String) room[0];
+            String maPhong = (String) room[1];
+            double lateFee = roomLateFeeMap.getOrDefault(maCTDP, 0.0);
+
+            GridPane rowGrid = new GridPane();
+            rowGrid.setHgap(8);
+            rowGrid.setPadding(new Insets(2, 0, 2, 0));
+            rowGrid.getColumnConstraints().addAll(cc1, cc2, cc3);
+
+            // Cột 1: Mã phòng
+            Label lblRoom = new Label(maPhong);
+            lblRoom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+            lblRoom.setTextFill(Color.web(C_BLUE));
+
+            // Cột 2: Phí phụ thu (TextField - cho nhập tay)
+            TextField txtPT = new TextField(String.format("%.0f", roomPhuThuMap.getOrDefault(maCTDP, 0.0)));
+            txtPT.setPrefWidth(100);
+            txtPT.setStyle(
+                "-fx-alignment:CENTER-RIGHT;" +
+                "-fx-font-size:12px;" +
+                "-fx-border-color:" + C_BORDER + ";" +
+                "-fx-border-radius:6;" +
+                "-fx-background-radius:6;" +
+                "-fx-padding:3 6;"
+            );
+            txtPT.setTextFormatter(new TextFormatter<>(change -> {
+                String t = change.getControlNewText();
+                if (t.isEmpty() || t.matches("[0-9]+")) return change;
+                return null;
+            }));
+            final String key = maCTDP;
+            txtPT.textProperty().addListener((obs, o, n) -> {
+                try {
+                    double val = n.isEmpty() ? 0 : Double.parseDouble(n);
+                    roomPhuThuMap.put(key, val);
+                    currentPhuThu = roomPhuThuMap.values().stream().mapToDouble(Double::doubleValue).sum();
+                    recalcTotal();
+                } catch (NumberFormatException ignored) {}
+            });
+
+            // Cột 3: Phụ phí trả muộn (Label - tự động tính, không sửa)
+            Label lblLate = new Label(String.format("%,.0f đ", lateFee));
+            lblLate.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+            lblLate.setTextFill(lateFee > 0 ? Color.web("#ef4444") : Color.web(C_TEXT_DARK));
+
+            rowGrid.add(lblRoom, 0, 0);
+            rowGrid.add(txtPT, 1, 0);
+            rowGrid.add(lblLate, 2, 0);
+            section.getChildren().add(rowGrid);
+        }
+
+        // Tổng dòng phụ thu
+        HBox totalPhuThu = new HBox();
+        totalPhuThu.setAlignment(Pos.CENTER_LEFT);
+        totalPhuThu.setPadding(new Insets(4, 0, 0, 0));
+        Label lblTotalPT = new Label("Tổng phụ thu + trả muộn:");
+        lblTotalPT.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        lblTotalPT.setTextFill(Color.web(C_TEXT_GRAY));
+        Region spPT = new Region(); HBox.setHgrow(spPT, Priority.ALWAYS);
+        Label lblTotalPTVal = new Label(String.format("%,.0f đ", currentPhuThu + currentLateFee));
+        lblTotalPTVal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblTotalPTVal.setTextFill(currentPhuThu + currentLateFee > 0 ? Color.web("#ef4444") : Color.web(C_TEXT_DARK));
+        totalPhuThu.getChildren().addAll(lblTotalPT, spPT, lblTotalPTVal);
+        section.getChildren().add(totalPhuThu);
+
+        return section;
     }
 
     private HBox billRow(String label, String value, Color valColor) {
@@ -979,6 +1033,7 @@ public class CheckOutView extends BorderPane {
     }
 
     private void recalcTotal() {
+        currentPhuThu = roomPhuThuMap.values().stream().mapToDouble(Double::doubleValue).sum();
         double base = currentTienPhong + currentLateFee + currentTienDV + currentPhuThu;
         currentTongTien = Math.max(0, base * (1 + VAT_RATE) - currentTienCoc);
         if (lblVAT      != null) lblVAT     .setText(String.format("%,.0f đ", (currentTienPhong + currentLateFee + currentTienDV + currentPhuThu) * VAT_RATE));
@@ -1035,12 +1090,14 @@ public class CheckOutView extends BorderPane {
                 String maPhong  = (String) room[1];
                 double giaPhong = (double) room[3];
                 double tienPhong = currentSoDem * giaPhong;
+                double roomPhuThu = roomPhuThuMap.getOrDefault(maCTDP, 0.0);
+                double roomLateFee = roomLateFeeMap.getOrDefault(maCTDP, 0.0);
                 String maCTHD = cthdDAO.getMaCTHDByMaCTDP(maCTDP);
                 if (maCTHD != null) {
-                    cthdDAO.updateLuuTruVaTien(maCTHD, currentSoDem, tienPhong);
+                    cthdDAO.updateLuuTruVaTien(maCTHD, currentSoDem, tienPhong, roomPhuThu, roomLateFee);
                 } else {
                     maCTHD = cthdDAO.generateMaCTHD();
-                    cthdDAO.insert(maCTHD, hd.getMaHD(), maCTDP, currentSoDem, tienPhong);
+                    cthdDAO.insert(maCTHD, hd.getMaHD(), maCTDP, currentSoDem, tienPhong, roomPhuThu, roomLateFee);
                 }
                 phongDAO.updateTrangThai(maPhong, "BAN");
             }
@@ -1084,6 +1141,8 @@ public class CheckOutView extends BorderPane {
         currentLateFee   = 0; currentPhuThu = 0; minLateFee = 0; currentTongTien = 0;
         currentSoDem     = 0;
         currentSoNgayTre = 0;
+        roomPhuThuMap.clear();
+        roomLateFeeMap.clear();
 
         if (btnConfirm != null) {
             btnConfirm.setVisible(false);
