@@ -101,15 +101,15 @@ public class HoaDonView extends BorderPane {
 
         cbGroupBy = new ComboBox<>(FXCollections.observableArrayList(
                 "Ngày", "Tháng", "Quý", "Năm"));
-        cbGroupBy.setValue("Tháng");
+        cbGroupBy.setValue("Ngày");
         cbGroupBy.setStyle(
                 "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
-                
+
         lblFrom = new Label("Từ ngày:");
         lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblFrom.setTextFill(Color.web(C_TEXT_DARK));
 
-        dpFrom = new DatePicker(java.time.LocalDate.now().withDayOfMonth(1));
+        dpFrom = new DatePicker(java.time.LocalDate.now());
         dpFrom.setPrefWidth(140);
         dpFrom.setPrefHeight(44);
         dpFrom.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-background-radius: 8;");
@@ -127,23 +127,27 @@ public class HoaDonView extends BorderPane {
         lblMonth.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblMonth.setTextFill(Color.web(C_TEXT_DARK));
         cbMonth = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
-        cbMonth.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+        cbMonth.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
 
         lblQuarter = new Label("Quý:");
         lblQuarter.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblQuarter.setTextFill(Color.web(C_TEXT_DARK));
         cbQuarter = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3, 4));
-        cbQuarter.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+        cbQuarter.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
 
         lblYear = new Label("Năm:");
         lblYear.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblYear.setTextFill(Color.web(C_TEXT_DARK));
         ObservableList<Integer> years = FXCollections.observableArrayList();
         int currentYear = java.time.LocalDate.now().getYear();
-        for (int i = currentYear - 5; i <= currentYear; i++) years.add(i);
+        for (int i = currentYear - 5; i <= currentYear; i++)
+            years.add(i);
         cbYear = new ComboBox<>(years);
-        cbYear.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
-        
+        cbYear.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+
         cbMonth.setValue(java.time.LocalDate.now().getMonthValue());
         cbQuarter.setValue((java.time.LocalDate.now().getMonthValue() - 1) / 3 + 1);
         cbYear.setValue(currentYear);
@@ -158,9 +162,10 @@ public class HoaDonView extends BorderPane {
         cbQuarter.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
         cbYear.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
 
-        HBox dateBox = new HBox(12, lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter, cbQuarter, lblYear, cbYear);
+        HBox dateBox = new HBox(12, lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter,
+                cbQuarter, lblYear, cbYear);
         dateBox.setAlignment(Pos.CENTER_LEFT);
-        
+
         // Spacer đẩy dateBox sang bên phải
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -168,9 +173,9 @@ public class HoaDonView extends BorderPane {
         filterRow.getChildren().addAll(txtSearch, spacer, dateBox);
 
         header.getChildren().addAll(titleBox, statsRow, filterRow);
-        
+
         updateFilterUI(cbGroupBy.getValue());
-        
+
         return header;
     }
 
@@ -436,7 +441,8 @@ public class HoaDonView extends BorderPane {
                 String maCTDP = (String) row[6];
                 double roomPhuThu = (double) row[7];
                 double roomPhuPhiTraMuon = (double) row[8];
-                tongTienPhong += thanhTien;;
+                tongTienPhong += thanhTien;
+                ;
                 tongCoc += giaCoc;
 
                 VBox roomContainer = new VBox();
@@ -453,15 +459,15 @@ public class HoaDonView extends BorderPane {
                 HBox r = new HBox();
                 r.setPadding(new Insets(8, 12, 8, 12));
                 r.setStyle("-fx-cursor: hand;");
-                
+
                 String textRoom = "🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
                         + "  •  " + (int) sodem + " đêm  ▼";
-                
+
                 Label lblP = new Label(textRoom);
                 lblP.setFont(Font.font("Segoe UI", 13));
                 lblP.setWrapText(true);
                 HBox.setHgrow(lblP, Priority.ALWAYS);
-                
+
                 double tongPhong = thanhTien;
                 Label lblAmt = new Label(String.format("%,.0f đ", tongPhong));
                 lblAmt.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
@@ -487,7 +493,8 @@ public class HoaDonView extends BorderPane {
                         dvBox.getChildren().add(lblPT);
                     }
                     if (roomPhuPhiTraMuon > 0) {
-                        Label lblLF = new Label("   ⏰ Phụ phí trả muộn: " + String.format("%,.0f đ", roomPhuPhiTraMuon));
+                        Label lblLF = new Label(
+                                "   ⏰ Phụ phí trả muộn: " + String.format("%,.0f đ", roomPhuPhiTraMuon));
                         lblLF.setTextFill(Color.web("#ef4444"));
                         lblLF.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
                         dvBox.getChildren().add(lblLF);
@@ -501,7 +508,8 @@ public class HoaDonView extends BorderPane {
 
                         for (model.entities.DichVuSuDung dv : dvList) {
                             HBox dvRow = new HBox();
-                            Label dvName = new Label("   🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
+                            Label dvName = new Label(
+                                    "   🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
                             dvName.setTextFill(Color.web(C_TEXT_GRAY));
                             dvName.setFont(Font.font("Segoe UI", 12));
                             dvName.setWrapText(true);
@@ -544,7 +552,7 @@ public class HoaDonView extends BorderPane {
 
         double phuPhiTraMuon = hd.getPhuPhiTraMuon();
         double phuThu = hd.getPhuThu();
-        double vatRate = hd.getThueVAT();
+        double vatRate = hd.getThueVAT() > 0 ? hd.getThueVAT() : 0.1;
         // VAT tính trên tổng tiền phòng + DV + phụ thu + phụ phí, sau đó trừ cọc
         double vatAmount = (tongTienPhong + tienDV + phuPhiTraMuon + phuThu) * vatRate;
         double tongTT = Math.max(0, (tongTienPhong + tienDV + phuPhiTraMuon + phuThu + vatAmount) - tienCoc);
@@ -552,8 +560,9 @@ public class HoaDonView extends BorderPane {
         sumBox.getChildren().addAll(
                 makeSumRow("Tiền phòng:", String.format("%,.0f đ", tongTienPhong), Color.web(C_TEXT_DARK)),
                 makeSumRow("Tiền dịch vụ:", String.format("%,.0f đ", tienDV), Color.web(C_TEXT_DARK)));
-        
-        sumBox.getChildren().add(makeSumRow("Phụ phí trả muộn:", String.format("%,.0f đ", phuPhiTraMuon), Color.web("#ef4444")));
+
+        sumBox.getChildren()
+                .add(makeSumRow("Phụ phí trả muộn:", String.format("%,.0f đ", phuPhiTraMuon), Color.web("#ef4444")));
         sumBox.getChildren().add(makeSumRow("Phí phụ thu:", String.format("%,.0f đ", phuThu), Color.web(C_TEXT_DARK)));
 
         sumBox.getChildren().addAll(
@@ -645,8 +654,8 @@ public class HoaDonView extends BorderPane {
         for (HoaDon hd : list) {
             // Nếu đơn đã được check-in thì hóa đơn có cọc sẽ được tính là chưa thanh toán
             if ("DA_THANH_TOAN_COC".equals(hd.getTrangThaiThanhToan()) &&
-                hd.getDatPhong() != null &&
-                "DA_CHECKIN".equals(hd.getDatPhong().getTrangThai())) {
+                    hd.getDatPhong() != null &&
+                    "DA_CHECKIN".equals(hd.getDatPhong().getTrangThai())) {
                 hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
             }
 
@@ -657,10 +666,10 @@ public class HoaDonView extends BorderPane {
             double phuPhiTraMuon = hd.getPhuPhiTraMuon();
             double phuThu = hd.getPhuThu();
             double vatAmount = (currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu) * hd.getThueVAT();
-            
+
             // 2. Tổng chi phí (Trước khi trừ cọc)
             double tcp = currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu + vatAmount;
-            
+
             // 3. Tổng thanh toán (Thực tế khách phải trả thêm sau khi trừ cọc)
             double ttt = Math.max(0, tcp - hd.getTienCoc());
 
@@ -672,22 +681,25 @@ public class HoaDonView extends BorderPane {
             dao.tinhDoanhThu(hd);
         }
         list.sort((a, b) -> {
-            if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null) return 0;
-            if (a.getNgayTaoHD() == null) return 1;
-            if (b.getNgayTaoHD() == null) return -1;
+            if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null)
+                return 0;
+            if (a.getNgayTaoHD() == null)
+                return 1;
+            if (b.getNgayTaoHD() == null)
+                return -1;
             return b.getNgayTaoHD().compareTo(a.getNgayTaoHD());
         });
 
         masterData.setAll(list);
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
-        
+
         applyFilter("");
     }
 
     private void applyFilter(String kw) {
         String filter = kw == null ? "" : kw.toLowerCase().trim();
-        
+
         java.time.LocalDate startDate = null, endDate = null;
         String groupBy = cbGroupBy.getValue();
 
@@ -716,18 +728,30 @@ public class HoaDonView extends BorderPane {
         filteredData.setPredicate(hd -> {
             if (hd.getNgayTaoHD() != null) {
                 java.time.LocalDate invoiceDate = hd.getNgayTaoHD().toLocalDate();
-                if (fStart != null && invoiceDate.isBefore(fStart)) return false;
-                if (fEnd != null && invoiceDate.isAfter(fEnd)) return false;
+                if (fStart != null && invoiceDate.isBefore(fStart))
+                    return false;
+                if (fEnd != null && invoiceDate.isAfter(fEnd))
+                    return false;
             } else {
-                if (fStart != null || fEnd != null) return false;
+                if (fStart != null || fEnd != null)
+                    return false;
             }
 
-            if (filter.isEmpty()) return true;
+            if (filter.isEmpty())
+                return true;
 
-            if (hd.getMaHD() != null && hd.getMaHD().toLowerCase().contains(filter)) return true;
-            if (hd.getDatPhong() != null && hd.getDatPhong().getMaDat() != null && hd.getDatPhong().getMaDat().toLowerCase().contains(filter)) return true;
-            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen() != null && hd.getNhanVien().getHoTen().toLowerCase().contains(filter)) return true;
-            if (hd.getDatPhong() != null && hd.getDatPhong().getKhachHang() != null && hd.getDatPhong().getKhachHang().getTenKH() != null && hd.getDatPhong().getKhachHang().getTenKH().toLowerCase().contains(filter)) return true;
+            if (hd.getMaHD() != null && hd.getMaHD().toLowerCase().contains(filter))
+                return true;
+            if (hd.getDatPhong() != null && hd.getDatPhong().getMaDat() != null
+                    && hd.getDatPhong().getMaDat().toLowerCase().contains(filter))
+                return true;
+            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen() != null
+                    && hd.getNhanVien().getHoTen().toLowerCase().contains(filter))
+                return true;
+            if (hd.getDatPhong() != null && hd.getDatPhong().getKhachHang() != null
+                    && hd.getDatPhong().getKhachHang().getTenKH() != null
+                    && hd.getDatPhong().getKhachHang().getTenKH().toLowerCase().contains(filter))
+                return true;
 
             return false;
         });

@@ -137,7 +137,8 @@ public class HoaDonDAO {
         try {
             hd.setPhuThu(rs.getDouble("phu_thu"));
             hd.setPhuPhiTraMuon(rs.getDouble("phu_phi_tra_muon"));
-        } catch (SQLException ignored) {}
+        } catch (SQLException ignored) {
+        }
         hd.setLoaiHD(rs.getString("loaiHD"));
         hd.setTrangThaiThanhToan(rs.getString("trangThaiThanhToan"));
         hd.setNgayThanhToan(
@@ -243,7 +244,8 @@ public class HoaDonDAO {
                 hd.getDatPhong().setKhachHang(kh);
                 try {
                     hd.getDatPhong().setTrangThai(rs.getString("dp_trangThai"));
-                } catch (SQLException ignored) {}
+                } catch (SQLException ignored) {
+                }
                 dsHoaDon.add(hd);
             }
         } catch (Exception e) {
@@ -357,14 +359,14 @@ public class HoaDonDAO {
     public Map<String, Double> getSoNgaySuDungTheoLoaiPhong(LocalDate start, LocalDate end) {
         Map<String, Double> result = new LinkedHashMap<>();
         String sql = "SELECT p.loaiPhong, ISNULL(SUM(cthd.thoiGianLuuTru), 0) as totalDays " +
-                     "FROM ChiTietHoaDon cthd " +
-                     "JOIN HoaDon hd ON cthd.maHD = hd.maHD " +
-                     "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
-                     "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                     "WHERE CAST(hd.ngayTaoHD AS DATE) >= ? AND CAST(hd.ngayTaoHD AS DATE) <= ? " +
-                     "GROUP BY p.loaiPhong";
+                "FROM ChiTietHoaDon cthd " +
+                "JOIN HoaDon hd ON cthd.maHD = hd.maHD " +
+                "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
+                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+                "WHERE CAST(hd.ngayTaoHD AS DATE) >= ? AND CAST(hd.ngayTaoHD AS DATE) <= ? " +
+                "GROUP BY p.loaiPhong";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(start));
             ps.setDate(2, java.sql.Date.valueOf(end));
             try (ResultSet rs = ps.executeQuery()) {

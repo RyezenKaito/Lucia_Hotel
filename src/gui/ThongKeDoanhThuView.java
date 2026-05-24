@@ -45,14 +45,15 @@ public class ThongKeDoanhThuView extends BorderPane {
     private Button btnExport;
 
     private Label lblFrom, lblTo;
-    private ComboBox<Integer> cbMonth, cbQuarter, cbYear;
-    private Label lblMonth, lblQuarter, lblYear;
+    private ComboBox<Integer> cbMonth, cbQuarter, cbYear, cbToYear;
+    private Label lblMonth, lblQuarter, lblYear, lblToYear;
 
     private Label lblTotalRev, lblTotalInv, lblAvgRev;
     private BarChart<String, Number> barChart;
     private LineChart<String, Number> lineChart;
 
     private ToggleButton btnThoiGian, btnPhong;
+    private CheckBox cbHideBar;
     private VBox viewThoiGian, viewPhong;
     private BarChart<String, Number> barChartPhong;
     private PieChart pieChartPhong;
@@ -140,6 +141,22 @@ public class ThongKeDoanhThuView extends BorderPane {
         dpTo.setStyle(
                 "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
 
+        // Limit dpTo selectable dates to dpFrom -> dpFrom + 30 days
+        dpTo.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                LocalDate fromDate = dpFrom.getValue();
+                if (fromDate != null) {
+                    LocalDate maxDate = fromDate.plusDays(30);
+                    if (item.isBefore(fromDate) || item.isAfter(maxDate)) {
+                        setDisable(true);
+                        setStyle("-fx-background-color: #ffc0cb;"); // light pink for disabled
+                    }
+                }
+            }
+        });
+
         lblMonth = new Label("Tháng:");
         lblMonth.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblMonth.setTextFill(Color.web("#475569"));
@@ -159,15 +176,45 @@ public class ThongKeDoanhThuView extends BorderPane {
         lblYear.setTextFill(Color.web("#475569"));
         ObservableList<Integer> years = FXCollections.observableArrayList();
         int currentYear = LocalDate.now().getYear();
-        for (int i = currentYear - 5; i <= currentYear; i++)
+        for (int i = currentYear; i >= currentYear - 10; i--)
             years.add(i);
         cbYear = new ComboBox<>(years);
+        cbYear.setEditable(true);
+        cbYear.setPrefWidth(100);
         cbYear.setStyle(
                 "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
+
+        lblToYear = new Label("Đến năm:");
+        lblToYear.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblToYear.setTextFill(Color.web("#475569"));
+        cbToYear = new ComboBox<>(years);
+        cbToYear.setEditable(true);
+        cbToYear.setPrefWidth(100);
+        cbToYear.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 38; -fx-background-radius: 6;");
+
+        StringConverter<Integer> intConverter = new StringConverter<Integer>() {
+            @Override
+            public String toString(Integer object) {
+                return object == null ? "" : object.toString();
+            }
+
+            @Override
+            public Integer fromString(String string) {
+                try {
+                    return Integer.parseInt(string);
+                } catch (NumberFormatException e) {
+                    return LocalDate.now().getYear();
+                }
+            }
+        };
+        cbYear.setConverter(intConverter);
+        cbToYear.setConverter(intConverter);
 
         cbMonth.setValue(LocalDate.now().getMonthValue());
         cbQuarter.setValue((LocalDate.now().getMonthValue() - 1) / 3 + 1);
         cbYear.setValue(currentYear);
+        cbToYear.setValue(currentYear);
 
         // Spacer đẩy nút Export sang góc phải
         Region spacer = new Region();
@@ -180,6 +227,14 @@ public class ThongKeDoanhThuView extends BorderPane {
         btnThoiGian.setToggleGroup(tg);
         btnPhong.setToggleGroup(tg);
         btnThoiGian.setSelected(true);
+
+        cbHideBar = new CheckBox("Ẩn cột");
+        cbHideBar.setFont(Font.font("Segoe UI", 13));
+        cbHideBar.setTextFill(Color.web(C_NAVY));
+        cbHideBar.setOnAction(e -> {
+            if (!isAdjustingDate)
+                updateDashboard();
+        });
 
         String tbStyleActive = "-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand; -fx-background-color: "
                 + C_NAVY + "; -fx-text-fill: white;";
@@ -224,7 +279,7 @@ public class ThongKeDoanhThuView extends BorderPane {
         btnExport.setOnAction(e -> exportReport());
 
         filterBox.getChildren().addAll(lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth,
-                lblQuarter, cbQuarter, lblYear, cbYear, spacer, toggleBox, btnExport);
+                lblQuarter, cbQuarter, lblYear, cbYear, lblToYear, cbToYear, spacer, toggleBox, btnExport);
         topBox.getChildren().addAll(title, filterBox);
         BorderPane.setMargin(topBox, new Insets(0, 0, 24, 0));
 
@@ -266,6 +321,11 @@ public class ThongKeDoanhThuView extends BorderPane {
             if (!isAdjustingDate)
                 updateDashboard();
         });
+
+        cbToYear.valueProperty().addListener((obs, oldV, newV) -> {
+            if (!isAdjustingDate)
+                updateDashboard();
+        });
     }
 
     private void updateFilterUI(String groupBy) {
@@ -283,10 +343,10 @@ public class ThongKeDoanhThuView extends BorderPane {
         dpTo.setVisible(isNormal);
         dpTo.setManaged(isNormal);
 
-        lblMonth.setVisible(isM);
-        lblMonth.setManaged(isM);
-        cbMonth.setVisible(isM);
-        cbMonth.setManaged(isM);
+        lblMonth.setVisible(false);
+        lblMonth.setManaged(false);
+        cbMonth.setVisible(false);
+        cbMonth.setManaged(false);
 
         lblQuarter.setVisible(isQ);
         lblQuarter.setManaged(isQ);
@@ -295,8 +355,14 @@ public class ThongKeDoanhThuView extends BorderPane {
 
         lblYear.setVisible(isM || isQ || isY);
         lblYear.setManaged(isM || isQ || isY);
+        lblYear.setText(isY ? "Từ năm:" : "Năm:");
         cbYear.setVisible(isM || isQ || isY);
         cbYear.setManaged(isM || isQ || isY);
+
+        lblToYear.setVisible(isY);
+        lblToYear.setManaged(isY);
+        cbToYear.setVisible(isY);
+        cbToYear.setManaged(isY);
     }
 
     private void adjustEndDate() {
@@ -308,22 +374,8 @@ public class ThongKeDoanhThuView extends BorderPane {
             return;
 
         LocalDate newEnd = dpTo.getValue();
-        switch (groupBy) {
-            case "Tuần":
-                newEnd = start.plusWeeks(1);
-                break;
-            case "Tháng":
-                newEnd = start.plusMonths(1);
-                break;
-            case "Quý":
-                newEnd = start.plusMonths(3);
-                break;
-            case "Năm":
-                newEnd = start.plusYears(1);
-                break;
-        }
-
-        if (newEnd != null && !newEnd.equals(dpTo.getValue())) {
+        if ("Ngày".equals(groupBy)) {
+            newEnd = start.plusDays(30);
             isAdjustingDate = true;
             dpTo.setValue(newEnd);
             isAdjustingDate = false;
@@ -372,13 +424,21 @@ public class ThongKeDoanhThuView extends BorderPane {
         barChart.setPadding(new Insets(5, 10, 5, 30));
 
         CategoryAxis xAxisLine = new CategoryAxis();
+        xAxisLine.setLabel("Thời gian"); // Thêm label để chiều cao khớp với BarChart
+        xAxisLine.setTickLabelFont(Font.font("Segoe UI", 12));
         NumberAxis yAxisLine = new NumberAxis();
+        yAxisLine.setLabel("Doanh thu (VND)"); // Thêm label để chiều rộng khớp với BarChart
+        yAxisLine.setTickLabelFont(Font.font("Segoe UI", 12));
         yAxisLine.setMinorTickVisible(false);
+        yAxisLine.setTickLabelGap(15); // Đồng bộ gap giống hệt BarChart
 
         lineChart = new LineChart<>(xAxisLine, yAxisLine);
         lineChart.setAnimated(false);
         lineChart.setLegendVisible(false);
         lineChart.setCreateSymbols(true);
+
+        // CỰC KỲ QUAN TRỌNG: Đồng bộ Padding y hệt BarChart
+        lineChart.setPadding(new Insets(5, 10, 5, 30));
 
         lineChart.getStylesheets().add("data:text/css," +
                 ".chart-plot-background { -fx-background-color: transparent; }" +
@@ -390,7 +450,9 @@ public class ThongKeDoanhThuView extends BorderPane {
                 ".chart-series-line { -fx-stroke: #ef4444; -fx-stroke-width: 3px; }" +
                 ".chart-line-symbol { -fx-background-color: #ef4444, white; -fx-background-insets: 0, 2; -fx-background-radius: 5px; -fx-padding: 4px; }");
 
-        StackPane chartContainer1 = new StackPane(barChart, lineChart);
+        StackPane chartContainer1 = new StackPane(barChart, lineChart, cbHideBar);
+        StackPane.setAlignment(cbHideBar, Pos.TOP_RIGHT);
+        cbHideBar.setPadding(new Insets(10, 10, 0, 0));
         chartContainer1.setStyle(
                 "-fx-background-color: white; -fx-padding: 24 24 24 40; -fx-background-radius: 12; -fx-border-color: "
                         + C_BORDER + "; -fx-border-radius: 12;");
@@ -521,19 +583,24 @@ public class ThongKeDoanhThuView extends BorderPane {
         String groupBy = cbGroupBy.getValue();
 
         if ("Tháng".equals(groupBy)) {
-            int m = cbMonth.getValue();
             int y = cbYear.getValue();
-            startDate = LocalDate.of(y, m, 1);
-            endDate = startDate.plusMonths(1).minusDays(1);
+            startDate = LocalDate.of(y, 1, 1);
+            endDate = LocalDate.of(y, 12, 31);
         } else if ("Quý".equals(groupBy)) {
             int q = cbQuarter.getValue();
             int y = cbYear.getValue();
             startDate = LocalDate.of(y, (q - 1) * 3 + 1, 1);
             endDate = startDate.plusMonths(3).minusDays(1);
         } else if ("Năm".equals(groupBy)) {
-            int y = cbYear.getValue();
-            startDate = LocalDate.of(y, 1, 1);
-            endDate = LocalDate.of(y, 12, 31);
+            int y1 = cbYear.getValue();
+            int y2 = cbToYear.getValue();
+            if (y1 > y2) {
+                int temp = y1;
+                y1 = y2;
+                y2 = temp;
+            }
+            startDate = LocalDate.of(y1, 1, 1);
+            endDate = LocalDate.of(y2, 12, 31);
         } else {
             startDate = dpFrom.getValue();
             endDate = dpTo.getValue();
@@ -567,6 +634,32 @@ public class ThongKeDoanhThuView extends BorderPane {
         // Nhóm dữ liệu (sử dụng biến groupBy đã khai báo ở đầu hàm)
         Map<LocalDate, Double> chartData = new TreeMap<>();
 
+        // Khởi tạo các cột rỗng để biểu đồ hiển thị đầy đủ
+        if ("Tháng".equals(groupBy)) {
+            int y = cbYear.getValue();
+            for (int i = 1; i <= 12; i++) {
+                chartData.put(LocalDate.of(y, i, 1), 0.0);
+            }
+        } else if ("Quý".equals(groupBy)) {
+            int q = cbQuarter.getValue();
+            int y = cbYear.getValue();
+            int startMonth = (q - 1) * 3 + 1;
+            for (int i = 0; i < 3; i++) {
+                chartData.put(LocalDate.of(y, startMonth + i, 1), 0.0);
+            }
+        } else if ("Năm".equals(groupBy)) {
+            int y1 = cbYear.getValue();
+            int y2 = cbToYear.getValue();
+            if (y1 > y2) {
+                int temp = y1;
+                y1 = y2;
+                y2 = temp;
+            }
+            for (int i = y1; i <= y2; i++) {
+                chartData.put(LocalDate.of(i, 1, 1), 0.0);
+            }
+        }
+
         for (HoaDon hd : filtered) {
             LocalDate date = hd.getNgayTaoHD().toLocalDate();
             LocalDate sortKey;
@@ -576,11 +669,8 @@ public class ThongKeDoanhThuView extends BorderPane {
                             .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
                     break;
                 case "Tháng":
-                    sortKey = date.withDayOfMonth(1);
-                    break;
                 case "Quý":
-                    int qMonth = ((date.getMonthValue() - 1) / 3) * 3 + 1;
-                    sortKey = LocalDate.of(date.getYear(), qMonth, 1);
+                    sortKey = date.withDayOfMonth(1);
                     break;
                 case "Năm":
                     sortKey = LocalDate.of(date.getYear(), 1, 1);
@@ -618,11 +708,8 @@ public class ThongKeDoanhThuView extends BorderPane {
                     label = "Tuần " + week + "/" + d.getYear();
                     break;
                 case "Tháng":
-                    label = d.format(monthFmt);
-                    break;
                 case "Quý":
-                    int q = (d.getMonthValue() - 1) / 3 + 1;
-                    label = "Quý " + q + "/" + d.getYear();
+                    label = d.format(monthFmt);
                     break;
                 case "Năm":
                     label = d.format(yearFmt);
@@ -666,31 +753,40 @@ public class ThongKeDoanhThuView extends BorderPane {
         ((NumberAxis) lineChart.getYAxis()).setTickUnit(tickUnit);
 
         // Thêm Tooltip, Data Label & Style cho Bar
-        for (XYChart.Data<String, Number> data : barSeries.getData()) {
-            if (data.getNode() != null && data.getNode() instanceof StackPane) {
-                StackPane sp = (StackPane) data.getNode();
-                sp.setStyle(
-                        "-fx-background-color: linear-gradient(to top, #1e3a8a, #3b82f6); -fx-background-radius: 4 4 0 0;");
-                // Thay thế Text bằng Label có nền trắng mờ để đường đỏ (LineChart) đi ngang qua
-                // không bị đè che mất số
-                Label dataLabel = new Label(String.format("%,.0f", data.getYValue()));
-                dataLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
-                dataLabel.setTextFill(Color.web("#1e3a8a"));
-                dataLabel.setStyle(
-                        "-fx-background-color: rgba(255,255,255,0.85); -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
-                dataLabel.setTranslateY(-20);
-                StackPane.setAlignment(dataLabel, Pos.TOP_CENTER);
-                sp.getChildren().removeIf(n -> n instanceof javafx.scene.text.Text || n instanceof Label);
-                sp.getChildren().add(dataLabel);
+        // Hide bars if requested
+        if (cbHideBar.isSelected()) {
+            for (XYChart.Data<String, Number> data : barSeries.getData()) {
+                if (data.getNode() != null && data.getNode() instanceof StackPane) {
+                    StackPane sp = (StackPane) data.getNode();
+                    sp.setStyle("-fx-background-color: transparent;");
+                    sp.getChildren().clear(); // hide labels
+                }
+            }
+        } else {
+            for (XYChart.Data<String, Number> data : barSeries.getData()) {
+                if (data.getNode() != null && data.getNode() instanceof StackPane) {
+                    StackPane sp = (StackPane) data.getNode();
+                    sp.setStyle(
+                            "-fx-background-color: linear-gradient(to top, #1e3a8a, #3b82f6); -fx-background-radius: 4 4 0 0;");
+                    Label dataLabel = new Label(String.format("%,.0f", data.getYValue()));
+                    dataLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+                    dataLabel.setTextFill(Color.web("#1e3a8a"));
+                    dataLabel.setStyle(
+                            "-fx-background-color: rgba(255,255,255,0.85); -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
+                    dataLabel.setTranslateY(-20);
+                    StackPane.setAlignment(dataLabel, Pos.TOP_CENTER);
+                    sp.getChildren().removeIf(n -> n instanceof javafx.scene.text.Text || n instanceof Label);
+                    sp.getChildren().add(dataLabel);
 
-                Tooltip tooltip = new Tooltip(String.format("%,.0f VND", data.getYValue()));
-                tooltip.setFont(Font.font("Segoe UI", 14));
-                Tooltip.install(sp, tooltip);
+                    Tooltip tooltip = new Tooltip(String.format("%,.0f VND", data.getYValue()));
+                    tooltip.setFont(Font.font("Segoe UI", 14));
+                    Tooltip.install(sp, tooltip);
 
-                sp.setOnMouseEntered(e -> sp.setStyle(
-                        "-fx-background-color: linear-gradient(to top, #1e40af, #60a5fa); -fx-background-radius: 4 4 0 0;"));
-                sp.setOnMouseExited(e -> sp.setStyle(
-                        "-fx-background-color: linear-gradient(to top, #1e3a8a, #3b82f6); -fx-background-radius: 4 4 0 0;"));
+                    sp.setOnMouseEntered(e -> sp.setStyle(
+                            "-fx-background-color: linear-gradient(to top, #1e40af, #60a5fa); -fx-background-radius: 4 4 0 0;"));
+                    sp.setOnMouseExited(e -> sp.setStyle(
+                            "-fx-background-color: linear-gradient(to top, #1e3a8a, #3b82f6); -fx-background-radius: 4 4 0 0;"));
+                }
             }
         }
 
