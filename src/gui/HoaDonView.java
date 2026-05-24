@@ -53,6 +53,7 @@ public class HoaDonView extends BorderPane {
     private Label lblFrom, lblTo, lblMonth, lblQuarter, lblYear;
     private DatePicker dpFrom, dpTo;
     private ComboBox<Integer> cbMonth, cbQuarter, cbYear;
+    private ComboBox<String> cbTrangThai;
 
     public HoaDonView() {
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -162,8 +163,17 @@ public class HoaDonView extends BorderPane {
         cbQuarter.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
         cbYear.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
 
+        Label lblTrangThai = new Label("Trạng thái:");
+        lblTrangThai.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblTrangThai.setTextFill(Color.web(C_TEXT_DARK));
+        cbTrangThai = new ComboBox<>(FXCollections.observableArrayList(
+                "Tất cả", "Đã thanh toán", "Chưa thanh toán", "Đã đặt cọc", "Đã hủy - hoàn cọc", "Đã hủy - mất cọc"));
+        cbTrangThai.setValue("Tất cả");
+        cbTrangThai.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+        cbTrangThai.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
+
         HBox dateBox = new HBox(12, lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter,
-                cbQuarter, lblYear, cbYear);
+                cbQuarter, lblYear, cbYear, lblTrangThai, cbTrangThai);
         dateBox.setAlignment(Pos.CENTER_LEFT);
 
         // Spacer đẩy dateBox sang bên phải
@@ -274,6 +284,33 @@ public class HoaDonView extends BorderPane {
         colTienCoc.setPrefWidth(120);
         colTienCoc.setMinWidth(100);
 
+        TableColumn<HoaDon, String> colPhuThu = new TableColumn<>("Phụ phí");
+        colPhuThu.setCellValueFactory(
+                p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuThu())));
+        colPhuThu.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colPhuThu.setPrefWidth(110);
+        colPhuThu.setMinWidth(90);
+
+        TableColumn<HoaDon, String> colPhuPhiTraMuon = new TableColumn<>("Phí trả muộn");
+        colPhuPhiTraMuon.setCellValueFactory(
+                p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuPhiTraMuon())));
+        colPhuPhiTraMuon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ef4444;");
+        colPhuPhiTraMuon.setPrefWidth(120);
+        colPhuPhiTraMuon.setMinWidth(100);
+        colPhuPhiTraMuon.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #ef4444;");
+                }
+            }
+        });
+
         TableColumn<HoaDon, String> colTong = new TableColumn<>("Tổng thanh toán");
         colTong.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongTien())));
@@ -349,6 +386,8 @@ public class HoaDonView extends BorderPane {
         table.getColumns().add(colNgay);
         table.getColumns().add(colTongCP);
         table.getColumns().add(colTienCoc);
+        table.getColumns().add(colPhuThu);
+        table.getColumns().add(colPhuPhiTraMuon);
         table.getColumns().add(colTong);
         table.getColumns().add(colTrangThai);
         for (TableColumn<HoaDon, ?> c : table.getColumns()) {
@@ -726,6 +765,21 @@ public class HoaDonView extends BorderPane {
         final java.time.LocalDate fEnd = endDate;
 
         filteredData.setPredicate(hd -> {
+            // Filter by status
+            String selectedStatus = cbTrangThai.getValue();
+            if (selectedStatus != null && !"Tất cả".equals(selectedStatus)) {
+                String trangThai = hd.getTrangThaiThanhToan();
+                boolean statusMatch = false;
+                switch (selectedStatus) {
+                    case "Đã thanh toán":      statusMatch = "DA_THANH_TOAN".equals(trangThai); break;
+                    case "Chưa thanh toán": statusMatch = "CHUA_THANH_TOAN".equals(trangThai); break;
+                    case "Đã đặt cọc":       statusMatch = "DA_THANH_TOAN_COC".equals(trangThai); break;
+                    case "Đã hủy - hoàn cọc": statusMatch = "DA_HOAN_COC".equals(trangThai); break;
+                    case "Đã hủy - mất cọc": statusMatch = "DA_MAT_COC".equals(trangThai); break;
+                    default: statusMatch = true;
+                }
+                if (!statusMatch) return false;
+            }
             if (hd.getNgayTaoHD() != null) {
                 java.time.LocalDate invoiceDate = hd.getNgayTaoHD().toLocalDate();
                 if (fStart != null && invoiceDate.isBefore(fStart))
