@@ -47,7 +47,6 @@ public class ThemSuaDichVuDialog extends Stage {
 
     private TextField txtMaDV, txtTenDV, txtDonVi;
     private ComboBox<LoaiDichVu> cbLoai;
-    private ComboBox<String> cbTrangThai;
     private Label errTen, errDonVi;
     private Button btnSave;
 
@@ -82,9 +81,9 @@ public class ThemSuaDichVuDialog extends Stage {
             if (btnSave != null && !btnSave.isDisabled()) {
                 handleSave();
             }
-        }, txtTenDV, txtDonVi, cbLoai, cbTrangThai);
+        }, txtTenDV, txtDonVi, cbLoai);
         if (isEdit && btnSave != null) {
-            EventUtils.setupDirtyTracking(btnSave, txtTenDV, txtDonVi, cbLoai, cbTrangThai);
+            EventUtils.setupDirtyTracking(btnSave, txtTenDV, txtDonVi, cbLoai);
         }
     }
 
@@ -176,7 +175,8 @@ public class ThemSuaDichVuDialog extends Stage {
         cbLoai.setStyle(fieldStyle());
 
         Button btnAddLoai = new Button("+");
-        btnAddLoai.setStyle("-fx-background-color: " + C_SIDEBAR + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-pref-height: 40; -fx-pref-width: 40;");
+        btnAddLoai.setStyle("-fx-background-color: " + C_SIDEBAR
+                + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8; -fx-pref-height: 42; -fx-pref-width: 42;");
         btnAddLoai.setOnAction(e -> showAddLoaiDialog());
         HBox loaiBox = new HBox(8, cbLoai, btnAddLoai);
         HBox.setHgrow(cbLoai, Priority.ALWAYS);
@@ -185,24 +185,13 @@ public class ThemSuaDichVuDialog extends Stage {
         txtDonVi = makeField(isEdit ? dichVu.getDonVi() : "Cái", "Ví dụ: Chai, Lượt, Cái...");
         errDonVi = errLabel();
 
-        // 5. Trạng thái
-        cbTrangThai = new ComboBox<>(FXCollections.observableArrayList("Đang phục vụ", "Tạm ngưng phục vụ"));
-        if (isEdit) {
-            cbTrangThai.setValue(dichVu.getTrangThai() == 0 ? "Đang phục vụ" : "Tạm ngưng phục vụ");
-        } else {
-            cbTrangThai.setValue("Đang phục vụ");
-        }
-        cbTrangThai.setMaxWidth(Double.MAX_VALUE);
-        cbTrangThai.setStyle(fieldStyle());
-
         setupValidation();
 
         form.getChildren().addAll(
                 fieldBlock("Mã dịch vụ", txtMaDV, null, "Mã định danh tự động"),
                 fieldBlock("Tên dịch vụ *", txtTenDV, errTen, "Nhập tên sản phẩm hoặc dịch vụ"),
                 fieldBlock("Loại dịch vụ", loaiBox, null, null),
-                fieldBlock("Đơn vị tính *", txtDonVi, errDonVi, "Đơn vị định lượng (Lon, Bộ...)"),
-                fieldBlock("Trạng thái", cbTrangThai, null, "Trạng thái phục vụ khách hàng"));
+                fieldBlock("Đơn vị tính *", txtDonVi, errDonVi, "Đơn vị định lượng (Lon, Bộ...)"));
 
         ScrollPane scroll = new ScrollPane(form);
         scroll.setFitToWidth(true);
@@ -251,6 +240,15 @@ public class ThemSuaDichVuDialog extends Stage {
             showErrorField(txtTenDV, errTen, "⚠ Tên có chứa ký tự lặp lại bất thường.");
             return false;
         }
+        
+        // Kiểm tra trùng lặp tên dịch vụ trong CSDL
+        DichVuDAO dao = new DichVuDAO();
+        String currentMaDV = isEdit ? dichVu.getMaDV() : null;
+        if (dao.existsTenDV(s, currentMaDV)) {
+            showErrorField(txtTenDV, errTen, "⚠ Tên dịch vụ đã tồn tại trong hệ thống.");
+            return false;
+        }
+
         clearErrorField(txtTenDV, errTen);
         return true;
     }
@@ -279,7 +277,7 @@ public class ThemSuaDichVuDialog extends Stage {
         }
         String loaiKey = selectedLoai.getMaLoaiDV();
         String donVi = txtDonVi.getText().trim();
-        int trangThai = cbTrangThai.getValue().equals("Đang phục vụ") ? 0 : 1;
+        int trangThai = 0;
 
         DichVuDAO dao = new DichVuDAO();
         if (isEdit) {
@@ -313,11 +311,6 @@ public class ThemSuaDichVuDialog extends Stage {
                 showError("Lỗi khi thêm dịch vụ. Vui lòng kiểm tra lại dữ liệu.");
             }
         }
-    }
-
-    private String generateCode() {
-        Random r = new Random();
-        return "DV" + (10000 + r.nextInt(90000));
     }
 
     private void showAddLoaiDialog() {

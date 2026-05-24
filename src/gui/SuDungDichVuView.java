@@ -19,6 +19,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 import java.util.HashMap;
 import java.util.List;
@@ -243,7 +244,7 @@ public class SuDungDichVuView extends BorderPane {
         boolean isSelected = selectedMaPhong.equals(p.getMaPhong());
         VBox card = new VBox(4);
         card.setAlignment(Pos.CENTER);
-        card.setPrefSize(90, 70);
+        card.setPrefSize(100, 70);
         card.setCursor(Cursor.HAND);
         card.setStyle("-fx-background-color: " + (isSelected ? "#eff6ff" : C_CARD) + ";" +
                 "-fx-border-color: " + (isSelected ? C_SIDEBAR : C_BORDER) + ";" +
@@ -256,10 +257,12 @@ public class SuDungDichVuView extends BorderPane {
 
         String guest = datPhongDAO.getTenKhachHienTai(p.getMaPhong());
         Label lblGuest = new Label(guest != null ? guest : "...");
-        lblGuest.setFont(Font.font("Segoe UI", 11));
+        lblGuest.setFont(Font.font("Segoe UI", 10));
         lblGuest.setTextFill(Color.web(C_TEXT_GRAY));
         lblGuest.setAlignment(Pos.CENTER);
-        lblGuest.setMaxWidth(80);
+        lblGuest.setTextAlignment(TextAlignment.CENTER);
+        lblGuest.setWrapText(true);
+        lblGuest.setMaxWidth(90);
 
         card.getChildren().addAll(lblMa, lblGuest);
         card.setOnMouseClicked(e -> {
@@ -303,6 +306,56 @@ public class SuDungDichVuView extends BorderPane {
 
         Button btnMinus = new Button("-");
         styleQtyBtn(btnMinus, "white", C_TEXT_GRAY);
+
+        // TextField nhập số lượng trực tiếp
+        TextField txtQty = new TextField(currentQty == 0 ? "0" : String.valueOf(currentQty));
+        txtQty.setPrefWidth(40);
+        txtQty.setMaxHeight(35);
+        txtQty.setMaxWidth(40);
+        txtQty.setAlignment(Pos.CENTER);
+        txtQty.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 14;" +
+                        "-fx-text-fill: " + C_SIDEBAR + "; -fx-background-color: #f0f4ff;" +
+                        "-fx-border-color: " + C_BORDER + "; -fx-border-radius: 6; -fx-background-radius: 6;" +
+                        "-fx-alignment: center; -fx-padding: 0;");
+
+        Button btnPlus = new Button("+");
+        styleQtyBtn(btnPlus, C_ACTIVE, "white");
+
+        // Hàm tiện ích cập nhật cart từ txtQty
+        Runnable commitQty = () -> {
+            String text = txtQty.getText().trim();
+            try {
+                int val = text.isEmpty() ? 0 : Integer.parseInt(text);
+                if (val < 0)
+                    val = 0;
+                if (val == 0)
+                    cart.remove(dv);
+                else
+                    cart.put(dv, val);
+                updateBillUI();
+                refreshServices(currentCategory);
+            } catch (NumberFormatException ex) {
+                // Nếu nhập chữ → khôi phục lại giá trị cũ
+                int q = cart.getOrDefault(dv, 0);
+                txtQty.setText(q == 0 ? "" : String.valueOf(q));
+            }
+        };
+
+        // Chỉ cho phép nhập số
+        txtQty.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.matches("\\d*")) {
+                txtQty.setText(newVal.replaceAll("[^\\d]", ""));
+            }
+        });
+
+        // Commit khi mất focus hoặc nhấn Enter
+        txtQty.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused)
+                commitQty.run();
+        });
+        txtQty.setOnAction(e -> commitQty.run());
+
         btnMinus.setOnAction(e -> {
             int q = cart.getOrDefault(dv, 0);
             if (q > 0) {
@@ -315,21 +368,13 @@ public class SuDungDichVuView extends BorderPane {
             }
         });
 
-        Label lblQty = new Label(String.valueOf(currentQty));
-        lblQty.setPrefWidth(25);
-        lblQty.setAlignment(Pos.CENTER);
-        lblQty.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
-        lblQty.setTextFill(Color.web(C_SIDEBAR));
-
-        Button btnPlus = new Button("+");
-        styleQtyBtn(btnPlus, C_ACTIVE, "white");
         btnPlus.setOnAction(e -> {
             cart.put(dv, cart.getOrDefault(dv, 0) + 1);
             updateBillUI();
             refreshServices(currentCategory);
         });
 
-        qtyBox.getChildren().addAll(btnMinus, lblQty, btnPlus);
+        qtyBox.getChildren().addAll(btnMinus, txtQty, btnPlus);
         card.getChildren().addAll(info, qtyBox);
         return card;
     }
@@ -355,7 +400,7 @@ public class SuDungDichVuView extends BorderPane {
             return;
         servicePane.getChildren().clear();
         DichVuDAO dichVuDAO = new DichVuDAO();
-        List<DichVu> list = dichVuDAO.getByType(cat.getMaLoaiDV());
+        List<DichVu> list = dichVuDAO.getActiveByType(cat.getMaLoaiDV());
         Map<String, Double> activePrices = bangGiaDAO.getActivePriceMap();
 
         for (DichVu dv : list) {

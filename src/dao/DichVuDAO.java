@@ -202,6 +202,30 @@ public class DichVuDAO {
     }
 
     /**
+     * Kiểm tra tên dịch vụ đã tồn tại trong CSDL chưa
+     */
+    public boolean existsTenDV(String tenDV, String excludeMaDV) {
+        String sql = "SELECT COUNT(*) FROM DV WHERE LOWER(LTRIM(RTRIM(tenDV))) = LOWER(?)";
+        if (excludeMaDV != null && !excludeMaDV.isEmpty()) {
+            sql += " AND maDV != ?";
+        }
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, tenDV.trim());
+            if (excludeMaDV != null && !excludeMaDV.isEmpty()) {
+                ps.setString(2, excludeMaDV);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next())
+                    return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * Xóa dịch vụ theo mã (Ẩn đi, không xóa vĩnh viễn)
      */
     public boolean delete(String maDV) {

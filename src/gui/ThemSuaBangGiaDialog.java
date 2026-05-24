@@ -2,9 +2,11 @@ package gui;
 
 import dao.BangGiaDichVuDAO;
 import dao.DichVuDAO;
+import dao.LoaiDichVuDAO;
 import model.entities.BangGiaDichVu;
 import model.entities.BangGiaDichVu_ChiTiet;
 import model.entities.DichVu;
+import model.entities.LoaiDichVu;
 import model.utils.DimOverlay;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -536,8 +538,11 @@ public class ThemSuaBangGiaDialog {
                     formatted = rawGia;
                 }
 
+                String ldv = changeIDToNameService(fullDv.getLoaiDV().toString());
                 tableData.add(new Object[] {
-                        fullDv.getMaDV(), fullDv.getTenDV(), fullDv.getLoaiDV(),
+                        fullDv.getMaDV(),
+                        fullDv.getTenDV(),
+                        ldv,
                         formatted
                 });
             }
@@ -690,6 +695,7 @@ public class ThemSuaBangGiaDialog {
         a.showAndWait();
     }
 
+    // ── 4. Phương thức chọn dịch vụ hoàn chỉnh ──────────────────────
     private void showServicePicker() {
         Dialog<List<DichVu>> picker = new Dialog<>();
         picker.setTitle("Chọn dịch vụ thêm vào bảng giá");
@@ -706,11 +712,13 @@ public class ThemSuaBangGiaDialog {
 
         DichVuDAO dvDAO = new DichVuDAO();
         List<DichVu> all = dvDAO.getAllActive();
-        // Lọc bỏ những gì đã có trong bảng
+
+        // Lọc bỏ những dịch vụ đã có sẵn trong bảng chính
         List<String> existingIds = new ArrayList<>();
         for (Object[] row : tableData) {
             existingIds.add(row[0].toString());
         }
+
         List<DichVu> available = new ArrayList<>();
         for (DichVu d : all) {
             if (!existingIds.contains(d.getMaDV())) {
@@ -735,19 +743,21 @@ public class ThemSuaBangGiaDialog {
         });
 
         TableView<DichVuSelection> pickerTable = new TableView<>(filteredPicker);
-        pickerTable.setPlaceholder(new Label("Không có dữ liệu"));
+        pickerTable.setPlaceholder(new Label("Không có dịch vụ khả dụng"));
         pickerTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         pickerTable.setPrefHeight(400);
+        pickerTable.setEditable(true);
 
         TableColumn<DichVuSelection, Boolean> cCheck = new TableColumn<>();
         CheckBox cbAll = new CheckBox("Chọn");
         cbAll.setStyle("-fx-font-weight: bold;");
         cbAll.setOnAction(ev -> {
             boolean sel = cbAll.isSelected();
-            for (DichVuSelection item : pickerData) {
+            for (DichVuSelection item : filteredPicker) { // Chỉ chọn trên danh sách đang hiển thị
                 item.selected.set(sel);
             }
         });
+
         cCheck.setGraphic(cbAll);
         cCheck.setCellValueFactory(p -> p.getValue().selected);
         cCheck.setCellFactory(tc -> new javafx.scene.control.cell.CheckBoxTableCell<>());
@@ -758,63 +768,103 @@ public class ThemSuaBangGiaDialog {
 
         TableColumn<DichVuSelection, String> cId = new TableColumn<>("Mã");
         cId.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getMaDV()));
+
         TableColumn<DichVuSelection, String> cName = new TableColumn<>("Tên dịch vụ");
         cName.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getTenDV()));
+
         TableColumn<DichVuSelection, String> cType = new TableColumn<>("Loại");
-        cType.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getLoaiDV()));
-        
+        // FIX: Tránh gọi DB liên tục trong cell. Dùng thuộc tính có sẵn từ LoaiDichVu
+        // hoặc tên loại dạng chuỗi nếu thực thể có hỗ trợ.
+        cType.setCellValueFactory(p -> new SimpleStringProperty(
+                p.getValue().dv.getLoaiDV() != null ? changeIDToNameService(p.getValue().dv.getLoaiDV().toString())
+                        : ""));
+
         for (TableColumn<DichVuSelection, ?> c : List.of(cCheck, cId, cName, cType)) {
             c.setReorderable(false);
             c.setSortable(false);
         }
 
-        pickerTable.getColumns().addAll(cCheck, cId, cName, cType);
-        pickerTable.setEditable(true);
-
-        // Cho phép click vào dòng để tích chọn checkbox
-        pickerTable.setRowFactory(tv -> {
-            TableRow<DichVuSelection> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (!row.isEmpty() && event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
-                    DichVuSelection item = row.getItem();
-                    item.selected.set(!item.selected.get());
-                }
-            });
-            return row;
-        });
-
-        root.getChildren().addAll(new Label("Danh sách dịch vụ chưa áp dụng:"), search, pickerTable);
+        pickerTable.getColumns().setAll(List.of(cCheck, cId, cName, cType));
+        root.getChildren().addAll(search, pickerTable);
         picker.getDialogPane().setContent(root);
 
-        ButtonType btnNap = new ButtonType("Thêm vào bảng giá", ButtonBar.ButtonData.OK_DONE);
-        ButtonType btnHuy = new ButtonType("Hủy", ButtonBar.ButtonData.CANCEL_CLOSE);
-        picker.getDialogPane().getButtonTypes().addAll(btnNap, btnHuy);
+        ButtonType btnOk = new ButtonType("Thêm vào danh sách", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancel = new ButtonType("Bỏ qua", ButtonBar.ButtonData.CANCEL_CLOSE);
+        picker.getDialogPane().getButtonTypes().addAll(btnOk, btnCancel);
 
-        picker.setResultConverter(bt -> {
-            if (bt == btnNap) {
-                List<DichVu> selected = new ArrayList<>();
-                for (DichVuSelection s : pickerData) {
-                    if (s.selected.get())
-                        selected.add(s.dv);
+        picker.setResultConverter(dialogButton -> {
+            if (dialogButton == btnOk) {
+                List<DichVu> selectedServices = new ArrayList<>();
+                for (DichVuSelection item : pickerData) {
+                    if (item.selected.get()) {
+                        selectedServices.add(item.dv);
+                    }
                 }
-                return selected;
+                return selectedServices;
             }
             return null;
         });
 
-        picker.showAndWait().ifPresent(selected -> {
-            for (DichVu dv : selected) {
-                // Object[]: [0]=maDV, [1]=tenDV, [2]=loaiDV, [3]=giaApDung
-                tableData.add(new Object[] {
-                        dv.getMaDV(),
-                        dv.getTenDV(),
-                        dv.getLoaiDV(),
-                        dv.getGia() != null ? String.format("%,.0f", dv.getGia()) : "0"
-                });
+        picker.showAndWait().ifPresent(selectedServices -> {
+            if (!selectedServices.isEmpty()) {
+                // Lấy giá mặc định từ bảng giá active hiện tại (nếu có)
+                BangGiaDichVuDAO bgDAO = new BangGiaDichVuDAO();
+                Map<String, Double> activePrices = bgDAO.getActivePriceMap();
+
+                for (DichVu dv : selectedServices) {
+                    Long currentPrice = 0L;
+                    if (activePrices.containsKey(dv.getMaDV())) {
+                        currentPrice = (long) activePrices.get(dv.getMaDV()).doubleValue();
+                    }
+
+                    String formattedPrice = currentPrice > 0 ? String.format("%,d", currentPrice) : "0";
+
+                    tableData.add(new Object[] {
+                            dv.getMaDV(),
+                            dv.getTenDV(),
+                            dv.getLoaiDV() != null ? dv.getLoaiDV().toString() : "",
+                            formattedPrice
+                    });
+                }
+                checkChanges(); // Cập nhật trạng thái nút Submit chính
             }
         });
     }
 
+    private String changeIDToNameService(String rawLoai) {
+        if (rawLoai == null || rawLoai.isEmpty())
+            return "Chưa phân loại";
+        try {
+            // Gọi sang LoaiDichVuDAO để lấy đối tượng Loại dịch vụ từ CSDL
+            dao.LoaiDichVuDAO loaiDAO = new dao.LoaiDichVuDAO();
+            model.entities.LoaiDichVu ldv = loaiDAO.getById(rawLoai);
+            if (ldv != null) {
+                return ldv.getTenLoaiDV();
+            }
+        } catch (Exception e) {
+            // Fallback: Nếu lỗi kết nối DB thì giữ nguyên chuỗi gốc tránh crash
+            System.err.println("Lỗi kết nối khi tìm tên loại dịch vụ: " + e.getMessage());
+        }
+        return rawLoai;
+    }
+
+    // ── 5. Xử lý xóa phần tử khỏi bảng ──────────────────────────────
+    private void handleDeleteServiceFromList(Object[] rowData) {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận xóa");
+        confirm.setHeaderText("Xóa dịch vụ khỏi bảng giá?");
+        confirm.setContentText("Bạn có chắc chắn muốn bỏ dịch vụ " + rowData[1] + " (" + rowData[0]
+                + ") ra khỏi đợt áp dụng giá này?");
+
+        confirm.showAndWait().ifPresent(btn -> {
+            if (btn == ButtonType.OK) {
+                tableData.remove(rowData);
+                checkChanges(); // Kích hoạt dirty tracking
+            }
+        });
+    }
+
+    // ── 6. Helper Class dùng riêng cho Service Picker Dialog ──────────
     private static class DichVuSelection {
         final DichVu dv;
         final javafx.beans.property.BooleanProperty selected = new javafx.beans.property.SimpleBooleanProperty(false);
@@ -824,23 +874,7 @@ public class ThemSuaBangGiaDialog {
         }
     }
 
-    private void handleDeleteServiceFromList(Object[] rowData) {
-        String tenDV = (String) rowData[1];
-        String tenBG = txtTenBG.getText();
-
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận xóa");
-        confirm.setHeaderText("Xóa dịch vụ khỏi bảng giá");
-        confirm.setContentText("Bạn có chắc muốn xóa dịch vụ [" + tenDV + "] ra khỏi bảng giá [" + tenBG + "] không?");
-
-        confirm.showAndWait().ifPresent(type -> {
-            if (type == ButtonType.OK) {
-                tableData.remove(rowData);
-            }
-        });
-    }
-
-    private static String nvl(String s) {
+    private String nvl(String s) {
         return s != null ? s : "";
     }
 }

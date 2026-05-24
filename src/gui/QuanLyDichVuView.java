@@ -56,8 +56,9 @@ public class QuanLyDichVuView extends BorderPane {
     /* ── UI Controls ────────────────────────────────────────────────── */
     private TableView<DichVu> table;
     private TextField txtSearch;
-    private ComboBox<String> cbCategory;
+    // private ComboBox<String> cbCategory;
     private String selectedStatusFilter = "Tất cả trạng thái";
+    private String selectedCategoryFilter = "Tất cả";
     private final boolean isAdmin;
 
     public QuanLyDichVuView(boolean isAdmin) {
@@ -103,13 +104,14 @@ public class QuanLyDichVuView extends BorderPane {
         }
 
         // Dòng 2: Thanh tìm kiếm + Bộ lọc loại
-        HBox filterBar = new HBox(12);
+        HBox filterBar = new HBox(10);
         filterBar.setAlignment(Pos.CENTER_LEFT);
 
         txtSearch = new TextField();
         txtSearch.setPromptText("🔍  Tìm kiếm theo mã dịch vụ hoặc tên dịch vụ...");
         txtSearch.setFont(Font.font("Segoe UI", 14));
         txtSearch.setPrefHeight(45);
+        txtSearch.setMaxWidth(500);
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
         txtSearch.setStyle(
                 "-fx-background-color: white;" +
@@ -118,26 +120,7 @@ public class QuanLyDichVuView extends BorderPane {
                         "-fx-background-radius: 10;" +
                         "-fx-padding: 0 16 0 16;");
         txtSearch.textProperty().addListener((obs, o, n) -> applyFilter());
-
-        cbCategory = new ComboBox<>(FXCollections.observableArrayList("Tất cả"));
-        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
-        List<LoaiDichVu> loaiList = ldvDAO.getAll();
-        for (LoaiDichVu l : loaiList) {
-            cbCategory.getItems().add(l.getTenLoaiDV());
-        }
-        cbCategory.setValue("Tất cả");
-        cbCategory.setPrefHeight(45);
-        cbCategory.setPrefWidth(180);
-        cbCategory.setCursor(Cursor.HAND);
-        cbCategory.setStyle(
-                "-fx-background-color: white;" +
-                        "-fx-border-color: " + C_BORDER + ";" +
-                        "-fx-border-radius: 10;" +
-                        "-fx-background-radius: 10;" +
-                        "-fx-font-family: 'Segoe UI'; -fx-font-size: 14;");
-        cbCategory.valueProperty().addListener((obs, o, n) -> applyFilter());
-
-        filterBar.getChildren().addAll(txtSearch, cbCategory);
+        filterBar.getChildren().addAll(txtSearch);
 
         header.getChildren().addAll(titleRow, filterBar);
         return header;
@@ -180,10 +163,47 @@ public class QuanLyDichVuView extends BorderPane {
         colTen.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenDV()));
 
         // 4. Cột Loại DV
-        TableColumn<DichVu, String> colLoai = new TableColumn<>("Phân loại");
+        TableColumn<DichVu, String> colLoai = new TableColumn<>();
         colLoai.setPrefWidth(150);
         colLoai.setStyle("-fx-alignment: CENTER;");
         colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenLoaiDV()));
+
+        Label lblHeaderPL = new Label("Phân loại ▼");
+        lblHeaderPL.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblHeaderPL.setTextFill(Color.web(C_TEXT_DARK));
+        lblHeaderPL.setCursor(Cursor.HAND);
+        colLoai.setGraphic(lblHeaderPL);
+
+        ContextMenu filterTypeMenu = new ContextMenu();
+        filterTypeMenu.getStyleClass().add("filter-menu");
+
+        ToggleGroup tgLoai = new ToggleGroup();
+
+        RadioMenuItem miAllLoai = new RadioMenuItem("Tất cả");
+        miAllLoai.setToggleGroup(tgLoai);
+        miAllLoai.setSelected(true);
+        miAllLoai.setOnAction(e -> {
+            selectedCategoryFilter = "Tất cả";
+            lblHeaderPL.setText("Phân loại ▼");
+            applyFilter();
+        });
+        filterTypeMenu.getItems().add(miAllLoai);
+
+        LoaiDichVuDAO ldvDAO = new LoaiDichVuDAO();
+        List<LoaiDichVu> loaiList = ldvDAO.getAll();
+
+        for (LoaiDichVu l : loaiList) {
+            RadioMenuItem item = new RadioMenuItem(l.getTenLoaiDV());
+            item.setToggleGroup(tgLoai);
+            item.setOnAction(e -> {
+                selectedCategoryFilter = l.getTenLoaiDV();
+                lblHeaderPL.setText("Phân loại (Lọc) ▼");
+                applyFilter();
+            });
+            filterTypeMenu.getItems().add(item);
+        }
+
+        lblHeaderPL.setOnMouseClicked(e -> filterTypeMenu.show(lblHeaderPL, Side.BOTTOM, 0, 5));
 
         // 5. Cột Đơn giá
         TableColumn<DichVu, String> colGia = new TableColumn<>("Giá áp dụng");
@@ -260,9 +280,21 @@ public class QuanLyDichVuView extends BorderPane {
         miSuspended.setToggleGroup(group);
         miAll.setSelected(true);
 
-        miAll.setOnAction(e -> { selectedStatusFilter = "Tất cả trạng thái"; lblHeader.setText("Trạng thái ▼"); applyFilter(); });
-        miActive.setOnAction(e -> { selectedStatusFilter = "Đang phục vụ"; lblHeader.setText("Trạng thái (Lọc) ▼"); applyFilter(); });
-        miSuspended.setOnAction(e -> { selectedStatusFilter = "Tạm ngưng phục vụ"; lblHeader.setText("Trạng thái (Lọc) ▼"); applyFilter(); });
+        miAll.setOnAction(e -> {
+            selectedStatusFilter = "Tất cả trạng thái";
+            lblHeader.setText("Trạng thái ▼");
+            applyFilter();
+        });
+        miActive.setOnAction(e -> {
+            selectedStatusFilter = "Đang phục vụ";
+            lblHeader.setText("Trạng thái (Lọc) ▼");
+            applyFilter();
+        });
+        miSuspended.setOnAction(e -> {
+            selectedStatusFilter = "Tạm ngưng phục vụ";
+            lblHeader.setText("Trạng thái (Lọc) ▼");
+            applyFilter();
+        });
 
         filterMenu.getItems().addAll(miAll, miActive, miSuspended);
         lblHeader.setOnMouseClicked(e -> filterMenu.show(lblHeader, Side.BOTTOM, 0, 5));
@@ -284,9 +316,11 @@ public class QuanLyDichVuView extends BorderPane {
                     if (isAdmin) {
                         ContextMenu quickMenu = new ContextMenu();
                         MenuItem qActive = new MenuItem("✅  Đang phục vụ");
-                        qActive.setOnAction(e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.DANG_PHUC_VU));
+                        qActive.setOnAction(
+                                e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.DANG_PHUC_VU));
                         MenuItem qSuspended = new MenuItem("🚫  Tạm ngưng phục vụ");
-                        qSuspended.setOnAction(e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.TAM_NGUNG));
+                        qSuspended.setOnAction(
+                                e -> handleToggleStatus((DichVu) getTableRow().getItem(), DichVu.TAM_NGUNG));
                         quickMenu.getItems().addAll(qActive, qSuspended);
 
                         badge.setOnMouseClicked(e -> {
@@ -370,19 +404,14 @@ public class QuanLyDichVuView extends BorderPane {
         if (filteredData == null)
             return;
         String kw = txtSearch.getText().toLowerCase().trim();
-        String category = cbCategory.getValue();
 
         filteredData.setPredicate(dv -> {
             boolean matchesText = kw.isEmpty()
                     || (dv.getMaDV() != null && dv.getMaDV().toLowerCase().contains(kw))
                     || (dv.getTenDV() != null && dv.getTenDV().toLowerCase().contains(kw));
 
-            boolean matchesCategory = category.equals("Tất cả");
-            if (!matchesCategory && dv.getTenLoaiDV() != null) {
-                if (dv.getTenLoaiDV().equalsIgnoreCase(category)) {
-                    matchesCategory = true;
-                }
-            }
+            boolean matchesCategory = selectedCategoryFilter.equals("Tất cả")
+                    || (dv.getTenLoaiDV() != null && dv.getTenLoaiDV().equalsIgnoreCase(selectedCategoryFilter));
 
             String statusFilter = selectedStatusFilter;
             boolean matchesStatus = statusFilter.equals("Tất cả trạng thái")
@@ -448,4 +477,5 @@ public class QuanLyDichVuView extends BorderPane {
         a.setContentText(msg);
         a.showAndWait();
     }
+
 }
