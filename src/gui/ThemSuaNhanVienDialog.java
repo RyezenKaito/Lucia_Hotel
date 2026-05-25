@@ -242,7 +242,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             dpNgaySinh.setValue(nvEdit.getNgaySinh());
         }
         errNS = errLabel();
-        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 16 tuổi)"));
+        form.getChildren().add(fieldBlock("Ngày sinh *", dpNgaySinh, errNS, "Vui lòng chọn ngày sinh (từ đủ 18 tuổi)"));
 
         /* ── CCCD ───────────────────────────────────────────────── */
         txtCCCD = makeField(nvEdit != null ? nvl(nvEdit.getCccd()) : "", "Nhập CCCD (12 số)");
@@ -291,6 +291,17 @@ public class ThemSuaNhanVienDialog extends Stage {
         if (nvEdit != null) {
             cbTrangThai = new ComboBox<>();
             cbTrangThai.getItems().addAll(TrangThaiNV.values());
+            cbTrangThai.setConverter(new javafx.util.StringConverter<TrangThaiNV>() {
+                @Override
+                public String toString(TrangThaiNV object) {
+                    if (object == null) return "";
+                    return object == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ";
+                }
+                @Override
+                public TrangThaiNV fromString(String string) {
+                    return "Còn làm".equals(string) ? TrangThaiNV.CON_LAM : TrangThaiNV.DA_NGHI;
+                }
+            });
             styleCombo(cbTrangThai);
 
             if (isAdmin) {
@@ -343,7 +354,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         }
 
         // Load NQL khi sửa
-        if (nvEdit != null && nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getQuanLy().getMaNV() != null) {
+        if (nvEdit != null && nvEdit.getRole() == ChucVu.NHAN_VIEN && nvEdit.getQuanLy() != null && nvEdit.getQuanLy().getMaNV() != null) {
             nguoiQuanLyBox.setVisible(true);
             nguoiQuanLyBox.setManaged(true);
             for (int i = 0; i < cbNguoiQuanLy.getItems().size(); i++) {
@@ -441,8 +452,8 @@ public class ThemSuaNhanVienDialog extends Stage {
             showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh.");
             return false;
         }
-        if (LocalDate.now().minusYears(16).isBefore(ns)) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Nhân viên phải từ đủ 16 tuổi.");
+        if (LocalDate.now().minusYears(18).isBefore(ns)) {
+            showErrorField(dpNgaySinh, errNS, "⚠ Nhân viên phải từ đủ 18 tuổi.");
             return false;
         }
         clearErrorField(dpNgaySinh, errNS);
@@ -544,7 +555,7 @@ public class ThemSuaNhanVienDialog extends Stage {
             // ── Validate trình độ khi gán QUAN_LY ────────────────────
             trinhDo selectedTrinhDo = cbTrinhDo.getValue();
             if (targetRole == ChucVu.QUAN_LY) {
-                if (selectedTrinhDo != trinhDo.DAIHOC && selectedTrinhDo != trinhDo.TREN_DAIHOC) {
+                if (selectedTrinhDo != trinhDo.DAIHOC && selectedTrinhDo != trinhDo.SAU_DAIHOC) {
                     showError("Quản lý phải có trình độ Đại học hoặc Trên đại học!");
                     return;
                 }
@@ -598,7 +609,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
             if (nvEdit != null && (n.getTrangThai() == TrangThaiNV.DA_NGHI || n.getRole() != ChucVu.QUAN_LY)) {
                 java.util.List<NhanVien> subordinates = dao.getAll().stream()
-                        .filter(nv -> nvEdit.getMaNV().equals(nv.getQuanLy().getMaNV())
+                        .filter(nv -> nv.getQuanLy() != null && nvEdit.getMaNV().equals(nv.getQuanLy().getMaNV())
                                 && nv.getTrangThai() != TrangThaiNV.DA_NGHI)
                         .toList();
 
@@ -615,12 +626,55 @@ public class ThemSuaNhanVienDialog extends Stage {
                         return;
                     }
 
-                    ChoiceDialog<NhanVien> dialog = new ChoiceDialog<>(otherManagers.get(0), otherManagers);
+                    Dialog<NhanVien> dialog = new Dialog<>();
                     dialog.initOwner(this);
                     dialog.setTitle("Bàn giao quyền quản lý");
-                    dialog.setHeaderText("Quản lý [" + n.getHoTen() + "] đang phụ trách " + subordinates.size()
-                            + " nhân viên.\nVui lòng chọn Quản lý thay thế:");
-                    dialog.setContentText("Quản lý mới:");
+                    
+                    VBox header = new VBox(8);
+                    header.setPadding(new Insets(24));
+                    header.setStyle("-fx-background-color: " + C_SIDEBAR + ";");
+                    Label title = new Label("Bàn giao nhân sự");
+                    title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+                    title.setTextFill(Color.WHITE);
+                    Label subtitle = new Label("Quản lý [" + n.getHoTen() + "] đang trực tiếp quản lý " + subordinates.size() + " nhân viên.");
+                    subtitle.setFont(Font.font("Segoe UI", 13));
+                    subtitle.setTextFill(Color.web("#bfdbfe"));
+                    header.getChildren().addAll(title, subtitle);
+            
+                    VBox content = new VBox(16);
+                    content.setPadding(new Insets(24));
+                    Label prompt = new Label("Vui lòng chọn Quản lý thay thế để tiếp nhận bàn giao công việc:");
+                    prompt.setFont(Font.font("Segoe UI", 14));
+                    prompt.setTextFill(Color.web("#111827"));
+            
+                    ComboBox<NhanVien> cb = new ComboBox<>(javafx.collections.FXCollections.observableArrayList(otherManagers));
+                    cb.setMaxWidth(Double.MAX_VALUE);
+                    cb.setPrefHeight(42);
+                    cb.setPromptText("Chọn quản lý thay thế...");
+                    cb.setCellFactory(lv -> new ListCell<>() {
+                        @Override
+                        protected void updateItem(NhanVien item, boolean empty) {
+                            super.updateItem(item, empty);
+                            setText(empty || item == null ? null : item.getHoTen() + " (" + item.getMaNV() + ")");
+                        }
+                    });
+                    cb.setButtonCell(cb.getCellFactory().call(null));
+                    if (!otherManagers.isEmpty()) cb.getSelectionModel().select(0);
+            
+                    content.getChildren().addAll(prompt, cb);
+            
+                    VBox layout = new VBox(0, header, content);
+                    layout.setPrefWidth(480);
+                    dialog.getDialogPane().setContent(layout);
+                    dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            
+                    Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+                    btnOk.setText("Xác nhận bàn giao");
+            
+                    Button btnCancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+                    btnCancel.setText("Hủy bỏ");
+            
+                    dialog.setResultConverter(bt -> bt == ButtonType.OK ? cb.getValue() : null);
 
                     Region dim = model.utils.DimOverlay.show(this);
                     java.util.Optional<NhanVien> result = dialog.showAndWait();

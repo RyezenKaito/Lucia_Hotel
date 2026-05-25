@@ -53,6 +53,7 @@ public class HoaDonView extends BorderPane {
     private Label lblFrom, lblTo, lblMonth, lblQuarter, lblYear;
     private DatePicker dpFrom, dpTo;
     private ComboBox<Integer> cbMonth, cbQuarter, cbYear;
+    private ComboBox<String> cbTrangThai;
 
     public HoaDonView() {
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -101,15 +102,15 @@ public class HoaDonView extends BorderPane {
 
         cbGroupBy = new ComboBox<>(FXCollections.observableArrayList(
                 "Ngày", "Tháng", "Quý", "Năm"));
-        cbGroupBy.setValue("Tháng");
+        cbGroupBy.setValue("Ngày");
         cbGroupBy.setStyle(
                 "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
-                
+
         lblFrom = new Label("Từ ngày:");
         lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblFrom.setTextFill(Color.web(C_TEXT_DARK));
 
-        dpFrom = new DatePicker(java.time.LocalDate.now().withDayOfMonth(1));
+        dpFrom = new DatePicker(java.time.LocalDate.now());
         dpFrom.setPrefWidth(140);
         dpFrom.setPrefHeight(44);
         dpFrom.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-background-radius: 8;");
@@ -127,23 +128,27 @@ public class HoaDonView extends BorderPane {
         lblMonth.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblMonth.setTextFill(Color.web(C_TEXT_DARK));
         cbMonth = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
-        cbMonth.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+        cbMonth.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
 
         lblQuarter = new Label("Quý:");
         lblQuarter.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblQuarter.setTextFill(Color.web(C_TEXT_DARK));
         cbQuarter = new ComboBox<>(FXCollections.observableArrayList(1, 2, 3, 4));
-        cbQuarter.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+        cbQuarter.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
 
         lblYear = new Label("Năm:");
         lblYear.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblYear.setTextFill(Color.web(C_TEXT_DARK));
         ObservableList<Integer> years = FXCollections.observableArrayList();
         int currentYear = java.time.LocalDate.now().getYear();
-        for (int i = currentYear - 5; i <= currentYear; i++) years.add(i);
+        for (int i = currentYear - 5; i <= currentYear; i++)
+            years.add(i);
         cbYear = new ComboBox<>(years);
-        cbYear.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
-        
+        cbYear.setStyle(
+                "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+
         cbMonth.setValue(java.time.LocalDate.now().getMonthValue());
         cbQuarter.setValue((java.time.LocalDate.now().getMonthValue() - 1) / 3 + 1);
         cbYear.setValue(currentYear);
@@ -158,9 +163,19 @@ public class HoaDonView extends BorderPane {
         cbQuarter.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
         cbYear.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
 
-        HBox dateBox = new HBox(12, lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter, cbQuarter, lblYear, cbYear);
+        Label lblTrangThai = new Label("Trạng thái:");
+        lblTrangThai.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblTrangThai.setTextFill(Color.web(C_TEXT_DARK));
+        cbTrangThai = new ComboBox<>(FXCollections.observableArrayList(
+                "Tất cả", "Đã thanh toán", "Chưa thanh toán", "Đã đặt cọc", "Đã hủy - hoàn cọc", "Đã hủy - mất cọc"));
+        cbTrangThai.setValue("Tất cả");
+        cbTrangThai.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
+        cbTrangThai.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
+
+        HBox dateBox = new HBox(12, lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter,
+                cbQuarter, lblYear, cbYear, lblTrangThai, cbTrangThai);
         dateBox.setAlignment(Pos.CENTER_LEFT);
-        
+
         // Spacer đẩy dateBox sang bên phải
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -168,9 +183,9 @@ public class HoaDonView extends BorderPane {
         filterRow.getChildren().addAll(txtSearch, spacer, dateBox);
 
         header.getChildren().addAll(titleBox, statsRow, filterRow);
-        
+
         updateFilterUI(cbGroupBy.getValue());
-        
+
         return header;
     }
 
@@ -269,6 +284,33 @@ public class HoaDonView extends BorderPane {
         colTienCoc.setPrefWidth(120);
         colTienCoc.setMinWidth(100);
 
+        TableColumn<HoaDon, String> colPhuThu = new TableColumn<>("Phụ phí");
+        colPhuThu.setCellValueFactory(
+                p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuThu())));
+        colPhuThu.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colPhuThu.setPrefWidth(110);
+        colPhuThu.setMinWidth(90);
+
+        TableColumn<HoaDon, String> colPhuPhiTraMuon = new TableColumn<>("Phí trả muộn");
+        colPhuPhiTraMuon.setCellValueFactory(
+                p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuPhiTraMuon())));
+        colPhuPhiTraMuon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ef4444;");
+        colPhuPhiTraMuon.setPrefWidth(120);
+        colPhuPhiTraMuon.setMinWidth(100);
+        colPhuPhiTraMuon.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #ef4444;");
+                }
+            }
+        });
+
         TableColumn<HoaDon, String> colTong = new TableColumn<>("Tổng thanh toán");
         colTong.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongTien())));
@@ -344,6 +386,8 @@ public class HoaDonView extends BorderPane {
         table.getColumns().add(colNgay);
         table.getColumns().add(colTongCP);
         table.getColumns().add(colTienCoc);
+        table.getColumns().add(colPhuThu);
+        table.getColumns().add(colPhuPhiTraMuon);
         table.getColumns().add(colTong);
         table.getColumns().add(colTrangThai);
         for (TableColumn<HoaDon, ?> c : table.getColumns()) {
@@ -434,51 +478,87 @@ public class HoaDonView extends BorderPane {
                 double thanhTien = (double) row[4];
                 double giaCoc = (double) row[5];
                 String maCTDP = (String) row[6];
+                double roomPhuThu = (double) row[7];
+                double roomPhuPhiTraMuon = (double) row[8];
                 tongTienPhong += thanhTien;
+                ;
                 tongCoc += giaCoc;
 
                 VBox roomContainer = new VBox();
                 roomContainer.setStyle(
                         "-fx-background-color: #f9fafb; -fx-background-radius: 6; -fx-border-color: #e5e7eb; -fx-border-radius: 6;");
 
+                java.util.List<model.entities.DichVuSuDung> dvList = dvsdDAO.findByMaCTDP(maCTDP);
+                double roomTienDV = 0;
+                for (model.entities.DichVuSuDung dv : dvList) {
+                    roomTienDV += dv.getThanhTien();
+                    dynamicTienDV += dv.getThanhTien();
+                }
+
                 HBox r = new HBox();
                 r.setPadding(new Insets(8, 12, 8, 12));
                 r.setStyle("-fx-cursor: hand;");
-                Label lblP = new Label("🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
-                        + "  •  " + (int) sodem + " đêm  ▼");
+
+                String textRoom = "🛏 " + maPhong + " - " + tenPhong + " (" + loaiPhong + ")"
+                        + "  •  " + (int) sodem + " đêm  ▼";
+
+                Label lblP = new Label(textRoom);
                 lblP.setFont(Font.font("Segoe UI", 13));
                 lblP.setWrapText(true);
                 HBox.setHgrow(lblP, Priority.ALWAYS);
-                Label lblAmt = new Label(String.format("%,.0f đ", thanhTien));
+
+                double tongPhong = thanhTien;
+                Label lblAmt = new Label(String.format("%,.0f đ", tongPhong));
                 lblAmt.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
                 lblAmt.setTextFill(Color.web(C_BLUE));
                 r.getChildren().addAll(lblP, lblAmt);
 
-                VBox dvBox = new VBox(4);
+                VBox dvBox = new VBox(6);
                 dvBox.setPadding(new Insets(0, 12, 10, 32));
                 dvBox.setManaged(false);
                 dvBox.setVisible(false);
 
-                java.util.List<model.entities.DichVuSuDung> dvList = dvsdDAO.findByMaCTDP(maCTDP);
-                if (dvList.isEmpty()) {
-                    Label lblEmpty = new Label("— Không sử dụng dịch vụ");
+                if (dvList.isEmpty() && roomPhuThu == 0 && roomPhuPhiTraMuon == 0) {
+                    Label lblEmpty = new Label("— Không có phụ thu hay dịch vụ");
                     lblEmpty.setTextFill(Color.web(C_TEXT_GRAY));
                     lblEmpty.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 12));
                     dvBox.getChildren().add(lblEmpty);
                 } else {
-                    for (model.entities.DichVuSuDung dv : dvList) {
-                        dynamicTienDV += dv.getThanhTien();
-                        HBox dvRow = new HBox();
-                        Label dvName = new Label("🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
-                        dvName.setTextFill(Color.web(C_TEXT_GRAY));
-                        dvName.setFont(Font.font("Segoe UI", 12));
-                        dvName.setWrapText(true);
-                        HBox.setHgrow(dvName, Priority.ALWAYS);
-                        Label dvPrice = new Label(String.format("%,.0f đ", dv.getThanhTien()));
-                        dvPrice.setTextFill(Color.web(C_TEXT_DARK));
-                        dvPrice.setFont(Font.font("Segoe UI", 12));
-                        dvRow.getChildren().addAll(dvName, dvPrice);
-                        dvBox.getChildren().add(dvRow);
+                    // Hiển thị phụ thu per-room
+                    if (roomPhuThu > 0) {
+                        Label lblPT = new Label("   💰 Phí phụ thu: " + String.format("%,.0f đ", roomPhuThu));
+                        lblPT.setTextFill(Color.web("#d97706"));
+                        lblPT.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                        dvBox.getChildren().add(lblPT);
+                    }
+                    if (roomPhuPhiTraMuon > 0) {
+                        Label lblLF = new Label(
+                                "   ⏰ Phụ phí trả muộn: " + String.format("%,.0f đ", roomPhuPhiTraMuon));
+                        lblLF.setTextFill(Color.web("#ef4444"));
+                        lblLF.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                        dvBox.getChildren().add(lblLF);
+                    }
+
+                    if (!dvList.isEmpty()) {
+                        Label lblPhuThuDV = new Label("Tiền dịch vụ: " + String.format("%,.0f đ", roomTienDV));
+                        lblPhuThuDV.setTextFill(Color.web(C_TEXT_DARK));
+                        lblPhuThuDV.setFont(Font.font("Segoe UI", 12));
+                        dvBox.getChildren().add(lblPhuThuDV);
+
+                        for (model.entities.DichVuSuDung dv : dvList) {
+                            HBox dvRow = new HBox();
+                            Label dvName = new Label(
+                                    "   🍹 " + dv.getDichVu().getTenDV() + " (x" + dv.getSoLuong() + ")");
+                            dvName.setTextFill(Color.web(C_TEXT_GRAY));
+                            dvName.setFont(Font.font("Segoe UI", 12));
+                            dvName.setWrapText(true);
+                            HBox.setHgrow(dvName, Priority.ALWAYS);
+                            Label dvPrice = new Label(String.format("%,.0f đ", dv.getThanhTien()));
+                            dvPrice.setTextFill(Color.web(C_TEXT_DARK));
+                            dvPrice.setFont(Font.font("Segoe UI", 12));
+                            dvRow.getChildren().addAll(dvName, dvPrice);
+                            dvBox.getChildren().add(dvRow);
+                        }
                     }
                 }
 
@@ -509,14 +589,22 @@ public class HoaDonView extends BorderPane {
         double tienDV = dynamicTienDV > 0 ? dynamicTienDV : hd.getTienDV();
         double tienCoc = tongCoc > 0 ? tongCoc : hd.getTienCoc();
 
-        // VAT tính trên tổng tiền phòng + DV, sau đó trừ cọc
-        double vatRate = hd.getThueVAT();
-        double vatAmount = (tongTienPhong + tienDV) * vatRate;
-        double tongTT = Math.max(0, (tongTienPhong + tienDV + vatAmount) - tienCoc);
+        double phuPhiTraMuon = hd.getPhuPhiTraMuon();
+        double phuThu = hd.getPhuThu();
+        double vatRate = hd.getThueVAT() > 0 ? hd.getThueVAT() : 0.1;
+        // VAT tính trên tổng tiền phòng + DV + phụ thu + phụ phí, sau đó trừ cọc
+        double vatAmount = (tongTienPhong + tienDV + phuPhiTraMuon + phuThu) * vatRate;
+        double tongTT = Math.max(0, (tongTienPhong + tienDV + phuPhiTraMuon + phuThu + vatAmount) - tienCoc);
 
         sumBox.getChildren().addAll(
                 makeSumRow("Tiền phòng:", String.format("%,.0f đ", tongTienPhong), Color.web(C_TEXT_DARK)),
-                makeSumRow("Tiền dịch vụ:", String.format("%,.0f đ", tienDV), Color.web(C_TEXT_DARK)),
+                makeSumRow("Tiền dịch vụ:", String.format("%,.0f đ", tienDV), Color.web(C_TEXT_DARK)));
+
+        sumBox.getChildren()
+                .add(makeSumRow("Phụ phí trả muộn:", String.format("%,.0f đ", phuPhiTraMuon), Color.web("#ef4444")));
+        sumBox.getChildren().add(makeSumRow("Phí phụ thu:", String.format("%,.0f đ", phuThu), Color.web(C_TEXT_DARK)));
+
+        sumBox.getChildren().addAll(
                 makeSumRow("Tiền cọc (đã khấu trừ):", String.format("- %,.0f đ", tienCoc), Color.web(C_GREEN)),
                 makeSumRow(String.format("Thuế VAT (%.0f%%):", vatRate * 100), String.format("%,.0f đ", vatAmount),
                         Color.web(C_TEXT_DARK)));
@@ -599,46 +687,69 @@ public class HoaDonView extends BorderPane {
     }
 
     private void loadData() {
-        List<HoaDon> list = dao.getAllWithKhachHang();
+        // Show loading placeholder
+        table.setPlaceholder(new Label("⏳ Đang tải dữ liệu hóa đơn..."));
 
-        dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
-        for (HoaDon hd : list) {
-            double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
-            java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
-            double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
+        javafx.concurrent.Task<List<HoaDon>> task = new javafx.concurrent.Task<>() {
+            @Override
+            protected List<HoaDon> call() {
+                List<HoaDon> list = dao.getAllWithKhachHang();
+                dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
 
-            double vatAmount = (currentSumPhong + totalTienDV) * hd.getThueVAT();
-            
-            // 2. Tổng chi phí (Trước khi trừ cọc)
-            double tcp = currentSumPhong + totalTienDV + vatAmount;
-            
-            // 3. Tổng thanh toán (Thực tế khách phải trả thêm sau khi trừ cọc)
-            double ttt = Math.max(0, tcp - hd.getTienCoc());
+                for (HoaDon hd : list) {
+                    if ("DA_THANH_TOAN_COC".equals(hd.getTrangThaiThanhToan()) &&
+                            hd.getDatPhong() != null &&
+                            "DA_CHECKIN".equals(hd.getDatPhong().getTrangThai())) {
+                        hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
+                    }
 
-            // Gán vào đối tượng hd
-            hd.setTienPhong(currentSumPhong);
-            hd.setTienDV(totalTienDV);
-            hd.setTongCP(tcp); // Đây là giá trị "Tổng chi phí" bạn muốn hiển thị
-            hd.setTongTien(ttt);
-            dao.tinhDoanhThu(hd);
-        }
-        list.sort((a, b) -> {
-            if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null) return 0;
-            if (a.getNgayTaoHD() == null) return 1;
-            if (b.getNgayTaoHD() == null) return -1;
-            return b.getNgayTaoHD().compareTo(a.getNgayTaoHD());
+                    double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
+                    java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
+                    double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
+
+                    double phuPhiTraMuon = hd.getPhuPhiTraMuon();
+                    double phuThu = hd.getPhuThu();
+                    double vatAmount = (currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu) * hd.getThueVAT();
+                    double tcp = currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu + vatAmount;
+                    double ttt = Math.max(0, tcp - hd.getTienCoc());
+
+                    hd.setTienPhong(currentSumPhong);
+                    hd.setTienDV(totalTienDV);
+                    hd.setTongCP(tcp);
+                    hd.setTongTien(ttt);
+                    dao.tinhDoanhThu(hd);
+                }
+
+                list.sort((a, b) -> {
+                    if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null) return 0;
+                    if (a.getNgayTaoHD() == null) return 1;
+                    if (b.getNgayTaoHD() == null) return -1;
+                    return b.getNgayTaoHD().compareTo(a.getNgayTaoHD());
+                });
+
+                return list;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            masterData.setAll(task.getValue());
+            filteredData = new FilteredList<>(masterData, p -> true);
+            table.setItems(filteredData);
+            table.setPlaceholder(new Label("Không có dữ liệu"));
+            applyFilter("");
         });
 
-        masterData.setAll(list);
-        filteredData = new FilteredList<>(masterData, p -> true);
-        table.setItems(filteredData);
-        
-        applyFilter("");
+        task.setOnFailed(e -> {
+            table.setPlaceholder(new Label("❌ Lỗi tải dữ liệu hóa đơn"));
+            task.getException().printStackTrace();
+        });
+
+        new Thread(task, "HoaDon-Loader").start();
     }
 
     private void applyFilter(String kw) {
         String filter = kw == null ? "" : kw.toLowerCase().trim();
-        
+
         java.time.LocalDate startDate = null, endDate = null;
         String groupBy = cbGroupBy.getValue();
 
@@ -665,20 +776,47 @@ public class HoaDonView extends BorderPane {
         final java.time.LocalDate fEnd = endDate;
 
         filteredData.setPredicate(hd -> {
+            // Filter by status
+            String selectedStatus = cbTrangThai.getValue();
+            if (selectedStatus != null && !"Tất cả".equals(selectedStatus)) {
+                String trangThai = hd.getTrangThaiThanhToan();
+                boolean statusMatch = false;
+                switch (selectedStatus) {
+                    case "Đã thanh toán":      statusMatch = "DA_THANH_TOAN".equals(trangThai); break;
+                    case "Chưa thanh toán": statusMatch = "CHUA_THANH_TOAN".equals(trangThai); break;
+                    case "Đã đặt cọc":       statusMatch = "DA_THANH_TOAN_COC".equals(trangThai); break;
+                    case "Đã hủy - hoàn cọc": statusMatch = "DA_HOAN_COC".equals(trangThai); break;
+                    case "Đã hủy - mất cọc": statusMatch = "DA_MAT_COC".equals(trangThai); break;
+                    default: statusMatch = true;
+                }
+                if (!statusMatch) return false;
+            }
             if (hd.getNgayTaoHD() != null) {
                 java.time.LocalDate invoiceDate = hd.getNgayTaoHD().toLocalDate();
-                if (fStart != null && invoiceDate.isBefore(fStart)) return false;
-                if (fEnd != null && invoiceDate.isAfter(fEnd)) return false;
+                if (fStart != null && invoiceDate.isBefore(fStart))
+                    return false;
+                if (fEnd != null && invoiceDate.isAfter(fEnd))
+                    return false;
             } else {
-                if (fStart != null || fEnd != null) return false;
+                if (fStart != null || fEnd != null)
+                    return false;
             }
 
-            if (filter.isEmpty()) return true;
+            if (filter.isEmpty())
+                return true;
 
-            if (hd.getMaHD() != null && hd.getMaHD().toLowerCase().contains(filter)) return true;
-            if (hd.getDatPhong() != null && hd.getDatPhong().getMaDat() != null && hd.getDatPhong().getMaDat().toLowerCase().contains(filter)) return true;
-            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen() != null && hd.getNhanVien().getHoTen().toLowerCase().contains(filter)) return true;
-            if (hd.getDatPhong() != null && hd.getDatPhong().getKhachHang() != null && hd.getDatPhong().getKhachHang().getTenKH() != null && hd.getDatPhong().getKhachHang().getTenKH().toLowerCase().contains(filter)) return true;
+            if (hd.getMaHD() != null && hd.getMaHD().toLowerCase().contains(filter))
+                return true;
+            if (hd.getDatPhong() != null && hd.getDatPhong().getMaDat() != null
+                    && hd.getDatPhong().getMaDat().toLowerCase().contains(filter))
+                return true;
+            if (hd.getNhanVien() != null && hd.getNhanVien().getHoTen() != null
+                    && hd.getNhanVien().getHoTen().toLowerCase().contains(filter))
+                return true;
+            if (hd.getDatPhong() != null && hd.getDatPhong().getKhachHang() != null
+                    && hd.getDatPhong().getKhachHang().getTenKH() != null
+                    && hd.getDatPhong().getKhachHang().getTenKH().toLowerCase().contains(filter))
+                return true;
 
             return false;
         });

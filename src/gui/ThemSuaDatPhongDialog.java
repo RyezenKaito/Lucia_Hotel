@@ -81,6 +81,7 @@ public class ThemSuaDatPhongDialog extends Stage {
     // Multi-select loại phòng
     private VBox loaiPhongCheckBoxArea;
     private Map<String, CheckBox> loaiPhongCheckBoxes = new LinkedHashMap<>();
+    private Map<String, List<String>> loaiPhongTienNghiMap = new LinkedHashMap<>();
 
     // Chọn phòng cụ thể
     private FlowPane phongSelectFlow;
@@ -416,6 +417,7 @@ public class ThemSuaDatPhongDialog extends Stage {
                 + " -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8;");
 
         List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
+        loaiPhongTienNghiMap = loadTienNghiByLoaiPhong();
         for (LoaiPhong lp : allLoaiPhong) {
             String displayName = lp.toString() + " — " + DF.format(lp.getGia()) + " đ/đêm"
                     + " (Sức chứa: " + lp.getSucChua() + " người)";
@@ -458,7 +460,23 @@ public class ThemSuaDatPhongDialog extends Stage {
                 }
             });
             loaiPhongCheckBoxes.put(lp.getMaLoaiPhong(), cb);
-            loaiPhongCheckBoxArea.getChildren().add(cb);
+
+            VBox loaiPhongItem = new VBox(2);
+            loaiPhongItem.setFillWidth(true);
+
+            List<String> tienNghi = loaiPhongTienNghiMap.getOrDefault(lp.getMaLoaiPhong(), java.util.Collections.emptyList());
+            if (!tienNghi.isEmpty()) {
+                Label lblTienNghi = new Label("Tiện nghi: " + String.join(", ", tienNghi));
+                lblTienNghi.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 11));
+                lblTienNghi.setTextFill(Color.web(C_TEXT_GRAY));
+                lblTienNghi.setWrapText(true);
+                lblTienNghi.setPadding(new Insets(0, 8, 6, 40));
+                loaiPhongItem.getChildren().addAll(cb, lblTienNghi);
+            } else {
+                loaiPhongItem.getChildren().add(cb);
+            }
+
+            loaiPhongCheckBoxArea.getChildren().add(loaiPhongItem);
         }
 
         errLoaiPhong = errLabel();
@@ -1380,6 +1398,26 @@ public class ThemSuaDatPhongDialog extends Stage {
             e.printStackTrace();
         }
         return ds;
+    }
+
+    private Map<String, List<String>> loadTienNghiByLoaiPhong() {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        String sql = "SELECT lptn.maLoaiPhong, tn.tenTN " +
+                "FROM LoaiPhongTienNghi lptn " +
+                "JOIN TienNghi tn ON tn.maTN = lptn.maTN " +
+                "WHERE tn.trangThai = 1 " +
+                "ORDER BY lptn.maLoaiPhong, tn.tenTN";
+        try (Connection con = ConnectDatabase.getInstance().getConnection();
+                java.sql.PreparedStatement ps = con.prepareStatement(sql);
+                java.sql.ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                result.computeIfAbsent(rs.getString("maLoaiPhong"), k -> new ArrayList<>())
+                        .add(rs.getString("tenTN"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     private void disableInputs() {

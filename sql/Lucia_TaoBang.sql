@@ -29,7 +29,7 @@ CREATE TABLE NV (
     diaChi      NVARCHAR(200),
     ngaySinh    DATE,
     ngayVaoLam  DATE,
-    trinhDo     NVARCHAR(20)  CHECK (trinhDo IN (N'THCS', N'THPT', N'CAODANG', N'DAIHOC', N'TREN_DAIHOC')),
+    trinhDo     NVARCHAR(20)  CHECK (trinhDo IN (N'THPT', N'TRUNGCAP', N'CAODANG', N'DAIHOC', N'SAU_DAIHOC')),
     mk          VARCHAR(100),
     role        NVARCHAR(20)  CHECK (role IN (N'NHAN_VIEN', N'QUAN_LY', N'ADMIN')),
     trangThai   NVARCHAR(20)  DEFAULT 'CON_LAM' CHECK (trangThai IN ('CON_LAM', 'DA_NGHI')),
@@ -70,7 +70,7 @@ CREATE TABLE Phong (
     tenPhong  NVARCHAR(50),
     -- Bá» CHECK trÃ¹ng vá»›i FK; LoaiPhong FK Ä‘Ã£ Ä‘áº£m báº£o giÃ¡ trá»‹ há»£p lá»‡
     loaiPhong VARCHAR(20),
-    tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG')),
+    tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG', N'BAOTRI')),
     soPhong   INT,
     soTang    INT,
     is_deleted BIT DEFAULT 0,
@@ -155,11 +155,13 @@ CREATE TABLE ChiTietHoaDon (
     maHD           VARCHAR(20),
     maCTDP         VARCHAR(20),
     thoiGianLuuTru DECIMAL(5,2),   -- Sá»‘ Ä‘Ãªm lÆ°u trÃº
-    thanhTien      DECIMAL(18,2),  -- Tiá»n phÃ²ng + dá»‹ch vá»¥ cá»§a dÃ²ng nÃ y
+    thanhTien      DECIMAL(18,2),  -- Tiá» n phÃ²ng + dá»‹ch vá»¥ cá»§a dÃ²ng nÃ y
+    phu_thu        DECIMAL(18,2) DEFAULT 0,  -- Phí phụ thu riêng phòng này
+    phu_phi_tra_muon DECIMAL(18,2) DEFAULT 0,  -- Phụ phí trả muộn riêng phòng này
     CONSTRAINT FK_CTHD_HoaDon FOREIGN KEY (maHD)   REFERENCES HoaDon(maHD),
     CONSTRAINT FK_CTHD_CTDP   FOREIGN KEY (maCTDP) REFERENCES ChiTietDatPhong(maCTDP)
 );
--- LÆ°u Ã½: bá» soLuongPhong vÃ¬ má»—i CTDP Ä‘Ã£ gáº¯n vá»›i 1 phÃ²ng cá»¥ thá»ƒ â†’ Ä‘áº¿m dÃ²ng lÃ  Ä‘á»§
+-- LÆ°u Ã½: bá»  soLuongPhong vÃ¬ má»—i CTDP Ä‘Ã£ gáº¯n vá»›i 1 phÃ²ng cá»¥ thá»ƒ â†’ Ä‘áº¿m dÃ²ng lÃ  Ä‘á»§
 
 CREATE TABLE DichVuSuDung (
     maDV         VARCHAR(20),
@@ -192,5 +194,33 @@ CREATE TABLE BangGiaDV_Detail (
     CONSTRAINT PK_BGDV_Detail  PRIMARY KEY (maBangGia, maDV),
     CONSTRAINT FK_BGDV_Header  FOREIGN KEY (maBangGia) REFERENCES BangGiaDV_Header(maBangGia),
     CONSTRAINT FK_BGDV_DV      FOREIGN KEY (maDV)      REFERENCES DV(maDV)
+);
+
+
+-- =============================
+-- 5. TIEN NGHI PHONG
+-- =============================
+
+CREATE TABLE TienNghi (
+    maTN        VARCHAR(20) PRIMARY KEY,
+    tenTN       NVARCHAR(100) NOT NULL,
+    moTa        NVARCHAR(255),
+    trangThai   BIT DEFAULT 1   -- 1: đang sử dụng, 0: ngưng sử dụng
+);
+
+CREATE TABLE LoaiPhongTienNghi (
+    maLoaiPhong VARCHAR(20),
+    maTN        VARCHAR(20),
+
+    CONSTRAINT PK_LoaiPhong_TienNghi
+        PRIMARY KEY (maLoaiPhong, maTN),
+
+    CONSTRAINT FK_LPTN_LoaiPhong
+        FOREIGN KEY (maLoaiPhong)
+        REFERENCES LoaiPhong(maLoaiPhong),
+
+    CONSTRAINT FK_LPTN_TienNghi
+        FOREIGN KEY (maTN)
+        REFERENCES TienNghi(maTN)
 );
 GO

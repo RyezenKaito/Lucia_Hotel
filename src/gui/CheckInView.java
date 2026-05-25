@@ -34,53 +34,56 @@ import java.util.stream.Collectors;
  * Giao diện giống y chang CheckOutView để đồng bộ trải nghiệm.
  *
  * Luồng:
- *  1. Hiển thị danh sách đơn ĐÃ_XÁC_NHẬN sẵn sàng check-in
- *  2. Click 1 đơn → load chi tiết bên phải + danh sách phòng (kèm trạng thái)
- *  3. Bấm "Xác nhận nhận phòng" → cập nhật DB, tạo HoaDon, đổi trạng thái
+ * 1. Hiển thị danh sách đơn ĐÃ_XÁC_NHẬN sẵn sàng check-in
+ * 2. Click 1 đơn → load chi tiết bên phải + danh sách phòng (kèm trạng thái)
+ * 3. Bấm "Xác nhận nhận phòng" → cập nhật DB, tạo HoaDon, đổi trạng thái
  */
 public class CheckInView extends BorderPane {
 
     // ===== COLOR PALETTE (đồng bộ CheckOutView) =====
-    private static final String C_BG          = "#f8fafc";
-    private static final String C_BORDER      = "#e5e7eb";
+    private static final String C_BG = "#f8fafc";
+    private static final String C_BORDER = "#e5e7eb";
     private static final String C_BORDER_SOFT = "#f1f5f9";
-    private static final String C_TEXT_DARK   = "#0f172a";
-    private static final String C_TEXT_GRAY   = "#64748b";
-    private static final String C_TEXT_LIGHT  = "#94a3b8";
-    private static final String C_NAVY        = "#1e3a8a";
-    private static final String C_BLUE        = "#1d4ed8";
-    private static final String C_BLUE_HOVER  = "#1e40af";
-    private static final String C_BLUE_LIGHT  = "#eff6ff";
-    private static final String C_GREEN       = "#16a34a";
-    private static final String C_ORANGE      = "#f59e0b";
-    private static final String C_RED         = "#dc2626";
+    private static final String C_TEXT_DARK = "#0f172a";
+    private static final String C_TEXT_GRAY = "#64748b";
+    private static final String C_TEXT_LIGHT = "#94a3b8";
+    private static final String C_NAVY = "#1e3a8a";
+    private static final String C_BLUE = "#1d4ed8";
+    private static final String C_BLUE_HOVER = "#1e40af";
+    private static final String C_BLUE_LIGHT = "#eff6ff";
+    private static final String C_GREEN = "#16a34a";
+    private static final String C_ORANGE = "#f59e0b";
+    private static final String C_RED = "#dc2626";
 
     // ===== DAOs =====
-    private final DatPhongDAO        datPhongDAO = new DatPhongDAO();
-    private final ChiTietDatPhongDAO ctdpDAO     = new ChiTietDatPhongDAO();
-    private final ChiTietHoaDonDAO   cthdDAO     = new ChiTietHoaDonDAO();
-    private final HoaDonDAO          hoaDonDAO   = new HoaDonDAO();
-    private final PhongDAO           phongDAO    = new PhongDAO();
+    private final DatPhongDAO datPhongDAO = new DatPhongDAO();
+    private final ChiTietDatPhongDAO ctdpDAO = new ChiTietDatPhongDAO();
+    private final ChiTietHoaDonDAO cthdDAO = new ChiTietHoaDonDAO();
+    private final HoaDonDAO hoaDonDAO = new HoaDonDAO();
+    private final PhongDAO phongDAO = new PhongDAO();
 
     // ===== UI =====
-    private TextField   txtSearch;
-    private CheckBox    chkLate;
-    private DatePicker  dpFilter;
-    private VBox        listItemsContainer;
-    private VBox        detailInfoBox;
-    private VBox        roomListBox;
-    private Button      btnConfirm;
-    private Label       lblRoomCount;
+    private TextField txtSearch;
+    private CheckBox chkLate;
+    private DatePicker dpFilter;
+    private VBox listItemsContainer;
+    private VBox detailInfoBox;
+    private VBox roomListBox;
+    private Button btnConfirm;
+    private Label lblRoomCount;
 
     // ===== STATE =====
     private final List<Object[]> allItems = new ArrayList<>();
-    private Object[]      selectedItem;
-    private DatPhong      currentDatPhong;
-    private List<Object[]> currentRoomDetails;     // {maPhong, maLoai}
+    private Object[] selectedItem;
+    private DatPhong currentDatPhong;
+    private List<Object[]> currentRoomDetails; // {maPhong, maLoai}
     private NhanVien staff;
 
     // ===== CONSTRUCTORS =====
-    public CheckInView() { this(null); }
+    public CheckInView() {
+        this(null);
+    }
+
     public CheckInView(NhanVien staff) {
         this.staff = staff;
         setStyle("-fx-background-color:" + C_BG + ";");
@@ -92,7 +95,7 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  HEADER
+    // HEADER
     // ============================================================
     private VBox buildHeader() {
         VBox header = new VBox(4);
@@ -111,13 +114,13 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  MAIN CONTENT
+    // MAIN CONTENT
     // ============================================================
     private HBox buildMainContent() {
         HBox main = new HBox(20);
         main.setAlignment(Pos.TOP_LEFT);
 
-        VBox leftCol  = buildLeftColumn();
+        VBox leftCol = buildLeftColumn();
         VBox rightCol = buildRightColumn();
 
         leftCol.setMinWidth(540);
@@ -133,16 +136,16 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  LEFT COLUMN
+    // LEFT COLUMN
     // ============================================================
     private VBox buildLeftColumn() {
         VBox col = new VBox(16);
 
-        HBox topRow      = buildSearchRow();
-        VBox listPanel   = buildListPanel();
-        VBox roomsPanel  = buildRoomsPanel();
+        HBox topRow = buildSearchRow();
+        VBox listPanel = buildListPanel();
+        VBox roomsPanel = buildRoomsPanel();
 
-        VBox.setVgrow(listPanel,  Priority.SOMETIMES);
+        VBox.setVgrow(listPanel, Priority.SOMETIMES);
         VBox.setVgrow(roomsPanel, Priority.ALWAYS);
 
         col.getChildren().addAll(topRow, listPanel, roomsPanel);
@@ -162,14 +165,13 @@ public class CheckInView extends BorderPane {
         txtSearch.setPromptText("🔍  Tìm theo mã đặt, tên khách, SĐT, CCCD...");
         txtSearch.setPrefHeight(40);
         HBox.setHgrow(txtSearch, Priority.ALWAYS);
-        String base =
-            "-fx-background-color:white;" +
-            "-fx-background-radius:10;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:10;" +
-            "-fx-border-width:1;" +
-            "-fx-font-size:13px;" +
-            "-fx-padding:0 14;";
+        String base = "-fx-background-color:white;" +
+                "-fx-background-radius:10;" +
+                "-fx-border-color:" + C_BORDER + ";" +
+                "-fx-border-radius:10;" +
+                "-fx-border-width:1;" +
+                "-fx-font-size:13px;" +
+                "-fx-padding:0 14;";
         String focused = base.replace(C_BORDER, C_BLUE).replace("-fx-border-width:1;", "-fx-border-width:1.5;");
         txtSearch.setStyle(base);
         txtSearch.focusedProperty().addListener((obs, o, n) -> txtSearch.setStyle(n ? focused : base));
@@ -184,12 +186,11 @@ public class CheckInView extends BorderPane {
         VBox panel = new VBox(12);
         panel.setPadding(new Insets(18, 20, 18, 20));
         panel.setStyle(
-            "-fx-background-color:white;" +
-            "-fx-background-radius:14;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:14;" +
-            "-fx-border-width:1;"
-        );
+                "-fx-background-color:white;" +
+                        "-fx-background-radius:14;" +
+                        "-fx-border-color:" + C_BORDER + ";" +
+                        "-fx-border-radius:14;" +
+                        "-fx-border-width:1;");
         panel.setEffect(new DropShadow(8, 0, 2, Color.web("#0f172a0a")));
 
         Label lblTitle = new Label("Đơn chờ check-in");
@@ -205,28 +206,25 @@ public class CheckInView extends BorderPane {
         scroll.setPrefHeight(200);
         scroll.setMaxHeight(240);
         scroll.setStyle(
-            "-fx-background:transparent;" +
-            "-fx-background-color:transparent;" +
-            "-fx-border-color:transparent;"
-        );
+                "-fx-background:transparent;" +
+                        "-fx-background-color:transparent;" +
+                        "-fx-border-color:transparent;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         panel.getChildren().addAll(lblTitle, scroll);
         return panel;
     }
 
- 
     // ----- Rooms panel: danh sách phòng trong đơn được chọn -----
     private VBox buildRoomsPanel() {
         VBox panel = new VBox(12);
         panel.setPadding(new Insets(18, 20, 18, 20));
         panel.setStyle(
-            "-fx-background-color:white;" +
-            "-fx-background-radius:14;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:14;" +
-            "-fx-border-width:1;"
-        );
+                "-fx-background-color:white;" +
+                        "-fx-background-radius:14;" +
+                        "-fx-border-color:" + C_BORDER + ";" +
+                        "-fx-border-radius:14;" +
+                        "-fx-border-width:1;");
         panel.setEffect(new DropShadow(8, 0, 2, Color.web("#0f172a0a")));
 
         HBox titleRow = new HBox(10);
@@ -251,11 +249,10 @@ public class CheckInView extends BorderPane {
         scroll.setMinHeight(180);
         scroll.setPrefHeight(280);
         scroll.setStyle(
-            "-fx-background:transparent;" +
-            "-fx-background-color:transparent;" +
-            "-fx-border-color:" + C_BORDER_SOFT + ";" +
-            "-fx-border-radius:8;"
-        );
+                "-fx-background:transparent;" +
+                        "-fx-background-color:transparent;" +
+                        "-fx-border-color:" + C_BORDER_SOFT + ";" +
+                        "-fx-border-radius:8;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         panel.getChildren().addAll(titleRow, scroll);
@@ -263,7 +260,7 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  RIGHT COLUMN
+    // RIGHT COLUMN
     // ============================================================
     private VBox buildRightColumn() {
         VBox col = new VBox(16);
@@ -275,12 +272,11 @@ public class CheckInView extends BorderPane {
         VBox panel = new VBox(14);
         panel.setPadding(new Insets(20, 22, 22, 22));
         panel.setStyle(
-            "-fx-background-color:white;" +
-            "-fx-background-radius:14;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:14;" +
-            "-fx-border-width:1;"
-        );
+                "-fx-background-color:white;" +
+                        "-fx-background-radius:14;" +
+                        "-fx-border-color:" + C_BORDER + ";" +
+                        "-fx-border-radius:14;" +
+                        "-fx-border-width:1;");
         panel.setEffect(new DropShadow(8, 0, 2, Color.web("#0f172a0a")));
 
         Label lbl = new Label("Thông tin đặt phòng");
@@ -301,12 +297,11 @@ public class CheckInView extends BorderPane {
         VBox panel = new VBox(14);
         panel.setPadding(new Insets(20, 22, 20, 22));
         panel.setStyle(
-            "-fx-background-color:white;" +
-            "-fx-background-radius:14;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:14;" +
-            "-fx-border-width:1;"
-        );
+                "-fx-background-color:white;" +
+                        "-fx-background-radius:14;" +
+                        "-fx-border-color:" + C_BORDER + ";" +
+                        "-fx-border-radius:14;" +
+                        "-fx-border-width:1;");
         panel.setEffect(new DropShadow(8, 0, 2, Color.web("#0f172a0a")));
 
         Label lbl = new Label("Bàn giao phòng");
@@ -314,10 +309,9 @@ public class CheckInView extends BorderPane {
         lbl.setTextFill(Color.web(C_NAVY));
 
         Label hint = new Label(
-            "• Kiểm tra trạng thái các phòng trong danh sách bên trái\n" +
-            "• Phòng có tình trạng \"Sẵn sàng\" mới được phép bàn giao\n" +
-            "• Hệ thống sẽ tạo hóa đơn nháp khi bàn giao thành công"
-        );
+                "• Kiểm tra trạng thái các phòng trong danh sách bên trái\n" +
+                        "• Phòng có tình trạng \"Sẵn sàng\" mới được phép bàn giao\n" +
+                        "• Hệ thống sẽ tạo hóa đơn nháp khi bàn giao thành công");
         hint.setFont(Font.font("Segoe UI", 12));
         hint.setTextFill(Color.web(C_TEXT_GRAY));
         hint.setWrapText(true);
@@ -337,29 +331,33 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  LIST RENDERING
+    // LIST RENDERING
     // ============================================================
     private void refreshList() {
         allItems.clear();
         // Lấy danh sách đơn ĐÃ_XÁC_NHẬN có thể check-in (default: hôm nay, không lọc)
         List<Object[]> rows = datPhongDAO.getDonCheckInByDate(LocalDate.now(), false);
-        if (rows == null) rows = new ArrayList<>();
+        if (rows == null)
+            rows = new ArrayList<>();
         for (Object[] r : rows) {
             // r = {maDat, tenKH, dsPhongStr, soPhong}
-            String maDat   = (String) r[0];
-            String tenKH   = (String) r[1];
+            String maDat = (String) r[0];
+            String tenKH = (String) r[1];
             String dsPhong = (String) r[2];
-            int    soNguoi = r[3] instanceof Integer ? (Integer) r[3] : 0;
+            int soNguoi = r[3] instanceof Integer ? (Integer) r[3] : 0;
 
             DatPhong dp = datPhongDAO.findDatPhongAllStatus(maDat);
-            String sdt   = dp != null && dp.getKhachHang() != null && dp.getKhachHang().getSoDT()   != null
-                            ? dp.getKhachHang().getSoDT() : "---";
-            String cccd  = dp != null && dp.getKhachHang() != null && dp.getKhachHang().getSoCCCD() != null
-                            ? dp.getKhachHang().getSoCCCD() : "";
+            String sdt = dp != null && dp.getKhachHang() != null && dp.getKhachHang().getSoDT() != null
+                    ? dp.getKhachHang().getSoDT()
+                    : "---";
+            String cccd = dp != null && dp.getKhachHang() != null && dp.getKhachHang().getSoCCCD() != null
+                    ? dp.getKhachHang().getSoCCCD()
+                    : "";
             LocalDate ngayNhan = dp != null && dp.getNgayCheckIn() != null
-                                  ? dp.getNgayCheckIn().toLocalDate() : null;
+                    ? dp.getNgayCheckIn().toLocalDate()
+                    : null;
 
-            allItems.add(new Object[]{ maDat, tenKH, sdt, cccd, dsPhong, soNguoi, ngayNhan });
+            allItems.add(new Object[] { maDat, tenKH, sdt, cccd, dsPhong, soNguoi, ngayNhan });
         }
         renderList();
     }
@@ -367,30 +365,35 @@ public class CheckInView extends BorderPane {
     private void renderList() {
         listItemsContainer.getChildren().clear();
         String q = txtSearch == null ? "" : txtSearch.getText().trim().toLowerCase();
-        boolean filterByDate = chkLate != null && chkLate.isSelected() && dpFilter != null && dpFilter.getValue() != null;
+        boolean filterByDate = chkLate != null && chkLate.isSelected() && dpFilter != null
+                && dpFilter.getValue() != null;
         LocalDate filterDate = filterByDate ? dpFilter.getValue() : null;
 
         List<Object[]> filtered = allItems.stream().filter(it -> {
             if (!q.isEmpty()) {
                 boolean match = ((String) it[0]).toLowerCase().contains(q)
-                             || ((String) it[1]).toLowerCase().contains(q)
-                             || ((String) it[2]).toLowerCase().contains(q)
-                             || ((String) it[3]).toLowerCase().contains(q);
-                if (!match) return false;
+                        || ((String) it[1]).toLowerCase().contains(q)
+                        || ((String) it[2]).toLowerCase().contains(q)
+                        || ((String) it[3]).toLowerCase().contains(q);
+                if (!match)
+                    return false;
             }
             if (filterByDate) {
                 LocalDate ngayNhan = (LocalDate) it[6];
-                if (ngayNhan == null || !ngayNhan.equals(filterDate)) return false;
+                if (ngayNhan == null || !ngayNhan.equals(filterDate))
+                    return false;
             }
             return true;
         }).collect(Collectors.toList());
 
         if (filtered.isEmpty()) {
             String msg;
-            if (allItems.isEmpty()) msg = "Không có đơn nào chờ check-in";
+            if (allItems.isEmpty())
+                msg = "Không có đơn nào chờ check-in";
             else if (filterByDate && q.isEmpty())
                 msg = "Không có đơn nào nhận ngày " + filterDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            else msg = "Không tìm thấy kết quả phù hợp";
+            else
+                msg = "Không tìm thấy kết quả phù hợp";
             Label empty = new Label(msg);
             empty.setTextFill(Color.web(C_TEXT_LIGHT));
             empty.setFont(Font.font("Segoe UI", 13));
@@ -405,11 +408,11 @@ public class CheckInView extends BorderPane {
     }
 
     private HBox createListItem(Object[] it) {
-        String maDat   = (String) it[0];
-        String tenKH   = (String) it[1];
-        String sdt     = (String) it[2];
-        String cccd    = (String) it[3];
-        int    soPhong = (int) it[5];
+        String maDat = (String) it[0];
+        String tenKH = (String) it[1];
+        String sdt = (String) it[2];
+        String cccd = (String) it[3];
+        int soPhong = (int) it[5];
 
         boolean isSelected = (selectedItem == it);
 
@@ -418,64 +421,83 @@ public class CheckInView extends BorderPane {
         row.setPadding(new Insets(10, 14, 10, 12));
         row.setCursor(Cursor.HAND);
 
-        String selStyle =
-            "-fx-background-color:" + C_BLUE_LIGHT + ";" +
-            "-fx-background-radius:10;" +
-            "-fx-border-color:" + C_BLUE + ";" +
-            "-fx-border-radius:10;" +
-            "-fx-border-width:1.5;";
-        String normalStyle =
-            "-fx-background-color:white;" +
-            "-fx-background-radius:10;" +
-            "-fx-border-color:" + C_BORDER_SOFT + ";" +
-            "-fx-border-radius:10;" +
-            "-fx-border-width:1;";
-        String hoverStyle =
-            "-fx-background-color:#f8fafc;" +
-            "-fx-background-radius:10;" +
-            "-fx-border-color:" + C_BORDER + ";" +
-            "-fx-border-radius:10;" +
-            "-fx-border-width:1;";
+        String selStyle = "-fx-background-color:" + C_BLUE_LIGHT + ";" +
+                "-fx-background-radius:10;" +
+                "-fx-border-color:" + C_BLUE + ";" +
+                "-fx-border-radius:10;" +
+                "-fx-border-width:1.5;";
+        String normalStyle = "-fx-background-color:white;" +
+                "-fx-background-radius:10;" +
+                "-fx-border-color:" + C_BORDER_SOFT + ";" +
+                "-fx-border-radius:10;" +
+                "-fx-border-width:1;";
+        String hoverStyle = "-fx-background-color:#f8fafc;" +
+                "-fx-background-radius:10;" +
+                "-fx-border-color:" + C_BORDER + ";" +
+                "-fx-border-radius:10;" +
+                "-fx-border-width:1;";
         row.setStyle(isSelected ? selStyle : normalStyle);
-        row.setOnMouseEntered(e -> { if (selectedItem != it) row.setStyle(hoverStyle); });
-        row.setOnMouseExited (e -> { if (selectedItem != it) row.setStyle(normalStyle); });
+        row.setOnMouseEntered(e -> {
+            if (selectedItem != it)
+                row.setStyle(hoverStyle);
+        });
+        row.setOnMouseExited(e -> {
+            if (selectedItem != it)
+                row.setStyle(normalStyle);
+        });
 
         Label pill = new Label(maDat);
         pill.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         pill.setTextFill(Color.web(C_ORANGE));
         pill.setStyle(
-            "-fx-background-color:white;" +
-            "-fx-background-radius:18;" +
-            "-fx-border-color:" + C_ORANGE + ";" +
-            "-fx-border-radius:18;" +
-            "-fx-border-width:1.5;" +
-            "-fx-padding:5 14;"
-        );
+                "-fx-background-color:white;" +
+                        "-fx-background-radius:18;" +
+                        "-fx-border-color:" + C_ORANGE + ";" +
+                        "-fx-border-radius:18;" +
+                        "-fx-border-width:1.5;" +
+                        "-fx-padding:5 14;");
         pill.setMinWidth(80);
         pill.setAlignment(Pos.CENTER);
 
-        VBox info = new VBox(2);
+        // Tên khách + CCCD + số người cùng 1 dòng (in đậm, rõ nét)
+        HBox info = new HBox(6);
+        info.setAlignment(Pos.CENTER_LEFT);
         Label lblName = new Label(tenKH);
         lblName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblName.setTextFill(Color.web(C_TEXT_DARK));
         info.getChildren().add(lblName);
-
-        StringBuilder sub = new StringBuilder();
-        sub.append(soPhong).append(" người");
-        if (!cccd.isEmpty()) sub.append("  •  CCCD: ").append(cccd);
-        Label lblSub = new Label(sub.toString());
-        lblSub.setFont(Font.font("Segoe UI", 11));
-        lblSub.setTextFill(Color.web(C_TEXT_LIGHT));
-        info.getChildren().add(lblSub);
+        if (!cccd.isEmpty()) {
+            Label dot1 = new Label("•");
+            dot1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+            dot1.setTextFill(Color.web(C_TEXT_GRAY));
+            Label lblCccd = new Label("CCCD: " + cccd);
+            lblCccd.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+            lblCccd.setTextFill(Color.web(C_TEXT_DARK));
+            info.getChildren().addAll(dot1, lblCccd);
+        }
+        {
+            Label dot2 = new Label("•");
+            dot2.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+            dot2.setTextFill(Color.web(C_TEXT_GRAY));
+            Label lblSoNguoi = new Label(soPhong + " người");
+            lblSoNguoi.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+            lblSoNguoi.setTextFill(Color.web(C_TEXT_DARK));
+            info.getChildren().addAll(dot2, lblSoNguoi);
+        }
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        HBox phoneBox = new HBox(4);
+        phoneBox.setAlignment(Pos.CENTER_RIGHT);
+        Label phoneIcon = new Label("📞");
+        phoneIcon.setFont(Font.font(12));
         Label lblPhone = new Label(sdt);
         lblPhone.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblPhone.setTextFill(Color.web(C_TEXT_DARK));
+        phoneBox.getChildren().addAll(phoneIcon, lblPhone);
 
-        row.getChildren().addAll(pill, info, spacer, lblPhone);
+        row.getChildren().addAll(pill, info, spacer, phoneBox);
 
         row.setOnMouseClicked(e -> {
             selectedItem = it;
@@ -486,7 +508,7 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  LOAD DETAIL
+    // LOAD DETAIL
     // ============================================================
     private void loadOrderDetail(String maDat) {
         DatPhong dp = datPhongDAO.findDatPhongAllStatus(maDat);
@@ -496,7 +518,8 @@ public class CheckInView extends BorderPane {
         }
         currentDatPhong = dp;
         currentRoomDetails = ctdpDAO.getPhongDetailsByMaDat(maDat);
-        if (currentRoomDetails == null) currentRoomDetails = new ArrayList<>();
+        if (currentRoomDetails == null)
+            currentRoomDetails = new ArrayList<>();
 
         updateDetailInfoUI();
         updateRoomListUI();
@@ -515,29 +538,33 @@ public class CheckInView extends BorderPane {
         grid.setVgap(10);
         ColumnConstraints c1 = new ColumnConstraints();
         ColumnConstraints c2 = new ColumnConstraints();
-        c1.setPercentWidth(50); c2.setPercentWidth(50);
+        c1.setPercentWidth(50);
+        c2.setPercentWidth(50);
         grid.getColumnConstraints().addAll(c1, c2);
 
-        String maDat  = currentDatPhong.getMaDat();
-        String tenKH  = safe(currentDatPhong.getKhachHang() != null ? currentDatPhong.getKhachHang().getTenKH()  : null);
-        String sdt    = safe(currentDatPhong.getKhachHang() != null ? currentDatPhong.getKhachHang().getSoDT()   : null);
-        String cccd   = safe(currentDatPhong.getKhachHang() != null ? currentDatPhong.getKhachHang().getSoCCCD() : null);
-        String ngayNhan = currentDatPhong.getNgayCheckIn()  != null ? currentDatPhong.getNgayCheckIn() .format(dtf) : "---";
-        String ngayTra  = currentDatPhong.getNgayCheckOut() != null ? currentDatPhong.getNgayCheckOut().format(dtf) : "---";
+        String maDat = currentDatPhong.getMaDat();
+        String tenKH = safe(currentDatPhong.getKhachHang() != null ? currentDatPhong.getKhachHang().getTenKH() : null);
+        String sdt = safe(currentDatPhong.getKhachHang() != null ? currentDatPhong.getKhachHang().getSoDT() : null);
+        String cccd = safe(currentDatPhong.getKhachHang() != null ? currentDatPhong.getKhachHang().getSoCCCD() : null);
+        String ngayNhan = currentDatPhong.getNgayCheckIn() != null ? currentDatPhong.getNgayCheckIn().format(dtf)
+                : "---";
+        String ngayTra = currentDatPhong.getNgayCheckOut() != null ? currentDatPhong.getNgayCheckOut().format(dtf)
+                : "---";
 
         String trangThaiStr = safe(currentDatPhong.getTrangThai());
         try {
             trangThaiStr = model.enums.TrangThaiDatPhong.valueOf(currentDatPhong.getTrangThai()).getThongTinTrangThai();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
-        grid.add(infoCell("Mã đặt phòng",   maDat,           false), 0, 0);
-        grid.add(infoCell("Số phòng",       currentRoomDetails.size() + " phòng", false), 1, 0);
-        grid.add(infoCell("Khách hàng",     tenKH,           false), 0, 1);
-        grid.add(infoCell("Số điện thoại",  sdt,             false), 1, 1);
-        grid.add(infoCell("Ngày nhận",      ngayNhan,        false), 0, 2);
-        grid.add(infoCell("Ngày trả",       ngayTra,         false), 1, 2);
-        grid.add(infoCell("CCCD",           cccd,            false), 0, 3);
-        grid.add(infoCell("Trạng thái",     trangThaiStr,    true ), 1, 3);
+        grid.add(infoCell("Mã đặt phòng", maDat, false), 0, 0);
+        grid.add(infoCell("Số phòng", currentRoomDetails.size() + " phòng", false), 1, 0);
+        grid.add(infoCell("Khách hàng", tenKH, false), 0, 1);
+        grid.add(infoCell("Số điện thoại", sdt, false), 1, 1);
+        grid.add(infoCell("Ngày nhận", ngayNhan, false), 0, 2);
+        grid.add(infoCell("Ngày trả", ngayTra, false), 1, 2);
+        grid.add(infoCell("CCCD", cccd, false), 0, 3);
+        grid.add(infoCell("Trạng thái", trangThaiStr, true), 1, 3);
 
         detailInfoBox.getChildren().add(grid);
     }
@@ -556,7 +583,7 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  ROOM LIST UI (với trạng thái phòng)
+    // ROOM LIST UI (với trạng thái phòng)
     // ============================================================
     private void updateRoomListUI() {
         roomListBox.getChildren().clear();
@@ -573,14 +600,16 @@ public class CheckInView extends BorderPane {
 
         // Lấy trạng thái thực tế của các phòng
         List<String> listMa = new ArrayList<>();
-        for (Object[] r : currentRoomDetails) listMa.add((String) r[0]);
+        for (Object[] r : currentRoomDetails)
+            listMa.add((String) r[0]);
         java.util.Map<String, String> mapStatus = phongDAO.getTrangThaiMapByMaPhongs(listMa);
 
         int readyCount = 0;
         for (Object[] r : currentRoomDetails) {
-            String mp     = (String) r[0];
+            String mp = (String) r[0];
             String status = mapStatus.getOrDefault(mp, "CONTRONG");
-            if ("CONTRONG".equals(status)) readyCount++;
+            if ("CONTRONG".equals(status))
+                readyCount++;
         }
         lblRoomCount.setText("(" + readyCount + "/" + currentRoomDetails.size() + " sẵn sàng)");
 
@@ -591,57 +620,72 @@ public class CheckInView extends BorderPane {
 
     private HBox createRoomCard(Object[] r, java.util.Map<String, String> mapStatus) {
         String maPhong = (String) r[0];
-        String maLoai  = (String) r[1];
-        String status  = mapStatus.getOrDefault(maPhong, "CONTRONG");
+        String maLoai = (String) r[1];
+        String status = mapStatus.getOrDefault(maPhong, "CONTRONG");
 
-        boolean isOccupied    = "DANGSUDUNG".equals(status);
-        boolean isDirty       = "BAN"       .equals(status);
-        boolean isMaintenance = "BAOTRI"    .equals(status);
-        boolean isReady       = !isOccupied && !isDirty && !isMaintenance;
+        boolean isOccupied = "DANGSUDUNG".equals(status);
+        boolean isDirty = "BAN".equals(status);
+        boolean isMaintenance = "BAOTRI".equals(status);
+        boolean isReady = !isOccupied && !isDirty && !isMaintenance;
 
         String tenLoai = maLoai;
         try {
             tenLoai = model.enums.TenLoaiPhong.valueOf(maLoai.toUpperCase()).getDisplayName();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         // Card style
         String bg, border, statusBg, statusFg, statusText, pillFg;
         if (isReady) {
-            bg = "#f0fdf4"; border = C_GREEN; statusBg = "#dcfce7"; statusFg = C_GREEN;
-            statusText = "✓ Sẵn sàng"; pillFg = C_GREEN;
+            bg = "#f0fdf4";
+            border = C_GREEN;
+            statusBg = "#dcfce7";
+            statusFg = C_GREEN;
+            statusText = "✓ Sẵn sàng";
+            pillFg = C_GREEN;
         } else if (isOccupied) {
-            bg = "#fef2f2"; border = C_RED; statusBg = "#fee2e2"; statusFg = C_RED;
-            statusText = "⛔ Đang có khách"; pillFg = C_RED;
+            bg = "#fef2f2";
+            border = C_RED;
+            statusBg = "#fee2e2";
+            statusFg = C_RED;
+            statusText = "⛔ Đang có khách";
+            pillFg = C_RED;
         } else if (isDirty) {
-            bg = "#fff7ed"; border = "#fb923c"; statusBg = "#ffedd5"; statusFg = "#ea580c";
-            statusText = "❌ Cần dọn"; pillFg = "#ea580c";
+            bg = "#fff7ed";
+            border = "#fb923c";
+            statusBg = "#ffedd5";
+            statusFg = "#ea580c";
+            statusText = "❌ Cần dọn";
+            pillFg = "#ea580c";
         } else {
-            bg = "#fef3c7"; border = "#f59e0b"; statusBg = "#fde68a"; statusFg = "#92400e";
-            statusText = "❌ Bảo trì"; pillFg = "#92400e";
+            bg = "#fef3c7";
+            border = "#f59e0b";
+            statusBg = "#fde68a";
+            statusFg = "#92400e";
+            statusText = "❌ Bảo trì";
+            pillFg = "#92400e";
         }
 
         HBox card = new HBox(14);
         card.setAlignment(Pos.CENTER_LEFT);
         card.setPadding(new Insets(10, 14, 10, 12));
         card.setStyle(
-            "-fx-background-color:" + bg + ";" +
-            "-fx-background-radius:10;" +
-            "-fx-border-color:" + border + ";" +
-            "-fx-border-radius:10;" +
-            "-fx-border-width:1.5;"
-        );
+                "-fx-background-color:" + bg + ";" +
+                        "-fx-background-radius:10;" +
+                        "-fx-border-color:" + border + ";" +
+                        "-fx-border-radius:10;" +
+                        "-fx-border-width:1.5;");
 
         Label pill = new Label(maPhong);
         pill.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         pill.setTextFill(Color.web(pillFg));
         pill.setStyle(
-            "-fx-background-color:white;" +
-            "-fx-background-radius:18;" +
-            "-fx-border-color:" + pillFg + ";" +
-            "-fx-border-radius:18;" +
-            "-fx-border-width:1.5;" +
-            "-fx-padding:5 14;"
-        );
+                "-fx-background-color:white;" +
+                        "-fx-background-radius:18;" +
+                        "-fx-border-color:" + pillFg + ";" +
+                        "-fx-border-radius:18;" +
+                        "-fx-border-width:1.5;" +
+                        "-fx-padding:5 14;");
         pill.setMinWidth(80);
         pill.setAlignment(Pos.CENTER);
 
@@ -661,23 +705,24 @@ public class CheckInView extends BorderPane {
         lblStatus.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
         lblStatus.setTextFill(Color.web(statusFg));
         lblStatus.setStyle(
-            "-fx-background-color:" + statusBg + ";" +
-            "-fx-padding:4 10;" +
-            "-fx-background-radius:8;"
-        );
+                "-fx-background-color:" + statusBg + ";" +
+                        "-fx-padding:4 10;" +
+                        "-fx-background-radius:8;");
 
         card.getChildren().addAll(pill, info, sp, lblStatus);
         return card;
     }
 
     // ============================================================
-    //  CHECK-IN EXECUTION
+    // CHECK-IN EXECUTION
     // ============================================================
     private void handleCheckIn() {
-        if (currentDatPhong == null || currentRoomDetails == null || currentRoomDetails.isEmpty()) return;
+        if (currentDatPhong == null || currentRoomDetails == null || currentRoomDetails.isEmpty())
+            return;
 
         List<String> listMaPhong = new ArrayList<>();
-        for (Object[] r : currentRoomDetails) listMaPhong.add((String) r[0]);
+        for (Object[] r : currentRoomDetails)
+            listMaPhong.add((String) r[0]);
 
         // Kiểm tra trạng thái phòng
         java.util.Map<String, String> mapStatus = phongDAO.getTrangThaiMapByMaPhongs(listMaPhong);
@@ -687,15 +732,19 @@ public class CheckInView extends BorderPane {
 
         for (String mp : listMaPhong) {
             String status = mapStatus.getOrDefault(mp, "CONTRONG");
-            if      ("BAN"       .equals(status)) dirtyRooms.add(mp);
-            else if ("BAOTRI"    .equals(status)) maintenanceRooms.add(mp);
-            else if ("DANGSUDUNG".equals(status)) occupiedRooms.add(mp);
+            if ("BAN".equals(status))
+                dirtyRooms.add(mp);
+            else if ("BAOTRI".equals(status))
+                maintenanceRooms.add(mp);
+            else if ("DANGSUDUNG".equals(status))
+                occupiedRooms.add(mp);
         }
 
         if (!dirtyRooms.isEmpty() || !maintenanceRooms.isEmpty() || !occupiedRooms.isEmpty()) {
             StringBuilder errorMsg = new StringBuilder("Không thể nhận phòng do có phòng chưa sẵn sàng:\n");
             if (!occupiedRooms.isEmpty())
-                errorMsg.append("\n⛔ Phòng [").append(String.join(", ", occupiedRooms)).append("] hiện đang CÓ KHÁCH ĐANG Ở.");
+                errorMsg.append("\n⛔ Phòng [").append(String.join(", ", occupiedRooms))
+                        .append("] hiện đang CÓ KHÁCH ĐANG Ở.");
             if (!dirtyRooms.isEmpty())
                 errorMsg.append("\n❌ Phòng [").append(String.join(", ", dirtyRooms)).append("] đang BẨN.");
             if (!maintenanceRooms.isEmpty())
@@ -713,25 +762,26 @@ public class CheckInView extends BorderPane {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận Check-in");
         confirm.setHeaderText("Xác nhận cho khách " + currentDatPhong.getKhachHang().getTenKH()
-            + " nhận " + listMaPhong.size() + " phòng?");
+                + " nhận " + listMaPhong.size() + " phòng?");
         confirm.setContentText(
-            "Bàn giao phòng: " + String.join(", ", listMaPhong) +
-            "\n\nHệ thống sẽ:\n" +
-            " • Cập nhật trạng thái phòng → Đang sử dụng\n" +
-            " • Cập nhật đơn → Đã nhận phòng\n" +
-            " • Tạo hóa đơn nháp"
-        );
+                "Bàn giao phòng: " + String.join(", ", listMaPhong) +
+                        "\n\nHệ thống sẽ:\n" +
+                        " • Cập nhật trạng thái phòng → Đang sử dụng\n" +
+                        " • Cập nhật đơn → Đã nhận phòng\n" +
+                        " • Tạo hóa đơn nháp");
         confirm.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
 
         confirm.showAndWait().ifPresent(btn -> {
-            if (btn != ButtonType.OK) return;
+            if (btn != ButtonType.OK)
+                return;
             performCheckIn(listMaPhong);
         });
     }
 
     private void performCheckIn(List<String> listMaPhong) {
         try (Connection con = ConnectDatabase.getInstance().getConnection()) {
-            if (con == null) return;
+            if (con == null)
+                return;
             con.setAutoCommit(false);
             try {
                 // 1. Tạo HoaDon nếu chưa có
@@ -755,7 +805,10 @@ public class CheckInView extends BorderPane {
                 String baseMaCTHD = cthdDAO.generateMaCTHD();
                 int lastNum = 0;
                 if (baseMaCTHD != null && baseMaCTHD.length() > 4) {
-                    try { lastNum = Integer.parseInt(baseMaCTHD.substring(4)); } catch (Exception ignored) {}
+                    try {
+                        lastNum = Integer.parseInt(baseMaCTHD.substring(4));
+                    } catch (Exception ignored) {
+                    }
                 }
 
                 // 3. Update trạng thái phòng + tạo CTHD
@@ -765,7 +818,7 @@ public class CheckInView extends BorderPane {
                     String maCTDP = mapMaCTDP.get(maPhong);
                     if (maCTDP != null && hd != null) {
                         String maCTHD = String.format("CTHD%03d", lastNum++);
-                        cthdDAO.insertWithConnection(con, maCTHD, hd.getMaHD(), maCTDP, 0, 0);
+                        cthdDAO.insertWithConnection(con, maCTHD, hd.getMaHD(), maCTDP, 0, 0, 0, 0);
                     }
                 }
 
@@ -775,8 +828,8 @@ public class CheckInView extends BorderPane {
                 con.commit();
 
                 Alert ok = new Alert(Alert.AlertType.INFORMATION,
-                    "Các phòng [" + String.join(", ", listMaPhong) + "] đã bàn giao thành công.",
-                    ButtonType.OK);
+                        "Các phòng [" + String.join(", ", listMaPhong) + "] đã bàn giao thành công.",
+                        ButtonType.OK);
                 ok.setTitle("Check-in thành công");
                 ok.setHeaderText("Check-in hoàn tất!");
                 ok.showAndWait();
@@ -796,10 +849,11 @@ public class CheckInView extends BorderPane {
     }
 
     // ============================================================
-    //  RESET / HELPERS
+    // RESET / HELPERS
     // ============================================================
     private void resetDetail() {
-        if (txtSearch != null) txtSearch.clear();
+        if (txtSearch != null)
+            txtSearch.clear();
         currentDatPhong = null;
         currentRoomDetails = null;
         selectedItem = null;
@@ -823,21 +877,24 @@ public class CheckInView extends BorderPane {
             lbl.setPadding(new Insets(20));
             roomListBox.getChildren().add(lbl);
         }
-        if (lblRoomCount != null) lblRoomCount.setText("");
+        if (lblRoomCount != null)
+            lblRoomCount.setText("");
     }
 
-    private String safe(String s) { return s != null && !s.isEmpty() ? s : "---"; }
+    private String safe(String s) {
+        return s != null && !s.isEmpty() ? s : "---";
+    }
 
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {
-        String base  = "-fx-background-color:" + bg + ";"
-                     + "-fx-text-fill:" + fg + ";"
-                     + "-fx-background-radius:10;"
-                     + "-fx-padding:10 20;"
-                     + "-fx-cursor:hand;"
-                     + "-fx-font-weight:bold;";
+        String base = "-fx-background-color:" + bg + ";"
+                + "-fx-text-fill:" + fg + ";"
+                + "-fx-background-radius:10;"
+                + "-fx-padding:10 20;"
+                + "-fx-cursor:hand;"
+                + "-fx-font-weight:bold;";
         String hover = base.replace("-fx-background-color:" + bg, "-fx-background-color:" + hoverBg);
         btn.setStyle(base);
         btn.setOnMouseEntered(e -> btn.setStyle(hover));
-        btn.setOnMouseExited (e -> btn.setStyle(base));
+        btn.setOnMouseExited(e -> btn.setStyle(base));
     }
 }

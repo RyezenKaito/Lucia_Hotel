@@ -3,26 +3,46 @@ package gui;
 import dao.BangGiaDichVuDAO;
 import dao.DatPhongDAO;
 import dao.DichVuDAO;
+import dao.DichVuSuDungDAO;
+import dao.LoaiDichVuDAO;
 import dao.PhongDAO;
-import model.entities.DichVu;
-import model.entities.Phong;
-import model.enums.TrangThaiPhong;
-
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import model.entities.DichVu;
+import model.entities.DichVuSuDung;
+import model.entities.LoaiDichVu;
+import model.entities.Phong;
+import model.enums.TrangThaiPhong;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class SuDungDichVuView extends BorderPane {
 
@@ -33,56 +53,49 @@ public class SuDungDichVuView extends BorderPane {
     private static final String C_BORDER = "#e9ecef";
     private static final String C_TEXT_DARK = "#111827";
     private static final String C_TEXT_GRAY = "#6b7280";
+    private static final String C_SOFT_BLUE = "#eff6ff";
 
     private final DatPhongDAO datPhongDAO = new DatPhongDAO();
     private final BangGiaDichVuDAO bangGiaDAO = new BangGiaDichVuDAO();
-    private final dao.LoaiDichVuDAO loaiDVDAO = new dao.LoaiDichVuDAO();
-    private final dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
-    private String selectedMaPhong = "";
-    private model.entities.LoaiDichVu currentCategory;
+    private final LoaiDichVuDAO loaiDVDAO = new LoaiDichVuDAO();
+    private final DichVuSuDungDAO dvsdDAO = new DichVuSuDungDAO();
+    private final PhongDAO phongDAO = new PhongDAO();
+    private final DichVuDAO dichVuDAO = new DichVuDAO();
+
+    private final ObservableList<Phong> displayedRooms = FXCollections.observableArrayList();
+    private final ObservableList<DichVu> displayedServices = FXCollections.observableArrayList();
     private final Map<DichVu, Integer> cart = new HashMap<>();
+    private final Map<String, Double> activePrices = new HashMap<>();
+    private final List<LoaiDichVu> categories = new ArrayList<>();
 
-    // ← THÊM MỚI: trạng thái thu gọn/mở rộng của "Dịch vụ đã dùng"
-    private boolean usedServicesExpanded = false;
-
-    private FlowPane roomPane;
-    private FlowPane servicePane;
+    private TilePane roomTilePane;
+    private TilePane serviceTilePane;
     private VBox billContainer;
-    private Label lblTotal;
+    private ComboBox<String> cboCategory;
     private Label lblRoomTitle;
-    private HBox tabBar;
+    private Label lblRoomCount;
+    private Label lblServiceCount;
+    private Label lblTotal;
+    private TextField txtRoomSearch;
+    private TextField txtServiceSearch;
+
+    private String selectedMaPhong = "";
+    private LoaiDichVu currentCategory;
+    private boolean usedServicesExpanded = false;
 
     public SuDungDichVuView() {
         setStyle("-fx-background-color: " + C_BG + ";");
-        setPadding(new Insets(32));
-        setTop(buildHeaderBlock());
+        setPadding(new Insets(24));
         setCenter(buildBody());
 
+        categories.addAll(loaiDVDAO.getAll());
+        currentCategory = null;
+        refreshCategoryOptions();
         refreshRooms();
-
-        List<model.entities.LoaiDichVu> cats = loaiDVDAO.getAll();
-        if (!cats.isEmpty()) {
-            currentCategory = cats.get(0);
-            refreshTabBar();
-            refreshServices(currentCategory);
-        }
+        refreshServices();
+        updateBillUI();
     }
 
-    /* ══ HEADER ══ */
-    private VBox buildHeaderBlock() {
-        VBox box = new VBox(4);
-        box.setPadding(new Insets(0, 0, 20, 0));
-        Label title = new Label("Sử dụng dịch vụ");
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
-        title.setTextFill(Color.web(C_TEXT_DARK));
-        Label subtitle = new Label("Thêm dịch vụ vào phòng đang có khách");
-        subtitle.setFont(Font.font("Segoe UI", 14));
-        subtitle.setTextFill(Color.web(C_TEXT_GRAY));
-        box.getChildren().addAll(title, subtitle);
-        return box;
-    }
-
-    /* ══ BODY ══ */
     private HBox buildBody() {
         HBox body = new HBox(24);
         body.setAlignment(Pos.TOP_LEFT);
@@ -99,82 +112,129 @@ public class SuDungDichVuView extends BorderPane {
         return body;
     }
 
-    /* ══ LEFT PANE ══ */
     private VBox buildLeftPane() {
         VBox pane = new VBox(16);
 
         VBox roomBox = new VBox(10);
-        roomBox.setPadding(new Insets(10, 15, 10, 15));
+        roomBox.setPadding(new Insets(12, 15, 12, 15));
         roomBox.setStyle("-fx-background-color: " + C_CARD + ";" +
                 "-fx-border-color: " + C_BORDER + ";" +
                 "-fx-border-radius: 12; -fx-background-radius: 12;");
         roomBox.setEffect(new DropShadow(8, 0, 2, Color.web("#00000008")));
-        roomBox.setPrefHeight(150);
-        roomBox.setMinHeight(150);
-        roomBox.setMaxHeight(150);
+        roomBox.setPrefHeight(320);
+        roomBox.setMinHeight(320);
 
-        Label lblRoom = new Label("Phòng đang có khách ( nhấp để chọn )");
+        HBox roomHeader = new HBox(10);
+        roomHeader.setAlignment(Pos.CENTER_LEFT);
+
+        VBox roomText = new VBox(2);
+        Label lblRoom = new Label("Phòng đang có khách");
         lblRoom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         lblRoom.setTextFill(Color.web(C_TEXT_DARK));
+        Label lblRoomSub = new Label("Tìm theo mã phòng hoặc tên khách hàng");
+        lblRoomSub.setFont(Font.font("Segoe UI", 12));
+        lblRoomSub.setTextFill(Color.web(C_TEXT_GRAY));
+        roomText.getChildren().addAll(lblRoom, lblRoomSub);
 
-        roomPane = new FlowPane(12, 8);
-        ScrollPane roomScroll = new ScrollPane(roomPane);
+        lblRoomCount = new Label();
+        lblRoomCount.setStyle("-fx-background-color: " + C_SOFT_BLUE + ";" +
+                "-fx-text-fill: " + C_SIDEBAR + ";" +
+                "-fx-background-radius: 999; -fx-padding: 6 12 6 12;" +
+                "-fx-font-weight: bold; -fx-font-size: 12;");
+
+        Region roomSpacer = new Region();
+        HBox.setHgrow(roomSpacer, Priority.ALWAYS);
+        roomHeader.getChildren().addAll(roomText, roomSpacer, lblRoomCount);
+
+        txtRoomSearch = createSearchField("Nhập mã phòng / Tên khách hàng..");
+        txtRoomSearch.textProperty().addListener((obs, oldVal, newVal) -> filterRooms());
+        txtRoomSearch.setMaxWidth(500);
+
+        roomTilePane = new TilePane();
+        roomTilePane.setHgap(8);
+        roomTilePane.setVgap(8);
+        roomTilePane.setPrefColumns(5);
+        roomTilePane.setTileAlignment(Pos.TOP_LEFT);
+        roomTilePane.setStyle("-fx-background-color: transparent;");
+
+        ScrollPane roomScroll = new ScrollPane(roomTilePane);
         roomScroll.setFitToWidth(true);
-        roomScroll.setPrefHeight(90);
+        roomScroll.setPrefViewportHeight(220);
         roomScroll.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
 
-        roomBox.getChildren().addAll(lblRoom, roomScroll);
+        roomBox.getChildren().addAll(roomHeader, txtRoomSearch, roomScroll);
 
         VBox serviceBox = new VBox(12);
         serviceBox.setStyle("-fx-background-color: transparent;");
         VBox.setVgrow(serviceBox, Priority.ALWAYS);
 
-        tabBar = new HBox(8);
-        // tabBar sẽ được populate qua refreshTabBar() gọi từ constructor hoặc sau khi
-        // load data
+        HBox serviceHeader = new HBox(10);
+        serviceHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox serviceText = new VBox(2);
+        Label lblService = new Label("Danh sách dịch vụ");
+        lblService.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblService.setTextFill(Color.web(C_TEXT_DARK));
+        Label lblServiceSub = new Label("Lọc theo nhóm và tìm theo tên dịch vụ.");
+        lblServiceSub.setFont(Font.font("Segoe UI", 12));
+        lblServiceSub.setTextFill(Color.web(C_TEXT_GRAY));
+        serviceText.getChildren().addAll(lblService, lblServiceSub);
 
-        servicePane = new FlowPane(12, 12);
-        ScrollPane serviceScroll = new ScrollPane(servicePane);
+        lblServiceCount = new Label();
+        lblServiceCount.setStyle("-fx-background-color: " + C_SOFT_BLUE + ";" +
+                "-fx-text-fill: " + C_SIDEBAR + ";" +
+                "-fx-background-radius: 999; -fx-padding: 6 12 6 12;" +
+                "-fx-font-weight: bold; -fx-font-size: 12;");
+        Region serviceSpacer = new Region();
+        HBox.setHgrow(serviceSpacer, Priority.ALWAYS);
+        serviceHeader.getChildren().addAll(serviceText, serviceSpacer, lblServiceCount);
+
+        txtServiceSearch = createSearchField("Tìm dịch vụ...");
+        txtServiceSearch.textProperty().addListener((obs, oldVal, newVal) -> refreshServices());
+
+        cboCategory = new ComboBox<>();
+        cboCategory.setPrefWidth(200);
+        cboCategory.setPrefHeight(34);
+
+        cboCategory.setStyle("-fx-background-color: white;" +
+                "-fx-border-color: " + C_BORDER + ";" +
+                "-fx-border-radius: 12; -fx-background-radius: 12;" +
+                "-fx-font-size: 12;");
+        cboCategory.setOnAction(e -> {
+            String selected = cboCategory.getValue();
+            if (selected == null || "Tất cả".equals(selected)) {
+                currentCategory = null;
+            } else {
+                for (LoaiDichVu category : categories) {
+                    if (category.getTenLoaiDV().equals(selected)) {
+                        currentCategory = category;
+                        break;
+                    }
+                }
+            }
+            refreshServices();
+        });
+
+        HBox filterRow = new HBox(10, txtServiceSearch, cboCategory);
+        filterRow.setAlignment(Pos.CENTER_LEFT);
+
+        serviceTilePane = new TilePane();
+        serviceTilePane.setHgap(10);
+        serviceTilePane.setVgap(10);
+        serviceTilePane.setTileAlignment(Pos.TOP_LEFT);
+        serviceTilePane.setStyle("-fx-background-color: transparent;");
+
+        ScrollPane serviceScroll = new ScrollPane(serviceTilePane);
         serviceScroll.setFitToWidth(true);
-        servicePane.prefWrapLengthProperty().bind(serviceScroll.widthProperty().subtract(20));
         serviceScroll.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(serviceScroll, Priority.ALWAYS);
 
-        serviceBox.getChildren().addAll(tabBar, serviceScroll);
-        VBox.setVgrow(serviceBox, Priority.ALWAYS);
+        serviceBox.getChildren().addAll(serviceHeader, filterRow, serviceScroll);
 
         pane.getChildren().addAll(roomBox, serviceBox);
-        VBox.setVgrow(pane, Priority.ALWAYS);
+        VBox.setVgrow(serviceBox, Priority.ALWAYS);
         return pane;
     }
 
-    private Button buildTabButton(model.entities.LoaiDichVu cat) {
-        boolean isActive = currentCategory != null && cat.getMaLoaiDV().equals(currentCategory.getMaLoaiDV());
-        Button btn = new Button(cat.getTenLoaiDV());
-        btn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        btn.setCursor(Cursor.HAND);
-        btn.setPrefHeight(36);
-        btn.setPadding(new Insets(0, 16, 0, 16));
-        btn.setStyle(isActive
-                ? "-fx-background-color: " + C_SIDEBAR + "; -fx-text-fill: white; -fx-background-radius: 8;"
-                : "-fx-background-color: " + C_CARD + "; -fx-text-fill: " + C_TEXT_GRAY + ";" +
-                        "-fx-border-color: " + C_BORDER + "; -fx-background-radius: 8; -fx-border-radius: 8;");
-        btn.setOnAction(e -> {
-            currentCategory = cat;
-            refreshTabBar();
-            refreshServices(cat);
-        });
-        return btn;
-    }
-
-    private void refreshTabBar() {
-        tabBar.getChildren().clear();
-        List<model.entities.LoaiDichVu> list = loaiDVDAO.getAll();
-        for (model.entities.LoaiDichVu c : list)
-            tabBar.getChildren().add(buildTabButton(c));
-    }
-
-    /* ══ RIGHT PANE ══ */
     private VBox buildRightPane() {
         VBox pane = new VBox(0);
         pane.setStyle("-fx-background-color: " + C_CARD + ";" +
@@ -204,7 +264,7 @@ public class SuDungDichVuView extends BorderPane {
         footer.setStyle(
                 "-fx-border-color: " + C_BORDER + " transparent transparent transparent; -fx-border-width: 1 0 0 0;");
 
-        lblTotal = new Label("Tổng: 0 đ");
+        lblTotal = new Label("Tổng: 0 đồng");
         lblTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         lblTotal.setTextFill(Color.web(C_SIDEBAR));
 
@@ -220,10 +280,10 @@ public class SuDungDichVuView extends BorderPane {
         btnClear.setOnAction(e -> {
             cart.clear();
             updateBillUI();
-            refreshServices(currentCategory);
+            refreshServices();
         });
 
-        Button btnConfirm = new Button("✔ XÁC NHẬN");
+        Button btnConfirm = new Button("Xác Nhận");
         btnConfirm.setPrefWidth(200);
         btnConfirm.setPrefHeight(45);
         btnConfirm.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
@@ -238,166 +298,137 @@ public class SuDungDichVuView extends BorderPane {
         return pane;
     }
 
-    /* ══ ROOM CARD ══ */
-    private VBox buildRoomCard(Phong p) {
-        boolean isSelected = selectedMaPhong.equals(p.getMaPhong());
+    private TextField createSearchField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setMinWidth(300);
+        field.setPrefWidth(400);
+        field.setPrefHeight(34);
+        field.setStyle("-fx-background-color: #f8fafc;" +
+                "-fx-border-color: " + C_BORDER + ";" +
+                "-fx-border-radius: 12; -fx-background-radius: 12;" +
+                "-fx-padding: 7 12 7 12; -fx-font-size: 12;");
+        return field;
+    }
+
+    private void refreshRooms() {
+        filterRooms();
+    }
+
+    private void filterRooms() {
+        List<Phong> allRooms = phongDAO.getPhongByTrangThai(TrangThaiPhong.DACOKHACH);
+        String keyword = normalize(txtRoomSearch == null ? "" : txtRoomSearch.getText());
+
+        allRooms.sort(Comparator.comparing(Phong::getMaPhong, String.CASE_INSENSITIVE_ORDER));
+        displayedRooms.setAll(allRooms.stream().filter(room -> {
+            if (keyword.isEmpty()) {
+                return true;
+            }
+            String guest = normalize(datPhongDAO.getTenKhachHienTai(room.getMaPhong()));
+            return normalize(room.getMaPhong()).contains(keyword) || guest.contains(keyword);
+        }).collect(Collectors.toList()));
+
+        lblRoomCount.setText(displayedRooms.size() + " Phòng");
+        renderRooms();
+    }
+
+    private void renderRooms() {
+        roomTilePane.getChildren().clear();
+        for (Phong room : displayedRooms) {
+            roomTilePane.getChildren().add(buildRoomCard(room));
+        }
+    }
+
+    private VBox buildRoomCard(Phong room) {
+        boolean isSelected = selectedMaPhong.equals(room.getMaPhong());
         VBox card = new VBox(4);
         card.setAlignment(Pos.CENTER);
-        card.setPrefSize(90, 70);
+        card.setPrefSize(100, 72);
+        card.setMinSize(100, 72);
+        card.setMaxSize(100, 72);
         card.setCursor(Cursor.HAND);
-        card.setStyle("-fx-background-color: " + (isSelected ? "#eff6ff" : C_CARD) + ";" +
+        card.setPadding(new Insets(6));
+        card.setStyle("-fx-background-color: " + (isSelected ? C_SOFT_BLUE : C_CARD) + ";" +
                 "-fx-border-color: " + (isSelected ? C_SIDEBAR : C_BORDER) + ";" +
                 "-fx-border-width: " + (isSelected ? "2" : "1") + ";" +
                 "-fx-border-radius: 12; -fx-background-radius: 12;");
 
-        Label lblMa = new Label(p.getMaPhong());
+        Label lblMa = new Label(room.getMaPhong());
         lblMa.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
         lblMa.setTextFill(Color.web(isSelected ? C_SIDEBAR : C_TEXT_DARK));
 
-        String guest = datPhongDAO.getTenKhachHienTai(p.getMaPhong());
+        String guest = datPhongDAO.getTenKhachHienTai(room.getMaPhong());
         Label lblGuest = new Label(guest != null ? guest : "...");
-        lblGuest.setFont(Font.font("Segoe UI", 11));
+        lblGuest.setFont(Font.font("Segoe UI", 10));
         lblGuest.setTextFill(Color.web(C_TEXT_GRAY));
+        lblGuest.setWrapText(true);
+        lblGuest.setMaxWidth(86);
         lblGuest.setAlignment(Pos.CENTER);
-        lblGuest.setMaxWidth(80);
 
         card.getChildren().addAll(lblMa, lblGuest);
         card.setOnMouseClicked(e -> {
-            if (!selectedMaPhong.equals(p.getMaPhong())) {
-                selectedMaPhong = p.getMaPhong();
-                usedServicesExpanded = false; // ← reset về thu gọn khi đổi phòng
+            if (!selectedMaPhong.equals(room.getMaPhong())) {
+                selectedMaPhong = room.getMaPhong();
+                usedServicesExpanded = false;
                 lblRoomTitle.setText("Hóa đơn: P." + selectedMaPhong);
-                refreshRooms();
+                renderRooms();
                 updateBillUI();
             }
         });
         return card;
     }
 
-    /* ══ SERVICE CARD ══ */
-    private HBox buildServiceCard(DichVu dv) {
-        HBox card = new HBox(12);
-        card.setPrefSize(230, 85);
-        card.setMaxWidth(230);
-        card.setPadding(new Insets(12));
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
-                "; -fx-border-radius: 12; -fx-background-radius: 12;");
-        card.setEffect(new DropShadow(6, 0, 2, Color.web("#00000005")));
+    private void refreshServices() {
+        displayedServices.clear();
+        activePrices.clear();
+        activePrices.putAll(bangGiaDAO.getActivePriceMap());
 
-        VBox info = new VBox(4);
-        info.setAlignment(Pos.CENTER_LEFT);
-        Label lblName = new Label(dv.getTenDV());
-        lblName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-        lblName.setTextFill(Color.web(C_TEXT_DARK));
-        Label lblPrice = new Label(dv.getGia() != null ? String.format("%,.0f đ", dv.getGia()) : "---");
-        lblPrice.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        lblPrice.setTextFill(Color.web(C_ACTIVE));
-        info.getChildren().addAll(lblName, lblPrice);
-        HBox.setHgrow(info, Priority.ALWAYS);
+        String keyword = normalize(txtServiceSearch == null ? "" : txtServiceSearch.getText());
+        List<DichVu> services;
+        if (currentCategory == null) {
+            services = dichVuDAO.getAllActive();
+        } else {
+            services = dichVuDAO.getActiveByType(currentCategory.getMaLoaiDV());
+        }
 
-        HBox qtyBox = new HBox(4);
-        qtyBox.setAlignment(Pos.CENTER_RIGHT);
-
-        int currentQty = cart.getOrDefault(dv, 0);
-
-        Button btnMinus = new Button("-");
-        styleQtyBtn(btnMinus, "white", C_TEXT_GRAY);
-        btnMinus.setOnAction(e -> {
-            int q = cart.getOrDefault(dv, 0);
-            if (q > 0) {
-                if (q == 1)
-                    cart.remove(dv);
-                else
-                    cart.put(dv, q - 1);
-                updateBillUI();
-                refreshServices(currentCategory);
-            }
-        });
-
-        Label lblQty = new Label(String.valueOf(currentQty));
-        lblQty.setPrefWidth(25);
-        lblQty.setAlignment(Pos.CENTER);
-        lblQty.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
-        lblQty.setTextFill(Color.web(C_SIDEBAR));
-
-        Button btnPlus = new Button("+");
-        styleQtyBtn(btnPlus, C_ACTIVE, "white");
-        btnPlus.setOnAction(e -> {
-            cart.put(dv, cart.getOrDefault(dv, 0) + 1);
-            updateBillUI();
-            refreshServices(currentCategory);
-        });
-
-        qtyBox.getChildren().addAll(btnMinus, lblQty, btnPlus);
-        card.getChildren().addAll(info, qtyBox);
-        return card;
-    }
-
-    private void styleQtyBtn(Button b, String bg, String fg) {
-        b.setPrefSize(28, 28);
-        b.setCursor(Cursor.HAND);
-        b.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg +
-                "; -fx-border-color: #f0f0f0; -fx-border-radius: 5; -fx-background-radius: 5;" +
-                " -fx-font-weight: bold; -fx-font-size: 13;");
-    }
-
-    /* ══ REFRESH ══ */
-    private void refreshRooms() {
-        roomPane.getChildren().clear();
-        PhongDAO phongDAO = new PhongDAO();
-        for (Phong p : phongDAO.getPhongByTrangThai(TrangThaiPhong.DACOKHACH))
-            roomPane.getChildren().add(buildRoomCard(p));
-    }
-
-    private void refreshServices(model.entities.LoaiDichVu cat) {
-        if (cat == null)
-            return;
-        servicePane.getChildren().clear();
-        DichVuDAO dichVuDAO = new DichVuDAO();
-        List<DichVu> list = dichVuDAO.getByType(cat.getMaLoaiDV());
-        Map<String, Double> activePrices = bangGiaDAO.getActivePriceMap();
-
-        for (DichVu dv : list) {
+        for (DichVu dv : services) {
             Double price = activePrices.get(dv.getMaDV());
             if (price != null) {
                 dv.setGia(price);
-                servicePane.getChildren().add(buildServiceCard(dv));
-            }
-        }
-
-        if (!cart.isEmpty()) {
-            for (DichVu dvInCart : cart.keySet()) {
-                if (activePrices.containsKey(dvInCart.getMaDV())) {
-                    dvInCart.setGia(activePrices.get(dvInCart.getMaDV()));
-                } else {
-                    DichVu base = dichVuDAO.getServiceByID(dvInCart.getMaDV());
-                    if (base != null && base.getGia() != null)
-                        dvInCart.setGia(base.getGia());
+                if (keyword.isEmpty() || normalize(dv.getTenDV()).contains(keyword)) {
+                    displayedServices.add(dv);
                 }
             }
         }
+
+        lblServiceCount.setText(displayedServices.size() + " dịch vụ");
+        renderServices();
     }
 
-    /* ══ BILL UI ══ */
+    private void refreshCategoryOptions() {
+        cboCategory.getItems().clear();
+        cboCategory.getItems().add("Tất cả");
+        for (LoaiDichVu category : categories) {
+            cboCategory.getItems().add(category.getTenLoaiDV());
+        }
+        cboCategory.setValue("Tất cả");
+    }
+
     private void updateBillUI() {
         billContainer.getChildren().clear();
         double total = 0;
 
-        // ════ 1. DỊCH VỤ ĐÃ DÙNG (collapsible) ════
         if (selectedMaPhong != null && !selectedMaPhong.isEmpty()) {
             String maCTDP = datPhongDAO.getMaCTDPDangSuDungByMaPhong(selectedMaPhong);
             if (maCTDP != null) {
-                List<model.entities.DichVuSuDung> usedList = dvsdDAO.findByMaCTDP(maCTDP);
+                List<DichVuSuDung> usedList = dvsdDAO.findByMaCTDP(maCTDP);
                 if (!usedList.isEmpty()) {
-
-                    // Tính tổng tiền dịch vụ đã dùng (dù đang thu gọn hay không)
                     double subTotalUsed = 0;
-                    for (model.entities.DichVuSuDung sd : usedList)
+                    for (DichVuSuDung sd : usedList) {
                         subTotalUsed += sd.getGiaDV() * sd.getSoLuong();
+                    }
                     total += subTotalUsed;
 
-                    // ── Header row: nhấp để toggle ──
                     HBox usedHeaderRow = new HBox(6);
                     usedHeaderRow.setAlignment(Pos.CENTER_LEFT);
                     usedHeaderRow.setPadding(new Insets(14, 20, 10, 20));
@@ -406,22 +437,20 @@ public class SuDungDichVuView extends BorderPane {
                             "-fx-border-color: transparent transparent " + C_BORDER + " transparent;" +
                             "-fx-border-width: 0 0 1 0;");
 
-                    Label lblArrow = new Label(usedServicesExpanded ? "▾" : "▸");
+                    Label lblArrow = new Label(usedServicesExpanded ? "v" : ">");
                     lblArrow.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
                     lblArrow.setTextFill(Color.web(C_SIDEBAR));
 
-                    Label lblUsedTitle = new Label("Dịch vụ đã dùng  (" + usedList.size() + " món)");
+                    Label lblUsedTitle = new Label("Dịch vụ đã sử dụng (" + usedList.size() + " món)");
                     lblUsedTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
                     lblUsedTitle.setTextFill(Color.web(C_SIDEBAR));
                     HBox.setHgrow(lblUsedTitle, Priority.ALWAYS);
 
-                    Label lblUsedSum = new Label(String.format("%,.0f đ", subTotalUsed));
+                    Label lblUsedSum = new Label(String.format("%,.0f đồng", subTotalUsed));
                     lblUsedSum.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
                     lblUsedSum.setTextFill(Color.web(C_TEXT_GRAY));
 
                     usedHeaderRow.getChildren().addAll(lblArrow, lblUsedTitle, lblUsedSum);
-
-                    // Toggle khi nhấp
                     usedHeaderRow.setOnMouseClicked(e -> {
                         usedServicesExpanded = !usedServicesExpanded;
                         updateBillUI();
@@ -429,26 +458,18 @@ public class SuDungDichVuView extends BorderPane {
 
                     billContainer.getChildren().add(usedHeaderRow);
 
-                    // ── Nội dung chi tiết (chỉ hiện khi expanded) ──
                     if (usedServicesExpanded) {
                         billContainer.getChildren().add(buildBillHeader(false));
-                        for (model.entities.DichVuSuDung sd : usedList) {
+                        for (DichVuSuDung sd : usedList) {
                             double sub = sd.getGiaDV() * sd.getSoLuong();
-                            billContainer.getChildren().add(
-                                    buildBillRow(sd.getDichVu().getTenDV(), sd.getSoLuong(), sub, false, null));
+                            billContainer.getChildren()
+                                    .add(buildBillRow(sd.getDichVu().getTenDV(), sd.getSoLuong(), sub, false, null));
                         }
-                        Label lblSub = new Label(String.format("Tạm tính: %,.0f đ", subTotalUsed));
-                        lblSub.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-                        lblSub.setPadding(new Insets(5, 15, 12, 15));
-                        lblSub.setMaxWidth(Double.MAX_VALUE);
-                        lblSub.setAlignment(Pos.CENTER_RIGHT);
-                        billContainer.getChildren().add(lblSub);
                     }
                 }
             }
         }
 
-        // ════ 2. DỊCH VỤ THÊM MỚI (luôn hiện, không thu gọn) ════
         if (!cart.isEmpty()) {
             HBox newHeaderRow = new HBox(6);
             newHeaderRow.setAlignment(Pos.CENTER_LEFT);
@@ -457,9 +478,9 @@ public class SuDungDichVuView extends BorderPane {
                     "-fx-border-color: transparent transparent " + C_BORDER + " transparent;" +
                     "-fx-border-width: 0 0 1 0;");
 
-            Label lblNewTitle = new Label("Dịch vụ thêm mới  (" + cart.size() + " món)");
+            Label lblNewTitle = new Label("Dịch vụ thêm mới (" + cart.size() + " món)");
             lblNewTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-            lblNewTitle.setTextFill(Color.web("#166534")); // xanh lá đậm
+            lblNewTitle.setTextFill(Color.web("#166534"));
             HBox.setHgrow(lblNewTitle, Priority.ALWAYS);
             newHeaderRow.getChildren().add(lblNewTitle);
             billContainer.getChildren().add(newHeaderRow);
@@ -476,20 +497,30 @@ public class SuDungDichVuView extends BorderPane {
                 billContainer.getChildren().add(buildBillRow(dv.getTenDV(), qty, sub, true, dv));
             }
             total += subTotalNew;
-
-            Label lblSub = new Label(String.format("Tạm tính: %,.0f đ", subTotalNew));
-            lblSub.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-            lblSub.setPadding(new Insets(5, 15, 15, 15));
-            lblSub.setMaxWidth(Double.MAX_VALUE);
-            lblSub.setAlignment(Pos.CENTER_RIGHT);
-            billContainer.getChildren().add(lblSub);
         }
 
-        lblTotal.setText(String.format("Tổng cộng: %,.0f đ", total));
+        if (billContainer.getChildren().isEmpty()) {
+            VBox emptyState = new VBox(8);
+            emptyState.setAlignment(Pos.CENTER);
+            emptyState.setPadding(new Insets(36, 20, 36, 20));
+
+            Label title = new Label("Chưa có dữ liệu để hiển thị");
+            title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
+            title.setTextFill(Color.web(C_TEXT_DARK));
+
+            Label note = new Label("Chọn phòng bên trái rồi thêm dịch vụ để xem phiếu.");
+            note.setWrapText(true);
+            note.setTextFill(Color.web(C_TEXT_GRAY));
+            note.setFont(Font.font("Segoe UI", 12));
+
+            emptyState.getChildren().addAll(title, note);
+            billContainer.getChildren().add(emptyState);
+        }
+
+        lblTotal.setText(String.format("Tổng cộng: %,.0f đồng", total));
         lblTotal.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
     }
 
-    /* ══ BILL HEADER ══ */
     private HBox buildBillHeader(boolean showDelete) {
         HBox header = new HBox(0);
         header.setPadding(new Insets(5, 20, 5, 20));
@@ -502,7 +533,7 @@ public class SuDungDichVuView extends BorderPane {
         lblQty.setPrefWidth(40);
         lblQty.setAlignment(Pos.CENTER);
 
-        Label lblPrice = new Label("Tiền");
+        Label lblPrice = new Label("Thành tiền");
         lblPrice.setPrefWidth(110);
         lblPrice.setAlignment(Pos.CENTER_RIGHT);
 
@@ -521,7 +552,8 @@ public class SuDungDichVuView extends BorderPane {
         }
 
         for (javafx.scene.Node n : header.getChildren()) {
-            if (n instanceof Label l) {
+            if (n instanceof Label) {
+                Label l = (Label) n;
                 l.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
                 l.setTextFill(Color.web(C_TEXT_GRAY));
             }
@@ -529,7 +561,6 @@ public class SuDungDichVuView extends BorderPane {
         return header;
     }
 
-    /* ══ BILL ROW ══ */
     private HBox buildBillRow(String name, int qty, double sub, boolean showDelete, DichVu dv) {
         HBox row = new HBox(0);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -560,22 +591,14 @@ public class SuDungDichVuView extends BorderPane {
             delPane.setPadding(new Insets(0, 0, 0, 36));
             delPane.setAlignment(Pos.CENTER_LEFT);
 
-            Button btn = new Button();
-            try {
-                ImageView iv = new ImageView(new Image("file:src/icon/xoa.png"));
-                iv.setFitWidth(14);
-                iv.setFitHeight(14);
-                btn.setGraphic(iv);
-            } catch (Exception e) {
-                btn.setText("✕");
-            }
+            Button btn = new Button("x");
             btn.setPrefSize(25, 25);
             btn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white;" +
                     "-fx-background-radius: 6; -fx-cursor: hand;");
             btn.setOnAction(e -> {
                 cart.remove(dv);
                 updateBillUI();
-                refreshServices(currentCategory);
+                refreshServices();
             });
             delPane.getChildren().add(btn);
             row.getChildren().add(delPane);
@@ -588,11 +611,9 @@ public class SuDungDichVuView extends BorderPane {
         return row;
     }
 
-    /* ══ CONFIRM ══ */
     private void handleConfirm() {
         if (cart.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Chưa chọn dịch vụ",
-                    "Vui lòng thêm ít nhất một dịch vụ vào đơn!");
+            showAlert(Alert.AlertType.WARNING, "Chưa chọn dịch vụ", "Vui lòng thêm ít nhất một dịch vụ vào đơn!");
             return;
         }
         if (selectedMaPhong.isEmpty()) {
@@ -627,5 +648,134 @@ public class SuDungDichVuView extends BorderPane {
         a.setHeaderText(header);
         a.setContentText(msg);
         a.showAndWait();
+    }
+
+    private String normalize(String text) {
+        return text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void renderServices() {
+        if (serviceTilePane == null) {
+            return;
+        }
+        serviceTilePane.getChildren().clear();
+        for (DichVu dv : displayedServices) {
+            serviceTilePane.getChildren().add(buildServiceCard(dv));
+        }
+    }
+
+    private HBox buildServiceCard(DichVu item) {
+        int qty = cart.getOrDefault(item, 0);
+
+        HBox card = new HBox(12);
+        card.setPrefSize(230, 85);
+        card.setMaxWidth(230);
+        card.setPadding(new Insets(12));
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
+                "; -fx-border-radius: 12; -fx-background-radius: 12;");
+        card.setEffect(new DropShadow(6, 0, 2, Color.web("#00000005")));
+
+        VBox info = new VBox(4);
+        info.setAlignment(Pos.CENTER_LEFT);
+        Label lblName = new Label(item.getTenDV());
+        lblName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblName.setTextFill(Color.web(C_TEXT_DARK));
+
+        Label lblPrice = new Label(item.getGia() != null ? String.format("%,.0f đồng", item.getGia()) : "---");
+        lblPrice.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+        lblPrice.setTextFill(Color.web(C_ACTIVE));
+        info.getChildren().addAll(lblName, lblPrice);
+        HBox.setHgrow(info, Priority.ALWAYS);
+
+        HBox qtyBox = new HBox(3);
+        qtyBox.setAlignment(Pos.CENTER_RIGHT);
+
+        Button btnMinus = new Button("-");
+        styleQtyBtn(btnMinus, "white", C_TEXT_GRAY);
+
+        TextField txtQty = new TextField(qty == 0 ? "0" : String.valueOf(qty));
+        txtQty.setPrefWidth(24);
+        txtQty.setMinWidth(24);
+        txtQty.setMaxWidth(24);
+        txtQty.setPrefHeight(24);
+        txtQty.setMinHeight(24);
+        txtQty.setMaxHeight(24);
+        txtQty.setAlignment(Pos.CENTER);
+        txtQty.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 12;" +
+                "-fx-text-fill: " + C_SIDEBAR + "; -fx-background-color: #f0f4ff;" +
+                "-fx-border-color: " + C_BORDER + "; -fx-border-radius: 5; -fx-background-radius: 5;" +
+                "-fx-alignment: center; -fx-padding: 0;");
+
+        Button btnPlus = new Button("+");
+        styleQtyBtn(btnPlus, C_ACTIVE, "white");
+
+        Runnable refreshUI = () -> {
+            updateBillUI();
+            renderServices();
+        };
+
+        Runnable commitQty = () -> {
+            String text = txtQty.getText().trim();
+            try {
+                int val = text.isEmpty() ? 0 : Integer.parseInt(text);
+                if (val < 0) {
+                    val = 0;
+                }
+                if (val == 0) {
+                    cart.remove(item);
+                } else {
+                    cart.put(item, val);
+                }
+                refreshUI.run();
+            } catch (NumberFormatException ex) {
+                int q = cart.getOrDefault(item, 0);
+                txtQty.setText(q == 0 ? "" : String.valueOf(q));
+            }
+        };
+
+        txtQty.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.matches("\\d*")) {
+                txtQty.setText(newVal.replaceAll("[^\\d]", ""));
+            }
+        });
+
+        txtQty.focusedProperty().addListener((obs, oldVal, focused) -> {
+            if (!focused) {
+                commitQty.run();
+            }
+        });
+        txtQty.setOnAction(e -> commitQty.run());
+
+        btnMinus.setOnAction(e -> {
+            int q = cart.getOrDefault(item, 0);
+            if (q > 0) {
+                if (q == 1) {
+                    cart.remove(item);
+                } else {
+                    cart.put(item, q - 1);
+                }
+                refreshUI.run();
+            }
+        });
+
+        btnPlus.setOnAction(e -> {
+            cart.put(item, cart.getOrDefault(item, 0) + 1);
+            refreshUI.run();
+        });
+
+        qtyBox.getChildren().addAll(btnMinus, txtQty, btnPlus);
+        card.getChildren().addAll(info, qtyBox);
+        return card;
+    }
+
+    private void styleQtyBtn(Button b, String bg, String fg) {
+        b.setPrefSize(24, 24);
+        b.setMinSize(24, 24);
+        b.setMaxSize(24, 24);
+        b.setCursor(Cursor.HAND);
+        b.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + fg +
+                "; -fx-border-color: #f0f0f0; -fx-border-radius: 5; -fx-background-radius: 5;" +
+                " -fx-font-weight: bold; -fx-font-size: 12; -fx-padding: 0;");
     }
 }
