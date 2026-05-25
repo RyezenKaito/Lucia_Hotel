@@ -91,8 +91,6 @@ public class InvoiceExporter {
                         // Dịch vụ
                         DichVuSuDungDAO dvsdDAO = new DichVuSuDungDAO();
                         html.append("<h3>CHI TIẾT DỊCH VỤ THEO PHÒNG</h3>\n");
-                        boolean hasAnyDV = false;
-
                         for (Object[] row : dsPhong) {
                                 String maPhong = (String) row[0];
                                 String tenPhong = (String) row[1];
@@ -103,12 +101,12 @@ public class InvoiceExporter {
                                 
                                 List<DichVuSuDung> listDV = dvsdDAO.findByMaCTDP(maCTDP);
 
+                                html.append("<h4 style='color: #475569; margin-top: 15px; margin-bottom: 5px;'>Phòng: "
+                                                + maPhong + " - " + tenPhong + "</h4>\n");
+                                html.append("<table>\n<thead>\n<tr>\n<th>Tên dịch vụ</th>\n<th>Đơn giá</th>\n<th>Số lượng</th>\n<th>Thành tiền</th>\n</tr>\n</thead>\n<tbody>\n");
+                                double tongTienDVPhong = 0;
+                                
                                 if (listDV != null && !listDV.isEmpty()) {
-                                        hasAnyDV = true;
-                                        html.append("<h4 style='color: #475569; margin-top: 15px; margin-bottom: 5px;'>Phòng: "
-                                                        + maPhong + " - " + tenPhong + "</h4>\n");
-                                        html.append("<table>\n<thead>\n<tr>\n<th>Tên dịch vụ</th>\n<th>Đơn giá</th>\n<th>Số lượng</th>\n<th>Thành tiền</th>\n</tr>\n</thead>\n<tbody>\n");
-                                        double tongTienDVPhong = 0;
                                         for (DichVuSuDung dv : listDV) {
                                                 double thanhTienDV = dv.getGiaDV() * dv.getSoLuong();
                                                 tongTienDVPhong += thanhTienDV;
@@ -122,26 +120,26 @@ public class InvoiceExporter {
                                                                 + "</td>\n");
                                                 html.append("</tr>\n");
                                         }
-                                        html.append("</tbody>\n");
-                                        html.append("<tfoot>\n<tr>\n");
-                                        html.append("<td colspan='3' style='text-align: right; font-weight: bold; color: #475569;'>Tổng tiền dịch vụ:</td>\n");
-                                        html.append("<td style='text-align: right; font-weight: bold; color: #2563eb;'>" + String.format("%,.0f đ", tongTienDVPhong) + "</td>\n");
-                                        html.append("</tr>\n");
-                                        
-                                        double tongCuaPhong = (tienPhong + tongTienDVPhong + phuThuPhong + phuPhiTraMuonPhong) * (1 + hd.getThueVAT());
-                                        html.append("<tr>\n");
-                                        html.append("<td colspan='3' style='text-align: right; font-weight: bold; color: #1e293b;'>Tổng cộng phòng " + maPhong + ":</td>\n");
-                                        html.append("<td style='text-align: right; font-weight: bold; color: #2563eb;'>" + String.format("%,.0f đ", tongCuaPhong) + "</td>\n");
-                                        html.append("</tr>\n");
-                                        
-                                        html.append("</tfoot>\n");
-                                        html.append("</table>\n");
+                                } else {
+                                        html.append("<tr>\n<td colspan='4' style='text-align: center; color: #999; font-style: italic;'>Không có dịch vụ</td>\n</tr>\n");
                                 }
+                                
+                                html.append("</tbody>\n");
+                                html.append("<tfoot>\n<tr>\n");
+                                html.append("<td colspan='3' style='text-align: right; font-weight: bold; color: #475569;'>Tổng tiền dịch vụ:</td>\n");
+                                html.append("<td style='text-align: right; font-weight: bold; color: #2563eb;'>" + String.format("%,.0f đ", tongTienDVPhong) + "</td>\n");
+                                html.append("</tr>\n");
+                                
+                                double tongCuaPhong = (tienPhong + tongTienDVPhong + phuThuPhong + phuPhiTraMuonPhong) * (1 + hd.getThueVAT());
+                                html.append("<tr>\n");
+                                html.append("<td colspan='3' style='text-align: right; font-weight: bold; color: #1e293b;'>Tổng cộng phòng " + maPhong + ":</td>\n");
+                                html.append("<td style='text-align: right; font-weight: bold; color: #2563eb;'>" + String.format("%,.0f đ", tongCuaPhong) + "</td>\n");
+                                html.append("</tr>\n");
+                                
+                                html.append("</tfoot>\n");
+                                html.append("</table>\n");
                         }
 
-                        if (!hasAnyDV) {
-                                html.append("<p style='text-align:center; color:#999; font-style: italic; margin-bottom: 20px;'>Không có dịch vụ sử dụng</p>\n");
-                        }
 
                         double phuPhiTraMuon = hd.getPhuPhiTraMuon();
                         double phuThu = hd.getPhuThu();
