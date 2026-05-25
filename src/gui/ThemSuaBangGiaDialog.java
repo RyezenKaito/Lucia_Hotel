@@ -2,11 +2,9 @@ package gui;
 
 import dao.BangGiaDichVuDAO;
 import dao.DichVuDAO;
-import dao.LoaiDichVuDAO;
 import model.entities.BangGiaDichVu;
 import model.entities.BangGiaDichVu_ChiTiet;
 import model.entities.DichVu;
-import model.entities.LoaiDichVu;
 import model.utils.DimOverlay;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -29,10 +27,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import javafx.util.StringConverter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * ThemSuaBangGiaDialog – JavaFX
@@ -496,16 +496,11 @@ public class ThemSuaBangGiaDialog {
         tableData.clear();
         DichVuDAO dvDAO = new DichVuDAO();
         List<DichVu> allDV = dvDAO.getAllActive();
+        Map<String, DichVu> dvMap = toDichVuMap(allDV);
 
         Map<String, String> giaApDungMap = new HashMap<>();
 
         if (isEdit && dsChiTietGoc != null) {
-            // Nạp full thông tin dịch vụ để tránh bị 0 (giá gốc) hoặc null (tên/loại)
-            Map<String, DichVu> dvMap = new HashMap<>();
-            for (DichVu d : allDV) {
-                dvMap.put(d.getMaDV(), d);
-            }
-
             for (BangGiaDichVu_ChiTiet ct : dsChiTietGoc) {
                 giaApDungMap.put(ct.getMaDichVu().getMaDV(),
                         String.valueOf(ct.getGiaDichVu() != null ? ct.getGiaDichVu().longValue() : 0L));
@@ -524,10 +519,7 @@ public class ThemSuaBangGiaDialog {
             // Chỉ nạp những dịch vụ đã có trong chi tiết của bảng giá này
             for (BangGiaDichVu_ChiTiet ct : dsChiTietGoc) {
                 DichVu dv = ct.getMaDichVu();
-                // Tìm thông tin đầy đủ từ allDV (vì dsChiTietGoc có thể chỉ có mã)
-                DichVu fullDv = allDV.stream()
-                        .filter(d -> d.getMaDV().equals(dv.getMaDV()))
-                        .findFirst().orElse(dv);
+                DichVu fullDv = dvMap.getOrDefault(dv.getMaDV(), dv);
 
                 String rawGia = String.valueOf(ct.getGiaDichVu() != null ? ct.getGiaDichVu().longValue() : 0L);
                 String formatted;
@@ -538,11 +530,10 @@ public class ThemSuaBangGiaDialog {
                     formatted = rawGia;
                 }
 
-                String ldv = changeIDToNameService(fullDv.getLoaiDV().toString());
                 tableData.add(new Object[] {
                         fullDv.getMaDV(),
                         fullDv.getTenDV(),
-                        ldv,
+                        getDisplayLoaiDV(fullDv),
                         formatted
                 });
             }
@@ -714,7 +705,7 @@ public class ThemSuaBangGiaDialog {
         List<DichVu> all = dvDAO.getAllActive();
 
         // Lọc bỏ những dịch vụ đã có sẵn trong bảng chính
-        List<String> existingIds = new ArrayList<>();
+        Set<String> existingIds = new LinkedHashSet<>();
         for (Object[] row : tableData) {
             existingIds.add(row[0].toString());
         }
@@ -773,11 +764,7 @@ public class ThemSuaBangGiaDialog {
         cName.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().dv.getTenDV()));
 
         TableColumn<DichVuSelection, String> cType = new TableColumn<>("Loại");
-        // FIX: Tránh gọi DB liên tục trong cell. Dùng thuộc tính có sẵn từ LoaiDichVu
-        // hoặc tên loại dạng chuỗi nếu thực thể có hỗ trợ.
-        cType.setCellValueFactory(p -> new SimpleStringProperty(
-                p.getValue().dv.getLoaiDV() != null ? changeIDToNameService(p.getValue().dv.getLoaiDV().toString())
-                        : ""));
+        cType.setCellValueFactory(p -> new SimpleStringProperty(getDisplayLoaiDV(p.getValue().dv)));
 
         for (TableColumn<DichVuSelection, ?> c : List.of(cCheck, cId, cName, cType)) {
             c.setReorderable(false);
@@ -822,7 +809,7 @@ public class ThemSuaBangGiaDialog {
                     tableData.add(new Object[] {
                             dv.getMaDV(),
                             dv.getTenDV(),
-                            dv.getLoaiDV() != null ? dv.getLoaiDV().toString() : "",
+                            getDisplayLoaiDV(dv),
                             formattedPrice
                     });
                 }
@@ -831,21 +818,24 @@ public class ThemSuaBangGiaDialog {
         });
     }
 
-    private String changeIDToNameService(String rawLoai) {
-        if (rawLoai == null || rawLoai.isEmpty())
-            return "Chưa phân loại";
-        try {
-            // Gọi sang LoaiDichVuDAO để lấy đối tượng Loại dịch vụ từ CSDL
-            dao.LoaiDichVuDAO loaiDAO = new dao.LoaiDichVuDAO();
-            model.entities.LoaiDichVu ldv = loaiDAO.getById(rawLoai);
-            if (ldv != null) {
-                return ldv.getTenLoaiDV();
-            }
-        } catch (Exception e) {
-            // Fallback: Nếu lỗi kết nối DB thì giữ nguyên chuỗi gốc tránh crash
-            System.err.println("Lỗi kết nối khi tìm tên loại dịch vụ: " + e.getMessage());
+    private Map<String, DichVu> toDichVuMap(List<DichVu> services) {
+        Map<String, DichVu> map = new HashMap<>();
+        for (DichVu service : services) {
+            map.put(service.getMaDV(), service);
         }
-        return rawLoai;
+        return map;
+    }
+
+    private String getDisplayLoaiDV(DichVu dv) {
+        if (dv == null) {
+            return "Chưa phân loại";
+        }
+        String tenLoai = dv.getTenLoaiDV();
+        if (tenLoai != null && !tenLoai.trim().isEmpty()) {
+            return tenLoai;
+        }
+        String maLoai = dv.getLoaiDV();
+        return (maLoai == null || maLoai.trim().isEmpty()) ? "Chưa phân loại" : maLoai;
     }
 
     // ── 5. Xử lý xóa phần tử khỏi bảng ──────────────────────────────
