@@ -12,6 +12,7 @@ import model.utils.DatePicker;
 import model.utils.DimOverlay;
 import model.utils.EventUtils;
 import model.utils.ValidationUtils;
+import model.utils.FieldValidationUtils;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -414,7 +415,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         loaiPhongCheckBoxArea.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 8;"
                 + " -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8;");
 
-List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
+        List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
         for (LoaiPhong lp : allLoaiPhong) {
             String displayName = lp.toString() + " — " + DF.format(lp.getGia()) + " đ/đêm"
                     + " (Sức chứa: " + lp.getSucChua() + " người)";
@@ -427,12 +428,18 @@ List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
             // Định nghĩa các trạng thái Style
             String normalStyle = "-fx-background-color: transparent; -fx-background-radius: 6;";
             String hoverFocusStyle = "-fx-background-color: #e5e7eb; -fx-background-radius: 6; -fx-cursor: hand;";
-            
+
             cb.setStyle(normalStyle);
 
             // Xử lý hiệu ứng khi Hover chuột
-            cb.setOnMouseEntered(e -> { if (!cb.isFocused()) cb.setStyle(hoverFocusStyle); });
-            cb.setOnMouseExited(e -> { if (!cb.isFocused()) cb.setStyle(normalStyle); });
+            cb.setOnMouseEntered(e -> {
+                if (!cb.isFocused())
+                    cb.setStyle(hoverFocusStyle);
+            });
+            cb.setOnMouseExited(e -> {
+                if (!cb.isFocused())
+                    cb.setStyle(normalStyle);
+            });
 
             // Xử lý hiệu ứng khi dùng phím Tab (Focus)
             cb.focusedProperty().addListener((obs, oldVal, isFocused) -> {
@@ -532,7 +539,8 @@ List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
         form.getChildren().add(totalBox);
 
         setupValidation();
-        if (!isReadOnly) setupInputEnableListeners();
+        if (!isReadOnly)
+            setupInputEnableListeners();
         Platform.runLater(this::reloadPhongTrong);
 
         ScrollPane scroll = new ScrollPane(form);
@@ -592,20 +600,18 @@ List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
             if (!nv)
                 validateNS();
         });
+        // Tự xóa lỗi vùng khi user tick checkbox
+        FieldValidationUtils.autoClearOnAnyCheck(loaiPhongCheckBoxes,
+                loaiPhongCheckBoxArea, errLoaiPhong, C_BORDER);
+        FieldValidationUtils.autoClearOnAnyCheck(phongCheckBoxes,
+                phongSelectFlow, errPhong, C_BORDER);
     }
 
     private boolean validateNS() {
-        LocalDate ns = dpNgaySinh.getValue();
-        if (ns == null) {
-            showErrorField(dpNgaySinh, errNS, "Chưa chọn ngày sinh.");
-            return false;
-        }
-        if (LocalDate.now().minusYears(16).isBefore(ns)) {
-            showErrorField(dpNgaySinh, errNS, "Khách hàng phải từ đủ 16 tuổi.");
-            return false;
-        }
-        clearErrorField(dpNgaySinh, errNS);
-        return true;
+        return FieldValidationUtils.validateNgaySinh(
+                dpNgaySinh, errNS, 16,
+                fieldStyle(),
+                fieldStyle() + "-fx-border-color: " + C_ERROR + "; -fx-background-color: #fef2f2");
     }
 
     private boolean validateTen() {
@@ -741,7 +747,7 @@ List<LoaiPhong> allLoaiPhong = loaiPhongDAO.getAll();
             return;
         }
 
-for (Phong p : phongs) {
+        for (Phong p : phongs) {
             VBox card = new VBox(4);
             card.setPadding(new Insets(8, 12, 8, 12));
 
@@ -750,9 +756,11 @@ for (Phong p : phongs) {
             cb.setTextFill(Color.web("#1e3a8a"));
 
             // Định nghĩa các trạng thái Style cho Card phòng
-            String styleNormal = "-fx-background-color: #f9fafb; -fx-background-radius: 8; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8; -fx-cursor: hand;";
+            String styleNormal = "-fx-background-color: #f9fafb; -fx-background-radius: 8; -fx-border-color: "
+                    + C_BORDER + "; -fx-border-radius: 8; -fx-cursor: hand;";
             String styleHoverFocus = "-fx-background-color: #e5e7eb; -fx-background-radius: 8; -fx-border-color: #9ca3af; -fx-border-radius: 8; -fx-cursor: hand;";
-            String styleSelected = "-fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-border-color: " + C_ACTIVE + "; -fx-border-radius: 8; -fx-border-width: 1.5; -fx-cursor: hand;";
+            String styleSelected = "-fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-border-color: "
+                    + C_ACTIVE + "; -fx-border-radius: 8; -fx-border-width: 1.5; -fx-cursor: hand;";
 
             // Hàm tự động đổi màu Card dựa trên trạng thái (Được chọn / Hover / Tab focus)
             Runnable updateCardStyle = () -> {
@@ -785,7 +793,8 @@ for (Phong p : phongs) {
                 updateCardStyle.run(); // Cập nhật màu lại ngay sau khi tick
                 updateTongTien();
                 updateCapacityWarning();
-                if (n) clearAreaError(phongSelectFlow, errPhong);
+                if (n)
+                    clearAreaError(phongSelectFlow, errPhong);
                 if (btnSave != null)
                     btnSave.setDisable(false);
             });
@@ -802,7 +811,8 @@ for (Phong p : phongs) {
             lblGia.setFont(Font.font("Segoe UI", 11));
             lblGia.setTextFill(Color.web(C_TEXT_GRAY));
 
-            // Chặn sự kiện click trên các Label/Checkbox để nó không nổi bubble lên Card click lần 2
+            // Chặn sự kiện click trên các Label/Checkbox để nó không nổi bubble lên Card
+            // click lần 2
             cb.setOnMouseClicked(e -> e.consume());
 
             card.getChildren().addAll(cb, lblLoai, lblGia);
@@ -914,7 +924,9 @@ for (Phong p : phongs) {
     }
 
     /* ── SAVE ───────────────────────────────────────────────────────── */
-private void handleSave() {
+    private void handleSave() {
+        String normalStyle = fieldStyle();
+        String errorStyle = fieldStyle() + "-fx-border-color: " + C_ERROR + "; -fx-background-color: #fef2f2;";
         boolean ok = true;
         if (!validateTen())
             ok = false;
@@ -925,19 +937,12 @@ private void handleSave() {
         if (!validateCCCD())
             ok = false;
 
-        if (dpCheckIn.getValue() == null) {
-            errNgayIn.setText("Chưa chọn ngày nhận phòng");
+        // ── Validate khoảng ngày check-in / check-out ──
+        if (!FieldValidationUtils.validateDateRange(
+                dpCheckIn, dpCheckOut, errNgayIn, errNgayOut,
+                "ngày nhận phòng", "ngày trả phòng",
+                normalStyle, errorStyle))
             ok = false;
-        } else
-            errNgayIn.setText("");
-        if (dpCheckOut.getValue() == null) {
-            errNgayOut.setText("Chưa chọn ngày trả phòng");
-            ok = false;
-        } else if (dpCheckIn.getValue() != null && !dpCheckOut.getValue().isAfter(dpCheckIn.getValue())) {
-            errNgayOut.setText("Ngày trả phải sau ngày nhận");
-            ok = false;
-        } else
-            errNgayOut.setText("");
 
         String soNguoiStr = txtSoNguoi.getText().trim();
         if (soNguoiStr.isEmpty() || Integer.parseInt(soNguoiStr) < 1) {
@@ -948,21 +953,17 @@ private void handleSave() {
 
         List<Phong> selectedPhongs = getSelectedPhongs();
 
-        // ── Validate loại phòng ──────────────────────────────────────────
-        if (getSelectedLoaiPhong().isEmpty()) {
-            showAreaError(loaiPhongCheckBoxArea, errLoaiPhong, "Chưa chọn loại phòng.");
+        // ── Validate loại phòng (multi-checkbox area) ──
+        if (!FieldValidationUtils.validateAnySelected(
+                loaiPhongCheckBoxes, loaiPhongCheckBoxArea, errLoaiPhong,
+                "Chưa chọn loại phòng."))
             ok = false;
-        } else {
-            clearAreaError(loaiPhongCheckBoxArea, errLoaiPhong);
-        }
 
-        // ── Validate phòng cụ thể ────────────────────────────────────────
-        if (selectedPhongs.isEmpty()) {
-            showAreaError(phongSelectFlow, errPhong, "Chưa chọn phòng cụ thể.");
+        // ── Validate phòng cụ thể (FlowPane area) ──
+        if (!FieldValidationUtils.validateAnySelected(
+                phongCheckBoxes, phongSelectFlow, errPhong,
+                "Chưa chọn phòng cụ thể."))
             ok = false;
-        } else {
-            clearAreaError(phongSelectFlow, errPhong);
-        }
 
         // Capacity check đã hiện real-time qua lblCapacityWarning
         if (lblCapacityWarning != null && !lblCapacityWarning.getText().isEmpty()) {
@@ -975,15 +976,15 @@ private void handleSave() {
                     txtCCCD, txtHoTen, dpNgaySinh, txtSoDT,
                     dpCheckIn, dpCheckOut, txtSoNguoi,
                     loaiPhongCheckBoxArea, // <--- Thêm VBox chứa loại phòng
-                    phongSelectFlow        // <--- Thêm FlowPane chứa phòng cụ thể
+                    phongSelectFlow // <--- Thêm FlowPane chứa phòng cụ thể
             };
             Label[] errorLabels = {
                     errCCCD, errTen, errNS, errSDT,
                     errNgayIn, errNgayOut, errSoNguoi,
-                    errLoaiPhong,          // <--- Thêm Label lỗi loại phòng
-                    errPhong               // <--- Thêm Label lỗi phòng cụ thể
+                    errLoaiPhong, // <--- Thêm Label lỗi loại phòng
+                    errPhong // <--- Thêm Label lỗi phòng cụ thể
             };
-            
+
             // Gọi hàm EventUtils đã được cập nhật đệ quy để trỏ đúng vào CheckBox bên trong
             model.utils.EventUtils.focusFirstError(errorFields, errorLabels);
             return;
@@ -1171,17 +1172,41 @@ private void handleSave() {
      * Khi user bắt đầu nhập bất kỳ trường nào → kích hoạt nút Thêm mới.
      */
     private void setupInputEnableListeners() {
-        Runnable enable = () -> { if (btnSave != null) btnSave.setDisable(false); };
-        if (txtCCCD   != null) txtCCCD.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
-        if (txtHoTen  != null) txtHoTen.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
-        if (txtSoDT   != null) txtSoDT.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
-        if (txtSoNguoi!= null) txtSoNguoi.textProperty().addListener((o,ov,nv) -> { if (nv!=null && !nv.isEmpty()) enable.run(); });
-        if (dpNgaySinh!= null) dpNgaySinh.valueProperty().addListener((o,ov,nv) -> { if (nv!=null) enable.run(); });
+        Runnable enable = () -> {
+            if (btnSave != null)
+                btnSave.setDisable(false);
+        };
+        if (txtCCCD != null)
+            txtCCCD.textProperty().addListener((o, ov, nv) -> {
+                if (nv != null && !nv.isEmpty())
+                    enable.run();
+            });
+        if (txtHoTen != null)
+            txtHoTen.textProperty().addListener((o, ov, nv) -> {
+                if (nv != null && !nv.isEmpty())
+                    enable.run();
+            });
+        if (txtSoDT != null)
+            txtSoDT.textProperty().addListener((o, ov, nv) -> {
+                if (nv != null && !nv.isEmpty())
+                    enable.run();
+            });
+        if (txtSoNguoi != null)
+            txtSoNguoi.textProperty().addListener((o, ov, nv) -> {
+                if (nv != null && !nv.isEmpty())
+                    enable.run();
+            });
+        if (dpNgaySinh != null)
+            dpNgaySinh.valueProperty().addListener((o, ov, nv) -> {
+                if (nv != null)
+                    enable.run();
+            });
     }
 
     /** Hiện viền đỏ + label lỗi cho vùng chọn (loại phòng / phòng cụ thể). */
     private void showAreaError(javafx.scene.layout.Region area, Label errLabel, String msg) {
-        if (errLabel != null) errLabel.setText(msg);
+        if (errLabel != null)
+            errLabel.setText(msg);
         if (area != null) {
             String base = area.getStyle().replaceAll("-fx-border-color:[^;]*;", "");
             area.setStyle(base + " -fx-border-color: " + C_ERROR + ";");
@@ -1190,7 +1215,8 @@ private void handleSave() {
 
     /** Xóa viền đỏ + label lỗi cho vùng chọn. */
     private void clearAreaError(javafx.scene.layout.Region area, Label errLabel) {
-        if (errLabel != null) errLabel.setText("");
+        if (errLabel != null)
+            errLabel.setText("");
         if (area != null) {
             String base = area.getStyle().replaceAll("-fx-border-color:[^;]*;", "");
             area.setStyle(base + " -fx-border-color: " + C_BORDER + ";");
