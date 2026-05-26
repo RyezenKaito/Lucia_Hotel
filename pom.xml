@@ -63,17 +63,10 @@
     </build>
 
     <dependencies>
-        <!-- ── JDBC driver (SQL Server)
-             Version 12.10.2.jre8 is the latest patch that resolves the
-             "improper input validation" CVEs affecting 13.2.1.jre8.
-             Scope is 'provided': the JAR is required only at compile time;
-             all DB calls are mocked by Mockito at test runtime. ── -->
-        <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
-            <version>12.10.2.jre8</version>
-            <scope>provided</scope>
-        </dependency>
+        <!-- mssql-jdbc is intentionally omitted: all source files use only
+             standard java.sql.* (JDK built-in) and every database call is
+             intercepted by Mockito at test runtime, so the driver JAR is
+             not needed at compile time or test runtime. -->
 
         <!-- ── JUnit 5 ── -->
         <dependency>
