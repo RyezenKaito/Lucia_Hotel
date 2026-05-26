@@ -192,7 +192,7 @@ public class ChiTietHoaDonDAO {
                 "FROM ChiTietHoaDon cthd " +
                 "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE cthd.maHD = ?";
+                "WHERE cthd.maHD = ? AND cthd.thoiGianLuuTru > 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maHD);
@@ -229,7 +229,7 @@ public class ChiTietHoaDonDAO {
     public double getTongCocByMaHD(String maHD) {
         String sql = "SELECT SUM(ctdp.giaCoc) FROM ChiTietHoaDon cthd " +
                 "JOIN ChiTietDatPhong ctdp ON cthd.maCTDP = ctdp.maCTDP " +
-                "WHERE cthd.maHD = ?";
+                "WHERE cthd.maHD = ? AND cthd.thoiGianLuuTru > 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maHD);

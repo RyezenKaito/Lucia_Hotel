@@ -624,7 +624,12 @@ public class HoaDonView extends BorderPane {
         btnExport.setPrefHeight(38);
         btnExport.setStyle("-fx-background-color: " + C_BLUE
                 + "; -fx-text-fill: white; -fx-background-radius: 8; -fx-font-weight: bold; -fx-padding: 8 20;");
+        final double finalTongTienPhong = tongTienPhong;
         btnExport.setOnAction(e -> {
+            hd.setTienPhong(finalTongTienPhong);
+            hd.setTienDV(tienDV);
+            hd.setTienCoc(tienCoc);
+            hd.setTongTien(tongTT);
             String path = InvoiceExporter.exportToHTML(hd, dsPhong);
             if (path != null) {
                 // Tự động mở file HTML trong trình duyệt mặc định
@@ -704,6 +709,9 @@ public class HoaDonView extends BorderPane {
                     }
 
                     double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
+                    double tongCocHD = new dao.ChiTietHoaDonDAO().getTongCocByMaHD(hd.getMaHD());
+                    if(currentSumPhong > 0 || tongCocHD > 0) hd.setTienCoc(tongCocHD);
+                    
                     java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
                     double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
 
@@ -748,6 +756,7 @@ public class HoaDonView extends BorderPane {
     }
 
     private void applyFilter(String kw) {
+        if (filteredData == null) return;
         String filter = kw == null ? "" : kw.toLowerCase().trim();
 
         java.time.LocalDate startDate = null, endDate = null;
