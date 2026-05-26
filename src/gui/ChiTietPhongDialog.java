@@ -334,6 +334,8 @@ public class ChiTietPhongDialog extends Stage {
             return new String[] { "#f59e0b", "#b45309" };
         if (TrangThaiPhong.BAN.getLabel().equals(trangThai))
             return new String[] { "#ef4444", "#b91c1c" };
+        if (TrangThaiPhong.BAOTRI.getLabel().equals(trangThai))
+            return new String[] { "#ef4444", "#b91c1c" };
         return new String[] { "#6b7280", "#374151" };
     }
 
@@ -343,6 +345,8 @@ public class ChiTietPhongDialog extends Stage {
             return new String[] { "#dcfce7", "#15803d" };
         if (TrangThaiPhong.DACOKHACH.getLabel().equals(trangThai))
             return new String[] { "#fef9c3", "#b45309" };
+        if (TrangThaiPhong.BAN.getLabel().equals(trangThai))
+            return new String[] { "#fee2e2", "#b91c1c" };
         if (TrangThaiPhong.BAN.getLabel().equals(trangThai))
             return new String[] { "#fee2e2", "#b91c1c" };
         return new String[] { "#f3f4f6", "#6b7280" };

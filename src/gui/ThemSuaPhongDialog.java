@@ -205,13 +205,15 @@ public class ThemSuaPhongDialog extends Stage {
             } else {
                 // Chỉ cho phép chọn Còn trống / Đang bảo trì
                 cbTrangThai = new ComboBox<>(FXCollections.observableArrayList(TrangThaiPhong.CONTRONG.getLabel(),
-                        TrangThaiPhong.BAN.getLabel()));
+                        TrangThaiPhong.BAN.getLabel(),TrangThaiPhong.BAOTRI.getLabel()));
                 cbTrangThai.setMaxWidth(Double.MAX_VALUE);
                 cbTrangThai.setStyle(fieldStyle());
                 if (phong.getTrangThai() == TrangThaiPhong.CONTRONG)
                     cbTrangThai.setValue(TrangThaiPhong.CONTRONG.getLabel());
-                else
+                else if(phong.getTrangThai() == TrangThaiPhong.BAN)
                     cbTrangThai.setValue(TrangThaiPhong.BAN.getLabel());
+                else 
+                    cbTrangThai.setValue(TrangThaiPhong.BAOTRI.getLabel());
                 cbTrangThai.setOnAction(e -> checkChanges());
                 trangThaiControl = cbTrangThai;
             }
@@ -350,8 +352,10 @@ public class ThemSuaPhongDialog extends Stage {
             tt = TrangThaiPhong.DACOKHACH; // Giữ nguyên trạng thái gốc (phòng đang có khách)
         else if (TrangThaiPhong.CONTRONG.getLabel().equals(ttStr))
             tt = TrangThaiPhong.CONTRONG;
-        else
+        else if (TrangThaiPhong.BAN.getLabel().equals(ttStr))
             tt = TrangThaiPhong.BAN;
+        else
+            tt = TrangThaiPhong.BAOTRI;
 
         Phong p;
         if (isEdit) {
