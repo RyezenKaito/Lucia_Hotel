@@ -7,7 +7,6 @@ import model.entities.Phong;
 import model.enums.TrangThaiPhong;
 import model.utils.DimOverlay;
 import model.utils.EventUtils;
-import model.utils.FieldValidationUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -339,28 +338,9 @@ public class ThemSuaPhongDialog extends Stage {
     }
 
     private void handleSave() {
-        String normalStyle = fieldStyle();
-        String errorStyle  = fieldStyle() + "-fx-border-color: " + C_RED + "; -fx-background-color: #fef2f2;";
-
         String ma = txtMaPhong.getText().trim();
         if (ma.isEmpty() || ma.contains("Đầy")) {
             showError("Mã phòng không hợp lệ!");
-            return;
-        }
-
-        // [MỚI] Validate ComboBox
-        if (!isEdit && FieldValidationUtils.isEmpty(cbSoTang)) {
-            showError("Vui lòng chọn tầng!");
-            cbSoTang.setStyle(errorStyle);
-            return;
-        }
-        if (FieldValidationUtils.isEmpty(cbLoaiPhong)) {
-            showError("Vui lòng chọn loại phòng!");
-            cbLoaiPhong.setStyle(errorStyle);
-            return;
-        }
-        if (FieldValidationUtils.isEmpty(cbTrangThai)) {
-            showError("Vui lòng chọn trạng thái!");
             return;
         }
 
@@ -374,7 +354,7 @@ public class ThemSuaPhongDialog extends Stage {
             tt = TrangThaiPhong.CONTRONG;
         else if (TrangThaiPhong.BAN.getLabel().equals(ttStr))
             tt = TrangThaiPhong.BAN;
-        else
+        else if (TrangThaiPhong.BAOTRI.getLabel().equals(ttStr))
             tt = TrangThaiPhong.BAOTRI;
 
         Phong p;

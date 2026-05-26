@@ -127,20 +127,21 @@ public class CheckOutView extends BorderPane {
     // MAIN CONTENT (LEFT + RIGHT)
     // ============================================================
     private HBox buildMainContent() {
-        HBox main = new HBox(20);
+        HBox main = new HBox(24);
         main.setAlignment(Pos.TOP_LEFT);
 
         VBox leftCol = buildLeftColumn();
         ScrollPane rightScroll = buildRightColumn();
 
         leftCol.setMinWidth(420);
-        leftCol.setPrefWidth(480);
+        leftCol.setPrefWidth(600);
+        leftCol.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
 
-        rightScroll.setMinWidth(440);
-        rightScroll.setPrefWidth(520);
-        rightScroll.setMaxWidth(600);
-        HBox.setHgrow(rightScroll, Priority.SOMETIMES);
+        rightScroll.setMinWidth(420);
+        rightScroll.setPrefWidth(600);
+        rightScroll.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(rightScroll, Priority.ALWAYS);
 
         main.getChildren().addAll(leftCol, rightScroll);
         return main;
@@ -745,8 +746,8 @@ public class CheckOutView extends BorderPane {
         grid.setVgap(10);
         ColumnConstraints c1 = new ColumnConstraints();
         ColumnConstraints c2 = new ColumnConstraints();
-        c1.setPercentWidth(50);
-        c2.setPercentWidth(50);
+        c1.setPercentWidth(40);
+        c2.setPercentWidth(60);
         grid.getColumnConstraints().addAll(c1, c2);
 
         String maDat = currentDatPhong.getMaDat();
@@ -763,14 +764,30 @@ public class CheckOutView extends BorderPane {
             sumCoc += (double) r[2];
         }
 
-        grid.add(infoCell("Mã đặt phòng", maDat, false), 0, 0);
-        grid.add(phongInfoCell(currentRoomList), 1, 0);
-        grid.add(infoCell("Khách hàng", tenKH, false), 0, 1);
-        grid.add(infoCell("Số điện thoại", sdt, false), 1, 1);
-        grid.add(infoCell("Ngày nhận", ngayNhan, false), 0, 2);
-        grid.add(infoCell("Ngày trả dự kiến", ngayTra, false), 1, 2);
-        grid.add(infoCell("CCCD", cccd, false), 0, 3);
-        grid.add(infoCell("Tiền cọc (phòng)", String.format("%,.0f đ", sumCoc), true), 1, 3);
+        // Left column
+        VBox leftBox = new VBox(15);
+        leftBox.getChildren().add(infoCell("Mã đặt phòng", maDat, false));
+        leftBox.getChildren().add(phongInfoCell(currentRoomList));
+        
+        // Right column: use a nested GridPane for the customer info
+        GridPane rightGrid = new GridPane();
+        rightGrid.setHgap(15);
+        rightGrid.setVgap(10);
+        ColumnConstraints rc1 = new ColumnConstraints();
+        rc1.setPercentWidth(50);
+        ColumnConstraints rc2 = new ColumnConstraints();
+        rc2.setPercentWidth(50);
+        rightGrid.getColumnConstraints().addAll(rc1, rc2);
+
+        rightGrid.add(infoCell("Khách hàng", tenKH, false), 0, 0);
+        rightGrid.add(infoCell("Số điện thoại", sdt, false), 1, 0);
+        rightGrid.add(infoCell("Ngày nhận", ngayNhan, false), 0, 1);
+        rightGrid.add(infoCell("Ngày trả dự kiến", ngayTra, false), 1, 1);
+        rightGrid.add(infoCell("CCCD", cccd, false), 0, 2);
+        rightGrid.add(infoCell("Tiền cọc (phòng)", String.format("%,.0f đ", sumCoc), true), 1, 2);
+
+        grid.add(leftBox, 0, 0);
+        grid.add(rightGrid, 1, 0);
 
         detailInfoBox.getChildren().add(grid);
     }
@@ -810,11 +827,12 @@ public class CheckOutView extends BorderPane {
             val.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
             val.setTextFill(Color.web(C_TEXT_DARK));
             box.getChildren().addAll(lbl, val);
+            box.setMinHeight(135);
             return box;
         }
 
-        // Nhiều phòng: hiện dạng chip ngang, cuộn ngang
-        HBox chips = new HBox(6);
+        // Nhiều phòng: hiện dạng chip trên FlowPane, tự ngắt dòng
+        FlowPane chips = new FlowPane(6, 6);
         chips.setAlignment(Pos.CENTER_LEFT);
         for (Object[] r : rooms) {
             String mp = (String) r[1];
@@ -829,18 +847,20 @@ public class CheckOutView extends BorderPane {
             chips.getChildren().add(chip);
         }
 
-        ScrollPane hScroll = new ScrollPane(chips);
-        hScroll.setFitToHeight(true);
-        hScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        hScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        hScroll.setStyle(
+        ScrollPane vScroll = new ScrollPane(chips);
+        vScroll.setFitToWidth(true);
+        vScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        vScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        vScroll.setStyle(
                 "-fx-background:transparent;" +
                         "-fx-background-color:transparent;" +
                         "-fx-border-color:transparent;" +
                         "-fx-padding:0;");
-        hScroll.setMaxHeight(32);
+        vScroll.setMinHeight(115);
+        vScroll.setMaxHeight(160);
 
-        box.getChildren().addAll(lbl, hScroll);
+        box.getChildren().addAll(lbl, vScroll);
+        VBox.setVgrow(box, Priority.ALWAYS);
         return box;
     }
 
