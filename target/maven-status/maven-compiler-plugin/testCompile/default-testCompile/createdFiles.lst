@@ -1,0 +1,6 @@
+model/NhanVienModelTest.class
+dao/DatPhongDAOTest.class
+model/DatPhongModelTest.class
+model/KhachHangModelTest.class
+fixtures/TestDataFixtures.class
+dao/NhanVienDAOTest.class

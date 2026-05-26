@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: dao.NhanVienDAOTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.333 s -- in dao.NhanVienDAOTest
