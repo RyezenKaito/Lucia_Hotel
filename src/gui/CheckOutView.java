@@ -906,15 +906,12 @@ public class CheckOutView extends BorderPane {
         isLateCheckout = false;
         if (now.isAfter(plannedOut)) {
             Duration d = Duration.between(plannedOut, now);
-            currentSoNgayTre = d.toDays(); // Tính theo số ngày trọn vẹn trễ
-
-            // Nếu trễ hơn 15 phút thì mới bắt đầu tính trễ (grace period)
-            // Hoặc nếu bạn muốn trễ 1 phút tính 1 ngày thì dùng ceil.
-            // Ở đây tôi dùng toDays() để ra con số 10 ngày như bạn mong đợi.
-            if (d.toMinutes() > 0) {
+            long lateMins = d.toMinutes();
+            
+            if (lateMins > 0) {
                 isLateCheckout = true;
-                if (currentSoNgayTre == 0)
-                    currentSoNgayTre = 1; // Trễ dưới 1 ngày tính 1 ngày
+                // Làm tròn lên: Cứ quá giờ trả phòng (thường là 12h) là tính thêm 1 ngày trễ
+                currentSoNgayTre = (lateMins + 1439) / 1440; 
             }
         }
 
