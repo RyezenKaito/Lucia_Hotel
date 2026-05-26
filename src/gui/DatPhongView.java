@@ -289,7 +289,7 @@ public class DatPhongView extends BorderPane {
         TableColumn<Object[], String> colSDT = col("SĐT", 2, 110);
         colSDT.setStyle("-fx-alignment: CENTER;");
         TableColumn<Object[], String> colPhong = col("Phòng", 3, 90);
-        colPhong.setStyle("-fx-alignment: CENTER;");
+        colPhong.setStyle("-fx-alignment: CENTER-LEFT;");
         TableColumn<Object[], String> colIn = col("Ngày nhận", 4, 130);
         colIn.setStyle("-fx-alignment: CENTER;");
         TableColumn<Object[], String> colOut = col("Ngày trả", 5, 130);
@@ -491,7 +491,11 @@ public class DatPhongView extends BorderPane {
                         java.time.LocalDate checkInDate = java.time.LocalDateTime.parse(checkInStr, FMT).toLocalDate();
                         if (fromDate != null && checkInDate.isBefore(fromDate)) return false;
                         if (toDate != null && checkInDate.isAfter(toDate)) return false;
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        return false;
+                    }
+                } else {
+                    return false;
                 }
             }
 
