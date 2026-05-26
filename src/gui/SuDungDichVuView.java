@@ -370,7 +370,7 @@ public class SuDungDichVuView extends BorderPane {
             if (!selectedMaPhong.equals(room.getMaPhong())) {
                 selectedMaPhong = room.getMaPhong();
                 usedServicesExpanded = false;
-                lblRoomTitle.setText("Hóa đơn: P." + selectedMaPhong);
+                lblRoomTitle.setText("Hóa đơn: phòng - " + selectedMaPhong);
                 renderRooms();
                 updateBillUI();
             }
