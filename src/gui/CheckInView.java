@@ -561,8 +561,8 @@ public class CheckInView extends BorderPane {
         grid.add(infoCell("Số phòng", currentRoomDetails.size() + " phòng", false), 1, 0);
         grid.add(infoCell("Khách hàng", tenKH, false), 0, 1);
         grid.add(infoCell("Số điện thoại", sdt, false), 1, 1);
-        grid.add(infoCell("Ngày nhận", ngayNhan, false), 0, 2);
-        grid.add(infoCell("Ngày trả", ngayTra, false), 1, 2);
+        grid.add(infoCell("Ngày nhận dự kiến", ngayNhan, false), 0, 2);
+        grid.add(infoCell("Ngày trả dự kiến", ngayTra, false), 1, 2);
         grid.add(infoCell("CCCD", cccd, false), 0, 3);
         grid.add(infoCell("Trạng thái", trangThaiStr, true), 1, 3);
 
@@ -824,6 +824,14 @@ public class CheckInView extends BorderPane {
 
                 // 4. Update đơn → DA_CHECKIN
                 datPhongDAO.updateTrangThaiWithCon(con, currentDatPhong.getMaDat(), "DA_CHECKIN");
+                
+                // Cập nhật lại ngày giờ nhận phòng thực tế là NGAY LÚC NÀY
+                try (java.sql.PreparedStatement psUpdateCI = con.prepareStatement(
+                        "UPDATE DatPhong SET ngayCheckIn = ? WHERE maDat = ?")) {
+                    psUpdateCI.setTimestamp(1, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()));
+                    psUpdateCI.setString(2, currentDatPhong.getMaDat());
+                    psUpdateCI.executeUpdate();
+                }
 
                 con.commit();
 

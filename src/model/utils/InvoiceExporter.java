@@ -52,10 +52,23 @@ public class InvoiceExporter {
                         html.append("<div class='info-section'>\n");
                         html.append("<div class='info-col'>\n<h3>THÔNG TIN HÓA ĐƠN</h3>\n");
                         html.append("<p><b>Mã hóa đơn:</b> " + hd.getMaHD() + "</p>\n");
-                        html.append(
-                                        "<p><b>Ngày lập:</b> "
-                                                        + (hd.getNgayTaoHD() != null ? hd.getNgayTaoHD().format(FMT) : "—")
-                                                        + "</p>\n");
+                        if (hd.getDatPhong() != null) {
+                                java.time.LocalDateTime actualCheckIn = hd.getDatPhong().getNgayCheckIn();
+                                java.time.LocalDateTime plannedCheckOut = hd.getDatPhong().getNgayCheckOut();
+                                java.time.LocalDateTime actualCheckOut = hd.getNgayTaoHD();
+                                
+                                java.time.LocalDateTime plannedCheckIn = actualCheckIn != null ? actualCheckIn.toLocalDate().atTime(14, 0) : null;
+                                java.time.LocalDateTime expectedCheckOut = plannedCheckOut != null ? plannedCheckOut.toLocalDate().atTime(12, 0) : null;
+
+                                html.append("<p><b>Ngày nhận dự kiến:</b> "
+                                                + (plannedCheckIn != null ? plannedCheckIn.format(FMT) : "—") + "</p>\n");
+                                html.append("<p><b>Ngày trả dự kiến:</b> "
+                                                + (expectedCheckOut != null ? expectedCheckOut.format(FMT) : "—") + "</p>\n");
+                                html.append("<p><b>Ngày nhận thực tế:</b> "
+                                                + (actualCheckIn != null ? actualCheckIn.format(FMT) : "—") + "</p>\n");
+                                html.append("<p><b>Ngày trả thực tế (Checkout):</b> "
+                                                + (actualCheckOut != null ? actualCheckOut.format(FMT) : "—") + "</p>\n");
+                        }
                         html.append("<p><b>Mã nhân viên lập:</b> "
                                         + (hd.getNhanVien() != null ? hd.getNhanVien().getMaNV() : "—")
                                         + "</p>\n");
