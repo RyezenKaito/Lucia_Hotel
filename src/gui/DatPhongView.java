@@ -72,7 +72,10 @@ public class DatPhongView extends BorderPane {
         setTop(buildHeader());
         setCenter(buildTable());
 
+        chkFilterDate.setSelected(true);
         loadData();
+
+        javafx.application.Platform.runLater(this::checkLateCheckOut);
     }
 
     /* ── HEADER ────────────────────────────────────────────────────── */
@@ -127,7 +130,7 @@ public class DatPhongView extends BorderPane {
         lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblFrom.setTextFill(Color.web(C_TEXT_MUTED));
         dpFrom = new model.utils.DatePicker(curYear - 5, curYear + 2);
-        dpFrom.setValue(java.time.LocalDate.now().withDayOfMonth(1));
+        dpFrom.setValue(java.time.LocalDate.now());
         dpFrom.setPromptText("Từ ngày");
         dpFrom.setPrefHeight(40);
         dpFrom.setMaxWidth(200);
@@ -464,6 +467,7 @@ public class DatPhongView extends BorderPane {
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
 
+        // Cập nhật số liệu ban đầu (trước khi lọc)
         lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
         lblDaDat.setText(String.valueOf(cntDaDat));
         lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
@@ -471,6 +475,9 @@ public class DatPhongView extends BorderPane {
         lblDaTra.setText(String.valueOf(cntDaTra));
 
         table.sort();
+
+        // Áp dụng bộ lọc hiện tại ngay sau khi tải dữ liệu
+        applyFilter();
     }
 
     private void applyFilter() {
@@ -545,6 +552,85 @@ public class DatPhongView extends BorderPane {
         if (lblDaTra != null) lblDaTra.setText(String.valueOf(cntDaTra));
     }
 
+    private void checkLateCheckOut() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.util.Map<String, String> lateRooms = new java.util.HashMap<>();
+
+        // 1. Tìm các phòng đang trễ check-out
+        for (Object[] row : masterData) {
+            String tt = (String) row[8];
+            if ("DA_CHECKIN".equals(tt)) {
+                String checkOutStr = (String) row[5];
+                if (checkOutStr != null && !"—".equals(checkOutStr)) {
+                    try {
+                        java.time.LocalDate checkOutDate = java.time.LocalDateTime.parse(checkOutStr, FMT).toLocalDate();
+                        if (today.isAfter(checkOutDate)) {
+                            String tenKH = (String) row[1];
+                            String maPhongs = (String) row[3];
+                            if (maPhongs != null) {
+                                for (String p : maPhongs.split(",\\s*")) {
+                                    lateRooms.put(p, tenKH);
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
+        if (lateRooms.isEmpty()) return;
+
+        // 2. Tìm khách sắp đến hôm nay bị trùng phòng
+        String conflictMessage = null;
+        String conflictingMaDat = null;
+
+        for (Object[] row : masterData) {
+            String tt = (String) row[8];
+            if ("DA_XACNHAN".equals(tt)) {
+                String checkInStr = (String) row[4];
+                if (checkInStr != null && !"—".equals(checkInStr)) {
+                    try {
+                        java.time.LocalDate checkInDate = java.time.LocalDateTime.parse(checkInStr, FMT).toLocalDate();
+                        if (today.equals(checkInDate)) {
+                            String tenKH = (String) row[1];
+                            String maPhongs = (String) row[3];
+                            if (maPhongs != null) {
+                                for (String p : maPhongs.split(",\\s*")) {
+                                    if (lateRooms.containsKey(p)) {
+                                        conflictMessage = "Khách hàng " + tenKH + " đang bị trùng phòng (" + p + ") với khách hàng " + lateRooms.get(p) + " (đang trễ check-out).";
+                                        conflictingMaDat = (String) row[0];
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+            if (conflictMessage != null) break;
+        }
+
+        // 3. Hiển thị thông báo và tuỳ chọn đổi phòng
+        if (conflictMessage != null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Cảnh báo trùng phòng");
+            alert.setHeaderText("Phát hiện trùng phòng với khách trễ Check-out");
+            alert.setContentText(conflictMessage);
+
+            ButtonType btnClose = new ButtonType("Đóng", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType btnChangeRoom = new ButtonType("Đổi phòng", ButtonBar.ButtonData.OK_DONE);
+            alert.getButtonTypes().setAll(btnClose, btnChangeRoom);
+
+            final String maDatToEdit = conflictingMaDat;
+            alert.showAndWait().ifPresent(type -> {
+                if (type == btnChangeRoom) {
+                    Window owner = getScene() != null ? getScene().getWindow() : null;
+                    new ThemSuaDatPhongDialog(owner, maDatToEdit, true, this::loadData).showDialog();
+                }
+            });
+        }
+    }
+
     /* ── Column-header filter helpers ──────────────────────────────── */
 private void installColumnFilter() {
         String baseName = "Trạng thái";
@@ -579,6 +665,11 @@ private void installColumnFilter() {
             CheckBox cb = new CheckBox(st[1]);
             cb.setStyle("-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
             
+            if (st[0].equals("DA_XACNHAN") || st[0].equals("DA_CHECKIN")) {
+                cb.setSelected(true);
+                selectedTrangThais.add(st[0]);
+            }
+            
             // CustomMenuItem giúp menu KHÔNG BỊ ĐÓNG khi click vào CheckBox
             CustomMenuItem cmi = new CustomMenuItem(cb);
             cmi.setHideOnClick(false);
@@ -603,6 +694,9 @@ private void installColumnFilter() {
         }
 
         btnFilterTT = new Button(baseName + " ▼");
+        if (!selectedTrangThais.isEmpty()) {
+            btnFilterTT.setText("Đã chọn (" + selectedTrangThais.size() + ") ▼");
+        }
         btnFilterTT.setStyle("-fx-font-size: 12px; -fx-background-color: transparent;"
                 + " -fx-padding: 4 8; -fx-cursor: hand;");
         btnFilterTT.setMaxWidth(Double.MAX_VALUE);

@@ -103,6 +103,44 @@ public class MainFrameView {
         Image logoImg = new Image("file:src/icon/logo.png");
         primaryStage.getIcons().add(logoImg);
         primaryStage.show();
+
+        // Kiểm tra và hiển thị thông báo nếu có đơn trễ check-out
+        Platform.runLater(() -> {
+            dao.DatPhongDAO dpDao = new dao.DatPhongDAO();
+            java.util.List<Object[]> donTre = dpDao.getDonCheckOutByDate(java.time.LocalDate.now().minusDays(1), true);
+            if (donTre != null && !donTre.isEmpty()) {
+                // Tạo custom ButtonType
+                ButtonType btnTraPhong = new ButtonType("🚪 Trả Phòng", ButtonBar.ButtonData.OK_DONE);
+                ButtonType btnDong = new ButtonType("Đóng", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                Alert alert = new Alert(Alert.AlertType.WARNING, "", btnTraPhong, btnDong);
+                alert.setTitle("Cảnh báo – Đơn trễ Check-out");
+                alert.setHeaderText("⚠  Có " + donTre.size() + " đơn đặt phòng đã quá hạn trả phòng!");
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("Danh sách đơn chưa Check-out:\n\n");
+                for (int i = 0; i < donTre.size() && i < 5; i++) {
+                    Object[] row = donTre.get(i);
+                    sb.append("  • ").append(row[0]).append("  |  KH: ").append(row[1])
+                      .append("  |  Phòng: ").append(row[2]).append("\n");
+                }
+                if (donTre.size() > 5) {
+                    sb.append("\n  ... và ").append(donTre.size() - 5).append(" đơn khác.\n");
+                }
+                sb.append("\nVui lòng vào mục Trả phòng để xử lý.");
+                alert.setContentText(sb.toString());
+
+                // Mở rộng dialog
+                alert.getDialogPane().setMinWidth(560);
+                alert.getDialogPane().setPrefWidth(580);
+
+                alert.showAndWait().ifPresent(result -> {
+                    if (result == btnTraPhong) {
+                        navigateTo("checkout");
+                    }
+                });
+            }
+        });
     }
 
     /*
@@ -194,6 +232,7 @@ public class MainFrameView {
         nav.getChildren().add(navHeader("- Quản lý"));
         nav.getChildren().addAll(
                 navBtn("🛏", "Phòng", "rooms"),
+                navBtn("🛁", "Tiện nghi", "amenities"),
                 navBtn("👥", "Khách hàng", "customers"));
 
         if (isAdmin) {
@@ -473,6 +512,7 @@ public class MainFrameView {
             case "serviceManager" -> showFX(new QuanLyDichVuView(isAdmin));
             case "servicePrice" -> showFX(new BangGiaDichVuView());
             case "rooms" -> showFX(new QuanLyPhongView(isAdmin));
+            case "amenities" -> showFX(new QuanLyTienNghiView());
             default -> showFX(buildPlaceholder(card));
         }
     }

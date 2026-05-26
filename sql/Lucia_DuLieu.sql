@@ -1489,3 +1489,43 @@ INSERT INTO ChiTietHoaDon (maCTHD, maHD, maCTDP, thoiGianLuuTru, thanhTien, phu_
 ('CTHD0246', 'HD192', 'CTDP0322', 6, 3000000, 0, 750000),
 ('CTHD0247', 'HD192', 'CTDP0323', 6, 4700000, 0, 1050000),
 ('CTHD0248', 'HD193', 'CTDP0324', 3, 3400000, 0, 1000000);
+
+
+-- Cập nhật danh sách tiện nghi sinh hoạt (Loại bỏ thiết bị điện tử)
+INSERT INTO TienNghi (maTN, tenTN, moTa, trangThai) VALUES
+('TN101', N'Bộ vệ sinh cá nhân (lớn)', N'Đồ dùng dùng 1 lần  như bàn chải, kem, lược, xà phòng, dầu gội, sữa tắm, khăn.', 1),
+('TN102', N'Nước khoáng', N'Nước đóng chai thủy tinh được để trong tủ lạnh mini', 1),
+('TN103', N'Nước ngọt', N'Để trong tủ lạnh mini', 1),
+('TN104', N'Bộ vệ sinh cá nhân 1 lần cho bé', N'Bàn chải, kem, lược, xà phòng, dầu gội, sữa tắm, khăn', 1),
+('TN105', N'Cà phê gói', N'kèm theo 1 gói đường tinh luyện + 1 gói đường ăn kiên, muỗn, ly', 1),
+('TN106', N'Trái cây chào mừng', N'Trái cây tươi theo mùa, đĩa sứ, dao nĩa nhỏ', 1),
+('TN107', N'Sữa dưỡng thể', N'', 1),
+('TN108', N'Bông tẩy trang', N'', 1);
+
+
+-- Gán tiện nghi cho từng loại phòng
+INSERT INTO LoaiPhongTienNghi (maLoaiPhong, maTN, soLuong) VALUES
+-- SINGLE (Sức chứa 1): Cơ bản
+('SINGLE', 'TN101', 1), ('SINGLE', 'TN102', 2), ('SINGLE', 'TN105', 1),
+
+-- DOUBLE (Sức chứa 2): Tiện nghi cho cặp đôi
+('DOUBLE', 'TN101', 2), ('DOUBLE', 'TN102', 2), ('DOUBLE', 'TN103', 2), 
+('DOUBLE', 'TN105', 2), ('DOUBLE', 'TN107', 1), ('DOUBLE', 'TN108', 1),
+
+-- TWIN (Sức chứa 2): Giống Double nhưng đồ dùng cá nhân tách biệt rõ ràng
+('TWIN',   'TN101', 2), ('TWIN',   'TN102', 4), ('TWIN',   'TN103', 2), 
+('TWIN',   'TN105', 2), ('TWIN',   'TN107', 2), ('TWIN',   'TN108', 2),
+
+-- TRIPLE (Sức chứa 3): Đầy đủ cho nhóm, cộng thêm ưu đãi trái cây
+('TRIPLE', 'TN101', 3), ('TRIPLE', 'TN102', 6), ('TRIPLE', 'TN103', 3), 
+('TRIPLE', 'TN105', 3), ('TRIPLE', 'TN107', 2), ('TRIPLE', 'TN108', 2), ('TRIPLE', 'TN106', 1),
+
+-- FAMILY (Sức chứa 4): Tiện nghi tối đa, có set cho bé và trái cây
+('FAMILY', 'TN101', 2), ('FAMILY', 'TN102', 8), ('FAMILY', 'TN103', 4), 
+('FAMILY', 'TN104', 2), ('FAMILY', 'TN105', 4), ('FAMILY', 'TN107', 2), 
+('FAMILY', 'TN108', 2), ('FAMILY', 'TN106', 1);
+
+GO
+
+
+

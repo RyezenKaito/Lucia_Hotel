@@ -14,7 +14,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getAll() {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.daXoa = 0";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
@@ -34,7 +34,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getAllActive() {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.trangThai = 0";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.trangThai = 0 AND d.daXoa = 0";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
@@ -54,7 +54,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maLoaiDV = ?";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maLoaiDV = ? AND d.daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, loaiDV);
@@ -74,7 +74,7 @@ public class DichVuDAO {
      */
     public List<DichVu> getActiveByType(String loaiDV) {
         List<DichVu> ds = new ArrayList<>();
-        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maLoaiDV = ? AND d.trangThai = 0";
+        String sql = "SELECT d.*, l.tenLoaiDV FROM DV d LEFT JOIN LoaiDichVu l ON d.maLoaiDV = l.maLoaiDV WHERE d.maLoaiDV = ? AND d.trangThai = 0 AND d.daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, loaiDV);
@@ -229,7 +229,7 @@ public class DichVuDAO {
      * Xóa dịch vụ theo mã (Ẩn đi, không xóa vĩnh viễn)
      */
     public boolean delete(String maDV) {
-        String sql = "UPDATE DV SET trangThai = 1 WHERE maDV = ?";
+        String sql = "UPDATE DV SET trangThai = 1, daXoa = 1 WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDV);
