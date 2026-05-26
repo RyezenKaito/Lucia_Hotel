@@ -1,0 +1,25 @@
+# Maven build output
+target/
+
+# Compiled Java class files
+*.class
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# NetBeans
+nbproject/
+
+# VS Code
+.vscode/
+
+# OS generated
+.DS_Store
+Thumbs.db
