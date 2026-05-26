@@ -43,8 +43,7 @@ public class HoaDonView extends BorderPane {
     private final HoaDonDAO dao = new HoaDonDAO();
     private final ChiTietHoaDonDAO cthdDAO = new ChiTietHoaDonDAO();
     private ObservableList<HoaDon> masterData = FXCollections.observableArrayList();
-    private FilteredList<HoaDon> filteredData;
-
+private FilteredList<HoaDon> filteredData = new FilteredList<>(masterData, p -> true);
     /* ── Controls ───────────────────────────────────────────────────── */
     private TableView<HoaDon> table;
     private TextField txtSearch;
@@ -225,6 +224,7 @@ public class HoaDonView extends BorderPane {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         table.setPlaceholder(new Label("Không có dữ liệu"));
+        table.setItems(filteredData);
 
         TableColumn<HoaDon, Void> colStt = new TableColumn<>("STT");
         colStt.setPrefWidth(50);
@@ -826,10 +826,8 @@ public class HoaDonView extends BorderPane {
 
         task.setOnSucceeded(e -> {
             masterData.setAll(task.getValue());
-            filteredData = new FilteredList<>(masterData, p -> true);
-            table.setItems(filteredData);
             table.setPlaceholder(new Label("Không có dữ liệu"));
-            applyFilter("");
+            applyFilter(txtSearch != null ? txtSearch.getText() : "");
         });
 
         task.setOnFailed(e -> {
