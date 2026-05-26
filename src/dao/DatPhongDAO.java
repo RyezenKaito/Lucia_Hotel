@@ -258,7 +258,8 @@ public class DatPhongDAO {
                 "JOIN DatPhong dp ON kh.maKH = dp.maKH " +
                 "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -281,7 +282,8 @@ public class DatPhongDAO {
                 "JOIN DatPhong dp ON h.maDat = dp.maDat " +
                 "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);
@@ -306,7 +308,8 @@ public class DatPhongDAO {
                 "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
                 "JOIN KH kh ON dp.maKH = kh.maKH " +
                 "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
-                "WHERE p.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
+                "WHERE p.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -353,7 +356,8 @@ public class DatPhongDAO {
         String sql = "SELECT DISTINCT dp.maDat FROM DatPhong dp " +
                 "JOIN ChiTietDatPhong ctdp ON dp.maDat = ctdp.maDat " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
-                "WHERE p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
+                "WHERE p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -432,7 +436,8 @@ public class DatPhongDAO {
         String sql = "SELECT ctdp.maCTDP FROM ChiTietDatPhong ctdp " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
                 "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN'";
+                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);
@@ -465,6 +470,7 @@ public class DatPhongDAO {
                 "WHERE " + dateCondition + " " +
                 "AND dp.trangThai = N'DA_CHECKIN' " +
                 "AND p.tinhTrang = N'DANGSUDUNG' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC) " +
                 "GROUP BY dp.maDat, kh.tenKH " +
                 "ORDER BY dp.maDat";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -676,7 +682,8 @@ public class DatPhongDAO {
                 "FROM ChiTietDatPhong ctdp " +
                 "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
                 "JOIN LoaiPhong lp ON p.loaiPhong = lp.maLoaiPhong " +
-                "WHERE ctdp.maDat = ? AND p.tinhTrang = N'DANGSUDUNG'";
+                "WHERE ctdp.maDat = ? AND p.tinhTrang = N'DANGSUDUNG' " +
+                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
         java.util.List<Object[]> roomList = new java.util.ArrayList<>();
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sqlRooms)) {
