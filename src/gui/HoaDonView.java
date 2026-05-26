@@ -655,10 +655,27 @@ public class HoaDonView extends BorderPane {
         HBox btnRow = new HBox(12, btnExport, btnClose);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
-        root.getChildren().addAll(lblTitle, khachBox, lblPhongHeader, scrollPhong, sumBox, btnRow);
+        // Wrap the scrollable middle content (rooms + summary) in a VBox
+        VBox scrollableContent = new VBox(16);
+        scrollableContent.getChildren().addAll(lblPhongHeader, scrollPhong, sumBox);
+
+        ScrollPane mainScroll = new ScrollPane(scrollableContent);
+        mainScroll.setFitToWidth(true);
+        mainScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        mainScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        mainScroll.setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
+        VBox.setVgrow(mainScroll, Priority.ALWAYS);
+
+        root.getChildren().addAll(lblTitle, khachBox, mainScroll, btnRow);
+
+        // Constrain popup size to prevent overflow
+        double screenHeight = javafx.stage.Screen.getPrimary().getVisualBounds().getHeight();
+        double maxH = screenHeight * 0.85;
+        root.setMaxHeight(maxH);
 
         Scene scene = new Scene(root);
         detailStage.setScene(scene);
+        detailStage.setMaxHeight(maxH);
         detailStage.sizeToScene();
         detailStage.showAndWait();
     }

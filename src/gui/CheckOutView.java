@@ -68,7 +68,7 @@ public class CheckOutView extends BorderPane {
     private DatePicker dpFilter;
     private TableView<DichVuSuDung> serviceTable;
     private Label lblTotalDV;
-    private VBox detailInfoBox, billingBox;
+    private VBox detailInfoBox, billingBox, bookingInfoPanel;
     private Label lblTongTien, lblVAT;
     private Button btnConfirm;
 
@@ -131,19 +131,19 @@ public class CheckOutView extends BorderPane {
         main.setAlignment(Pos.TOP_LEFT);
 
         VBox leftCol = buildLeftColumn();
-        ScrollPane rightScroll = buildRightColumn();
+        VBox rightCol = buildRightColumn();
 
         leftCol.setMinWidth(420);
         leftCol.setPrefWidth(600);
         leftCol.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
 
-        rightScroll.setMinWidth(420);
-        rightScroll.setPrefWidth(600);
-        rightScroll.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(rightScroll, Priority.ALWAYS);
+        rightCol.setMinWidth(420);
+        rightCol.setPrefWidth(600);
+        rightCol.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(rightCol, Priority.ALWAYS);
 
-        main.getChildren().addAll(leftCol, rightScroll);
+        main.getChildren().addAll(leftCol, rightCol);
         return main;
     }
 
@@ -356,9 +356,9 @@ public class CheckOutView extends BorderPane {
             }
             return new SimpleStringProperty("");
         });
-        colPhong.setMinWidth(60);
+        colPhong.setMinWidth(70);
         colPhong.setMaxWidth(80);
-        colPhong.setStyle("-fx-alignment:CENTER; -fx-font-weight:bold; -fx-text-fill:" + C_NAVY + ";");
+        colPhong.setStyle("-fx-alignment:CENTER-LEFT; -fx-padding: 0 0 0 15; -fx-font-weight:bold; -fx-text-fill:" + C_NAVY + ";");
 
         TableColumn<DichVuSuDung, String> colNgay = new TableColumn<>("Ngày");
         colNgay.setCellValueFactory(p -> new SimpleStringProperty(
@@ -418,22 +418,29 @@ public class CheckOutView extends BorderPane {
     }
 
     // ============================================================
-    // RIGHT COLUMN (wrapped in ScrollPane to prevent overflow)
+    // RIGHT COLUMN: Booking info fixed on top, billing scrollable
     // ============================================================
-    private ScrollPane buildRightColumn() {
+    private VBox buildRightColumn() {
         VBox col = new VBox(16);
-        col.getChildren().addAll(buildBookingInfoPanel(), buildBillingPanel());
 
-        ScrollPane scroll = new ScrollPane(col);
-        scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle(
+        // Booking info panel stays fixed (no scroll)
+        bookingInfoPanel = buildBookingInfoPanel();
+
+        // Billing panel wrapped in ScrollPane
+        VBox billingPanel = buildBillingPanel();
+        ScrollPane billingScroll = new ScrollPane(billingPanel);
+        billingScroll.setFitToWidth(true);
+        billingScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        billingScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        billingScroll.setStyle(
                 "-fx-background:transparent;" +
                         "-fx-background-color:transparent;" +
                         "-fx-border-color:transparent;" +
                         "-fx-padding:0;");
-        return scroll;
+        VBox.setVgrow(billingScroll, Priority.ALWAYS);
+
+        col.getChildren().addAll(bookingInfoPanel, billingScroll);
+        return col;
     }
 
     // ----- Panel "Thông tin đặt phòng" -----
@@ -895,25 +902,25 @@ public class CheckOutView extends BorderPane {
         if (plannedOut == null)
             plannedOut = now;
 
-        // 1. Tiền phòng tính theo THỜI GIAN THỰC TẾ đã ở
-        long actualMins = Duration.between(checkIn, now).toMinutes();
-        currentSoDem = (actualMins + 1439) / 1440; // Làm tròn lên đêm
-        if (currentSoDem < 1)
-            currentSoDem = 1;
+        // 1. Tính số đêm dự kiến (Chỉ dựa vào ngày, KHÔNG phụ thuộc giờ check-in thực tế)
+        long plannedNights = java.time.temporal.ChronoUnit.DAYS.between(checkIn.toLocalDate(), plannedOut.toLocalDate());
+        if (plannedNights < 1) plannedNights = 1;
 
         // 2. Phụ phí tính theo SỐ NGÀY TRỄ so với dự kiến (Tiền phạt)
         currentSoNgayTre = 0;
         isLateCheckout = false;
         if (now.isAfter(plannedOut)) {
-            Duration d = Duration.between(plannedOut, now);
-            long lateMins = d.toMinutes();
+            long lateMins = Duration.between(plannedOut, now).toMinutes();
             
-            if (lateMins > 0) {
+            // Từ đủ 30 phút trở đi tính là 1 ngày trễ
+            if (lateMins >= 30) {
                 isLateCheckout = true;
-                // Làm tròn lên: Cứ quá giờ trả phòng (thường là 12h) là tính thêm 1 ngày trễ
-                currentSoNgayTre = (lateMins + 1439) / 1440; 
+                currentSoNgayTre = (lateMins - 30 + 1440) / 1440; 
             }
         }
+
+        // Vẫn tính luôn tiền phòng ngày trễ đó
+        currentSoDem = plannedNights + currentSoNgayTre;
 
         currentTienPhong = 0;
         currentTienCoc = 0;
@@ -926,7 +933,8 @@ public class CheckOutView extends BorderPane {
             double giaPhong = (double) room[3];
             currentTienPhong += giaPhong * currentSoDem;
             currentTienCoc += giaCoc;
-            double roomLate = giaPhong * currentSoNgayTre;
+            // Phụ thu phí trả muộn = 50% giá tiền phòng * số ngày trễ
+            double roomLate = giaPhong * 0.5 * currentSoNgayTre;
             roomLateFeeMap.put(maCTDP, roomLate);
             roomPhuThuMap.putIfAbsent(maCTDP, 0.0);
             currentLateFee += roomLate;

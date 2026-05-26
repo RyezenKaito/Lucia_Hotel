@@ -347,7 +347,7 @@ public class ThemSuaPhongDialog extends Stage {
         int tang = isEdit ? phong.getSoTang() : cbSoTang.getValue();
         LoaiPhong lp = cbLoaiPhong.getValue();
         String ttStr = cbTrangThai.getValue();
-        TrangThaiPhong tt;
+        TrangThaiPhong tt = null;
         if (TrangThaiPhong.DACOKHACH.getLabel().equals(ttStr))
             tt = TrangThaiPhong.DACOKHACH; // Giữ nguyên trạng thái gốc (phòng đang có khách)
         else if (TrangThaiPhong.CONTRONG.getLabel().equals(ttStr))

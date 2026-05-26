@@ -228,7 +228,7 @@ public class HoaDonDAO {
      */
     public List<HoaDon> getAllWithKhachHang() {
         List<HoaDon> dsHoaDon = new ArrayList<>();
-        String sql = "SELECT h.*, kh.tenKH, kh.soDT, kh.soCCCD, dp.trangThai AS dp_trangThai FROM HoaDon h " +
+        String sql = "SELECT h.*, kh.tenKH, kh.soDT, kh.soCCCD, dp.trangThai AS dp_trangThai, dp.ngayCheckIn AS dp_ngayCheckIn, dp.ngayCheckOut AS dp_ngayCheckOut FROM HoaDon h " +
                 "JOIN DatPhong dp ON h.maDat = dp.maDat " +
                 "JOIN KH kh ON dp.maKH = kh.maKH " +
                 "ORDER BY h.maHD ASC";
@@ -244,6 +244,12 @@ public class HoaDonDAO {
                 hd.getDatPhong().setKhachHang(kh);
                 try {
                     hd.getDatPhong().setTrangThai(rs.getString("dp_trangThai"));
+                    if (rs.getTimestamp("dp_ngayCheckIn") != null) {
+                        hd.getDatPhong().setNgayCheckIn(rs.getTimestamp("dp_ngayCheckIn").toLocalDateTime());
+                    }
+                    if (rs.getTimestamp("dp_ngayCheckOut") != null) {
+                        hd.getDatPhong().setNgayCheckOut(rs.getTimestamp("dp_ngayCheckOut").toLocalDateTime());
+                    }
                 } catch (SQLException ignored) {
                 }
                 dsHoaDon.add(hd);
