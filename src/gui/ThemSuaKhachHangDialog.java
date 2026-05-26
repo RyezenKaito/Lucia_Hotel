@@ -6,6 +6,7 @@ import model.utils.ValidationUtils;
 import model.utils.EventUtils;
 import model.utils.DatePicker;
 import model.utils.DimOverlay;
+import model.utils.FieldValidationUtils;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -260,17 +261,11 @@ public class ThemSuaKhachHangDialog extends Stage {
     }
 
     private boolean validateNS() {
-        LocalDate ns = dpNgaySinh.getValue();
-        if (ns == null) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh.");
-            return false;
-        }
-        if (LocalDate.now().minusYears(16).isBefore(ns)) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Khách hàng phải từ đủ 16 tuổi.");
-            return false;
-        }
-        clearErrorField(dpNgaySinh, errNS);
-        return true;
+        return FieldValidationUtils.validateNgaySinh(
+        dpNgaySinh, errNS, 16,
+        fieldStyle(),
+        fieldStyle() + "-fx-border-color: " + C_RED + "; -fx-background-color: #fef2f2;"
+    );
     }
 
     private boolean validateSDT() {

@@ -76,7 +76,7 @@ CREATE TABLE Phong (
     is_deleted BIT DEFAULT 0,
     CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (loaiPhong) REFERENCES LoaiPhong(maLoaiPhong)
 );
-ALTER
+
 CREATE TABLE DatPhong (
     maDat        VARCHAR(20)  PRIMARY KEY,
     ngayDat      DATETIME     NOT NULL DEFAULT GETDATE(),
@@ -194,5 +194,33 @@ CREATE TABLE BangGiaDV_Detail (
     CONSTRAINT PK_BGDV_Detail  PRIMARY KEY (maBangGia, maDV),
     CONSTRAINT FK_BGDV_Header  FOREIGN KEY (maBangGia) REFERENCES BangGiaDV_Header(maBangGia),
     CONSTRAINT FK_BGDV_DV      FOREIGN KEY (maDV)      REFERENCES DV(maDV)
+);
+
+
+-- =============================
+-- 5. TIEN NGHI PHONG
+-- =============================
+
+CREATE TABLE TienNghi (
+    maTN        VARCHAR(20) PRIMARY KEY,
+    tenTN       NVARCHAR(100) NOT NULL,
+    moTa        NVARCHAR(255),
+    trangThai   BIT DEFAULT 1   -- 1: đang sử dụng, 0: ngưng sử dụng
+);
+
+CREATE TABLE LoaiPhongTienNghi (
+    maLoaiPhong VARCHAR(20),
+    maTN        VARCHAR(20),
+
+    CONSTRAINT PK_LoaiPhong_TienNghi
+        PRIMARY KEY (maLoaiPhong, maTN),
+
+    CONSTRAINT FK_LPTN_LoaiPhong
+        FOREIGN KEY (maLoaiPhong)
+        REFERENCES LoaiPhong(maLoaiPhong),
+
+    CONSTRAINT FK_LPTN_TienNghi
+        FOREIGN KEY (maTN)
+        REFERENCES TienNghi(maTN)
 );
 GO

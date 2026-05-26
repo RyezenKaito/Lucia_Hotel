@@ -687,53 +687,64 @@ public class HoaDonView extends BorderPane {
     }
 
     private void loadData() {
-        List<HoaDon> list = dao.getAllWithKhachHang();
+        // Show loading placeholder
+        table.setPlaceholder(new Label("⏳ Đang tải dữ liệu hóa đơn..."));
 
-        dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
-        for (HoaDon hd : list) {
-            // Nếu đơn đã được check-in thì hóa đơn có cọc sẽ được tính là chưa thanh toán
-            if ("DA_THANH_TOAN_COC".equals(hd.getTrangThaiThanhToan()) &&
-                    hd.getDatPhong() != null &&
-                    "DA_CHECKIN".equals(hd.getDatPhong().getTrangThai())) {
-                hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
+        javafx.concurrent.Task<List<HoaDon>> task = new javafx.concurrent.Task<>() {
+            @Override
+            protected List<HoaDon> call() {
+                List<HoaDon> list = dao.getAllWithKhachHang();
+                dao.DichVuSuDungDAO dvsdDAO = new dao.DichVuSuDungDAO();
+
+                for (HoaDon hd : list) {
+                    if ("DA_THANH_TOAN_COC".equals(hd.getTrangThaiThanhToan()) &&
+                            hd.getDatPhong() != null &&
+                            "DA_CHECKIN".equals(hd.getDatPhong().getTrangThai())) {
+                        hd.setTrangThaiThanhToan("CHUA_THANH_TOAN");
+                    }
+
+                    double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
+                    java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
+                    double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
+
+                    double phuPhiTraMuon = hd.getPhuPhiTraMuon();
+                    double phuThu = hd.getPhuThu();
+                    double vatAmount = (currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu) * hd.getThueVAT();
+                    double tcp = currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu + vatAmount;
+                    double ttt = Math.max(0, tcp - hd.getTienCoc());
+
+                    hd.setTienPhong(currentSumPhong);
+                    hd.setTienDV(totalTienDV);
+                    hd.setTongCP(tcp);
+                    hd.setTongTien(ttt);
+                    dao.tinhDoanhThu(hd);
+                }
+
+                list.sort((a, b) -> {
+                    if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null) return 0;
+                    if (a.getNgayTaoHD() == null) return 1;
+                    if (b.getNgayTaoHD() == null) return -1;
+                    return b.getNgayTaoHD().compareTo(a.getNgayTaoHD());
+                });
+
+                return list;
             }
+        };
 
-            double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
-            java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
-            double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
-
-            double phuPhiTraMuon = hd.getPhuPhiTraMuon();
-            double phuThu = hd.getPhuThu();
-            double vatAmount = (currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu) * hd.getThueVAT();
-
-            // 2. Tổng chi phí (Trước khi trừ cọc)
-            double tcp = currentSumPhong + totalTienDV + phuPhiTraMuon + phuThu + vatAmount;
-
-            // 3. Tổng thanh toán (Thực tế khách phải trả thêm sau khi trừ cọc)
-            double ttt = Math.max(0, tcp - hd.getTienCoc());
-
-            // Gán vào đối tượng hd
-            hd.setTienPhong(currentSumPhong);
-            hd.setTienDV(totalTienDV);
-            hd.setTongCP(tcp); // Đây là giá trị "Tổng chi phí" bạn muốn hiển thị
-            hd.setTongTien(ttt);
-            dao.tinhDoanhThu(hd);
-        }
-        list.sort((a, b) -> {
-            if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null)
-                return 0;
-            if (a.getNgayTaoHD() == null)
-                return 1;
-            if (b.getNgayTaoHD() == null)
-                return -1;
-            return b.getNgayTaoHD().compareTo(a.getNgayTaoHD());
+        task.setOnSucceeded(e -> {
+            masterData.setAll(task.getValue());
+            filteredData = new FilteredList<>(masterData, p -> true);
+            table.setItems(filteredData);
+            table.setPlaceholder(new Label("Không có dữ liệu"));
+            applyFilter("");
         });
 
-        masterData.setAll(list);
-        filteredData = new FilteredList<>(masterData, p -> true);
-        table.setItems(filteredData);
+        task.setOnFailed(e -> {
+            table.setPlaceholder(new Label("❌ Lỗi tải dữ liệu hóa đơn"));
+            task.getException().printStackTrace();
+        });
 
-        applyFilter("");
+        new Thread(task, "HoaDon-Loader").start();
     }
 
     private void applyFilter(String kw) {
