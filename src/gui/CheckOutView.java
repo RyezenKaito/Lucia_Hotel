@@ -68,7 +68,7 @@ public class CheckOutView extends BorderPane {
     private DatePicker dpFilter;
     private TableView<DichVuSuDung> serviceTable;
     private Label lblTotalDV;
-    private VBox detailInfoBox, billingBox;
+    private VBox detailInfoBox, billingBox, bookingInfoPanel;
     private Label lblTongTien, lblVAT;
     private Button btnConfirm;
 
@@ -131,19 +131,19 @@ public class CheckOutView extends BorderPane {
         main.setAlignment(Pos.TOP_LEFT);
 
         VBox leftCol = buildLeftColumn();
-        ScrollPane rightScroll = buildRightColumn();
+        VBox rightCol = buildRightColumn();
 
         leftCol.setMinWidth(420);
         leftCol.setPrefWidth(600);
         leftCol.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
 
-        rightScroll.setMinWidth(420);
-        rightScroll.setPrefWidth(600);
-        rightScroll.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(rightScroll, Priority.ALWAYS);
+        rightCol.setMinWidth(420);
+        rightCol.setPrefWidth(600);
+        rightCol.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(rightCol, Priority.ALWAYS);
 
-        main.getChildren().addAll(leftCol, rightScroll);
+        main.getChildren().addAll(leftCol, rightCol);
         return main;
     }
 
@@ -418,22 +418,29 @@ public class CheckOutView extends BorderPane {
     }
 
     // ============================================================
-    // RIGHT COLUMN (wrapped in ScrollPane to prevent overflow)
+    // RIGHT COLUMN: Booking info fixed on top, billing scrollable
     // ============================================================
-    private ScrollPane buildRightColumn() {
+    private VBox buildRightColumn() {
         VBox col = new VBox(16);
-        col.getChildren().addAll(buildBookingInfoPanel(), buildBillingPanel());
 
-        ScrollPane scroll = new ScrollPane(col);
-        scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle(
+        // Booking info panel stays fixed (no scroll)
+        bookingInfoPanel = buildBookingInfoPanel();
+
+        // Billing panel wrapped in ScrollPane
+        VBox billingPanel = buildBillingPanel();
+        ScrollPane billingScroll = new ScrollPane(billingPanel);
+        billingScroll.setFitToWidth(true);
+        billingScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        billingScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        billingScroll.setStyle(
                 "-fx-background:transparent;" +
                         "-fx-background-color:transparent;" +
                         "-fx-border-color:transparent;" +
                         "-fx-padding:0;");
-        return scroll;
+        VBox.setVgrow(billingScroll, Priority.ALWAYS);
+
+        col.getChildren().addAll(bookingInfoPanel, billingScroll);
+        return col;
     }
 
     // ----- Panel "Thông tin đặt phòng" -----
