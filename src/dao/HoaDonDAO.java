@@ -351,7 +351,8 @@ public class HoaDonDAO {
         double doanhThu = 0;
 
         if ("DA_THANH_TOAN".equals(status)) {
-            doanhThu = tinhTongTien(hd) + hd.getTienCoc();
+            // Doanh thu = tổng tiền phòng + tiền DV + phụ phí trả muộn + phụ thu
+            doanhThu = hd.getTienPhong() + hd.getTienDV() + hd.getPhuPhiTraMuon() + hd.getPhuThu();
         } else if ("DA_MAT_COC".equals(status)) {
             doanhThu = hd.getTienCoc();
         } else {

@@ -52,7 +52,7 @@ public class HoaDonView extends BorderPane {
     private Label lblFrom, lblTo, lblMonth, lblQuarter, lblYear;
     private DatePicker dpFrom, dpTo;
     private ComboBox<Integer> cbMonth, cbQuarter, cbYear;
-    
+
     /* ── Column filter state ────────────────────────────────────────── */
     private java.util.Set<String> selectedTrangThais = new java.util.HashSet<>();
     private TableColumn<HoaDon, String> colTrangThai;
@@ -406,7 +406,7 @@ public class HoaDonView extends BorderPane {
         lblHint.setTextFill(Color.web(C_TEXT_GRAY));
         lblHint.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 13));
         lblHint.setPadding(new Insets(10, 0, 0, 0));
-        
+
         installColumnFilter();
 
         card.getChildren().addAll(table, lblHint);
@@ -420,11 +420,11 @@ public class HoaDonView extends BorderPane {
         MenuItem all = new MenuItem("Tất cả trạng thái");
 
         String[][] statuses = {
-            {"DA_THANH_TOAN", "Đã thanh toán"},
-            {"CHUA_THANH_TOAN", "Chưa thanh toán"},
-            {"DA_THANH_TOAN_COC", "Đã đặt cọc"},
-            {"DA_HOAN_COC", "Đã hủy - hoàn cọc"},
-            {"DA_MAT_COC", "Đã hủy - mất cọc"}
+                { "DA_THANH_TOAN", "Đã thanh toán" },
+                { "CHUA_THANH_TOAN", "Chưa thanh toán" },
+                { "DA_THANH_TOAN_COC", "Đã đặt cọc" },
+                { "DA_HOAN_COC", "Đã hủy - hoàn cọc" },
+                { "DA_MAT_COC", "Đã hủy - mất cọc" }
         };
 
         java.util.List<CheckBox> checkBoxes = new java.util.ArrayList<>();
@@ -446,7 +446,7 @@ public class HoaDonView extends BorderPane {
         for (String[] st : statuses) {
             CheckBox cb = new CheckBox(st[1]);
             cb.setStyle("-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
-            
+
             // CustomMenuItem giúp menu KHÔNG BỊ ĐÓNG khi click vào CheckBox
             CustomMenuItem cmi = new CustomMenuItem(cb);
             cmi.setHideOnClick(false);
@@ -659,7 +659,7 @@ public class HoaDonView extends BorderPane {
         double phuThu = hd.getPhuThu();
         double vatRate = hd.getThueVAT() > 0 ? hd.getThueVAT() : 0.1;
         // VAT tính trên tổng tiền phòng + DV + phụ thu + phụ phí, sau đó trừ cọc
-        double vatAmount = (tongTienPhong + tienDV + phuPhiTraMuon + phuThu) * vatRate;
+        double vatAmount = (tongTienPhong + tienDV) * vatRate;
         double tongTT = Math.max(0, (tongTienPhong + tienDV + phuPhiTraMuon + phuThu + vatAmount) - tienCoc);
 
         sumBox.getChildren().addAll(
@@ -796,8 +796,9 @@ public class HoaDonView extends BorderPane {
 
                     double currentSumPhong = dao.getTongTienPhongCurrent(hd.getMaHD());
                     double tongCocHD = new dao.ChiTietHoaDonDAO().getTongCocByMaHD(hd.getMaHD());
-                    if(currentSumPhong > 0 || tongCocHD > 0) hd.setTienCoc(tongCocHD);
-                    
+                    if (currentSumPhong > 0 || tongCocHD > 0)
+                        hd.setTienCoc(tongCocHD);
+
                     java.util.List<model.entities.DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
                     double totalTienDV = listDV.stream().mapToDouble(model.entities.DichVuSuDung::getThanhTien).sum();
 
@@ -815,9 +816,12 @@ public class HoaDonView extends BorderPane {
                 }
 
                 list.sort((a, b) -> {
-                    if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null) return 0;
-                    if (a.getNgayTaoHD() == null) return 1;
-                    if (b.getNgayTaoHD() == null) return -1;
+                    if (a.getNgayTaoHD() == null && b.getNgayTaoHD() == null)
+                        return 0;
+                    if (a.getNgayTaoHD() == null)
+                        return 1;
+                    if (b.getNgayTaoHD() == null)
+                        return -1;
                     return b.getNgayTaoHD().compareTo(a.getNgayTaoHD());
                 });
 
@@ -840,7 +844,8 @@ public class HoaDonView extends BorderPane {
     }
 
     private void applyFilter(String kw) {
-        if (filteredData == null) return;
+        if (filteredData == null)
+            return;
         String filter = kw == null ? "" : kw.toLowerCase().trim();
 
         java.time.LocalDate startDate = null, endDate = null;
