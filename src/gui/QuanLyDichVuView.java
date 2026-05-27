@@ -147,26 +147,26 @@ public class QuanLyDichVuView extends BorderPane implements IRefreshable {
         TableColumn<DichVu, String> colSTT = new TableColumn<>("STT");
         colSTT.setPrefWidth(60);
         colSTT.setMaxWidth(60);
-        colSTT.setStyle("-fx-alignment: CENTER;");
+        colSTT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSTT.setCellValueFactory(
                 p -> new SimpleStringProperty(String.valueOf(table.getItems().indexOf(p.getValue()) + 1)));
 
         // 2. Cột Mã DV
         TableColumn<DichVu, String> colMa = new TableColumn<>("Mã dịch vụ");
         colMa.setPrefWidth(120);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getMaDV()));
 
         // 3. Cột Tên DV
         TableColumn<DichVu, String> colTen = new TableColumn<>("Tên dịch vụ");
         colTen.setPrefWidth(250);
-        colTen.setStyle("-fx-alignment: CENTER_LEFT; -fx-padding: 0 0 0 15;");
+        colTen.setStyle("-fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 15;");
         colTen.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenDV()));
 
         // 4. Cột Loại DV
         TableColumn<DichVu, String> colLoai = new TableColumn<>();
         colLoai.setPrefWidth(150);
-        colLoai.setStyle("-fx-alignment: CENTER;");
+        colLoai.setStyle("-fx-alignment: CENTER-LEFT;");
         colLoai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTenLoaiDV()));
 
         Label lblHeaderPL = new Label("Phân loại ▼");
@@ -209,7 +209,7 @@ public class QuanLyDichVuView extends BorderPane implements IRefreshable {
         // 5. Cột Đơn giá
         TableColumn<DichVu, String> colGia = new TableColumn<>("Giá áp dụng");
         colGia.setPrefWidth(160);
-        colGia.setStyle("-fx-alignment: CENTER-RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold; -fx-text-fill: "
+        colGia.setStyle("-fx-alignment: CENTER-LEFT; -fx-padding: 0 15 0 0; -fx-font-weight: bold; -fx-text-fill: "
                 + C_BLUE + ";");
         colGia.setCellValueFactory(p -> {
             DichVu dv = p.getValue();
@@ -237,12 +237,12 @@ public class QuanLyDichVuView extends BorderPane implements IRefreshable {
                         if (dv.getGia() == null) {
                             // Chưa thiết lập giá
                             setStyle("-fx-text-fill: " + C_RED + "; -fx-font-style: italic;"
-                                    + " -fx-alignment: CENTER_RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
+                                    + " -fx-alignment: CENTER-LEFT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
                             setTooltip(new Tooltip("Dịch vụ chưa được thiết lập giá"));
                         } else {
                             // Hiện giá (màu xanh lá cây)
                             setStyle("-fx-text-fill: " + C_GREEN
-                                    + "; -fx-alignment: CENTER_RIGHT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
+                                    + "; -fx-alignment: CENTER-LEFT; -fx-padding: 0 15 0 0; -fx-font-weight: bold;");
                             setTooltip(new Tooltip("Giá đang áp dụng hiện tại"));
                         }
                     }
@@ -253,13 +253,13 @@ public class QuanLyDichVuView extends BorderPane implements IRefreshable {
         // 6. Cột Đơn vị
         TableColumn<DichVu, String> colDonVi = new TableColumn<>("Đơn vị");
         colDonVi.setPrefWidth(100);
-        colDonVi.setStyle("-fx-alignment: CENTER;");
+        colDonVi.setStyle("-fx-alignment: CENTER-LEFT;");
         colDonVi.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getDonVi()));
 
         // 7. Cột Trạng thái (Tích hợp bộ lọc vào Header)
         TableColumn<DichVu, String> colTrangThai = new TableColumn<>();
         colTrangThai.setPrefWidth(160);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setStyle("-fx-alignment: CENTER-LEFT;");
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTrangThaiLabel()));
 
         // Thiết kế Header có nút lọc

@@ -377,20 +377,20 @@ public class CheckOutView extends BorderPane implements IRefreshable {
                         ? p.getValue().getDichVu().getDonVi()
                         : ""));
         colDonVi.setMaxWidth(70);
-        colDonVi.setStyle("-fx-alignment:CENTER;");
+        colDonVi.setStyle("-fx-alignment:CENTER-LEFT;");
 
         TableColumn<DichVuSuDung, String> colSl = new TableColumn<>("SL");
         colSl.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getSoLuong())));
         colSl.setMaxWidth(55);
-        colSl.setStyle("-fx-alignment:CENTER;");
+        colSl.setStyle("-fx-alignment:CENTER-LEFT;");
 
         TableColumn<DichVuSuDung, String> colGia = new TableColumn<>("Đơn giá");
         colGia.setCellValueFactory(p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getGiaDV())));
-        colGia.setStyle("-fx-alignment:CENTER-RIGHT;");
+        colGia.setStyle("-fx-alignment:CENTER-LEFT;");
 
         TableColumn<DichVuSuDung, String> colTT = new TableColumn<>("Thành tiền");
         colTT.setCellValueFactory(p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getThanhTien())));
-        colTT.setStyle("-fx-alignment:CENTER-RIGHT;-fx-font-weight:bold;");
+        colTT.setStyle("-fx-alignment:CENTER-LEFT;-fx-font-weight:bold;");
 
         serviceTable.getColumns().addAll(colPhong, colNgay, colTen, colDonVi, colSl, colGia, colTT);
         for (TableColumn<DichVuSuDung, ?> c : serviceTable.getColumns()) {
@@ -1295,7 +1295,7 @@ public class CheckOutView extends BorderPane implements IRefreshable {
                     maCTHD = cthdDAO.generateMaCTHD();
                     cthdDAO.insert(maCTHD, hd.getMaHD(), maCTDP, currentSoDem, tienPhong, roomPhuThu, roomLateFee);
                 }
-                phongDAO.updateTrangThai(maPhong, "BAN");
+                phongDAO.updateTrangThai(maPhong, "CONTRONG");
             }
             double sumPhong = hoaDonDAO.getTongTienPhongCurrent(hd.getMaHD());
             List<DichVuSuDung> listDV = dvsdDAO.findByMaHD(hd.getMaHD());
@@ -1325,6 +1325,7 @@ public class CheckOutView extends BorderPane implements IRefreshable {
             if (datPhongDAO.isAllRoomsCheckedOut(currentDatPhong.getMaDat())) {
                 datPhongDAO.updateTrangThai(currentDatPhong.getMaDat(), "DA_CHECKOUT");
                 hd.setTrangThaiThanhToan("DA_THANH_TOAN");
+                hd.setNgayThanhToan(now);
             }
             if (hoaDonDAO.updateTongTien(hd))
                 return hd;

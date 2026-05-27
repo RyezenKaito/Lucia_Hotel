@@ -168,20 +168,20 @@ public class QuanLyPhongView extends BorderPane implements IRefreshable {
         TableColumn<Phong, String> colSTT = new TableColumn<>("STT");
         colSTT.setMinWidth(50);
         colSTT.setMaxWidth(60);
-        colSTT.setStyle("-fx-alignment: CENTER;");
+        colSTT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSTT.setCellValueFactory(
                 p -> new SimpleStringProperty(String.valueOf(table.getItems().indexOf(p.getValue()) + 1)));
 
         // Cột Mã phòng
         TableColumn<Phong, String> colMa = new TableColumn<>("Mã phòng");
         colMa.setMinWidth(100);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaPhong())));
 
         // Cột Loại phòng (có bộ lọc trong header)
         colLoai = new TableColumn<>("Loại phòng ▼");
         colLoai.setMinWidth(150);
-        colLoai.setStyle("-fx-alignment: CENTER;");
+        colLoai.setStyle("-fx-alignment: CENTER-LEFT;");
         colLoai.setCellValueFactory(p -> new SimpleStringProperty(
                 p.getValue().getLoaiPhong() != null ? p.getValue().getLoaiPhong().toString() : ""));
         installColumnFilter(colLoai, "Loại phòng", buildLoaiPhongMenu());
@@ -189,7 +189,7 @@ public class QuanLyPhongView extends BorderPane implements IRefreshable {
         // Cột Đơn giá
         TableColumn<Phong, String> colGia = new TableColumn<>("Đơn giá");
         colGia.setMinWidth(130);
-        colGia.setStyle("-fx-alignment: CENTER;");
+        colGia.setStyle("-fx-alignment: CENTER-LEFT;");
         colGia.setCellValueFactory(p -> {
             if (p.getValue().getLoaiPhong() != null) {
                 return new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getLoaiPhong().getGia()));
@@ -200,7 +200,7 @@ public class QuanLyPhongView extends BorderPane implements IRefreshable {
         // Cột Sức chứa
         TableColumn<Phong, String> colSucChua = new TableColumn<>("Sức chứa");
         colSucChua.setMinWidth(100);
-        colSucChua.setStyle("-fx-alignment: CENTER;");
+        colSucChua.setStyle("-fx-alignment: CENTER-LEFT;");
         colSucChua.setCellValueFactory(p -> {
             if (p.getValue().getLoaiPhong() != null) {
                 return new SimpleStringProperty(p.getValue().getLoaiPhong().getSucChua() + " người");
@@ -211,7 +211,7 @@ public class QuanLyPhongView extends BorderPane implements IRefreshable {
         // Cột Trạng thái (có bộ lọc trong header)
         colTrangThai = new TableColumn<>("Trạng thái ▼");
         colTrangThai.setMinWidth(150);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setStyle("-fx-alignment: CENTER-LEFT;");
         colTrangThai.setCellValueFactory(p -> {
             TrangThaiPhong tt = p.getValue().getTrangThai();
             String val = (tt != null) ? tt.getLabel() : "Không xác định";
@@ -272,7 +272,7 @@ public class QuanLyPhongView extends BorderPane implements IRefreshable {
         // Cột Tầng (có bộ lọc trong header)
         colTang = new TableColumn<>("Tầng ▼");
         colTang.setMinWidth(80);
-        colTang.setStyle("-fx-alignment: CENTER;");
+        colTang.setStyle("-fx-alignment: CENTER-LEFT;");
         colTang.setCellValueFactory(p -> new SimpleStringProperty(String.valueOf(p.getValue().getSoTang())));
 
         table.getColumns().add(colSTT);

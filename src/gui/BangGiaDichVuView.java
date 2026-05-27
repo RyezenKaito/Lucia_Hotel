@@ -166,7 +166,7 @@ public class BangGiaDichVuView extends BorderPane implements IRefreshable {
         TableColumn<Object[], String> colSTT = new TableColumn<>("STT");
         colSTT.setMinWidth(50);
         colSTT.setMaxWidth(60);
-        colSTT.setStyle("-fx-alignment: CENTER;");
+        colSTT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSTT.setCellValueFactory(p -> {
             int idx = table.getItems().indexOf(p.getValue()) + 1;
             return new SimpleStringProperty(String.valueOf(idx));
@@ -176,7 +176,7 @@ public class BangGiaDichVuView extends BorderPane implements IRefreshable {
         TableColumn<Object[], String> colMa = new TableColumn<>("Mã bảng giá");
         colMa.setMinWidth(120);
         colMa.setPrefWidth(120);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[0])));
 
         // ── Cột Tên BG ──
@@ -189,14 +189,14 @@ public class BangGiaDichVuView extends BorderPane implements IRefreshable {
         TableColumn<Object[], String> colNgayAD = new TableColumn<>("Ngày áp dụng");
         colNgayAD.setMinWidth(120);
         colNgayAD.setPrefWidth(150);
-        colNgayAD.setStyle("-fx-alignment: CENTER;");
+        colNgayAD.setStyle("-fx-alignment: CENTER-LEFT;");
         colNgayAD.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[2])));
 
         // ── Cột Ngày hết hạn ──
         TableColumn<Object[], String> colNgayHH = new TableColumn<>("Ngày hết hạn");
         colNgayHH.setMinWidth(120);
         colNgayHH.setPrefWidth(150);
-        colNgayHH.setStyle("-fx-alignment: CENTER;");
+        colNgayHH.setStyle("-fx-alignment: CENTER-LEFT;");
         colNgayHH.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[3])));
 
         // ── Cột Trạng thái (tô màu) ──
@@ -204,7 +204,7 @@ public class BangGiaDichVuView extends BorderPane implements IRefreshable {
         TableColumn<Object[], String> colTrangThai = new TableColumn<>("Trạng thái");
         colTrangThai.setMinWidth(160);
         colTrangThai.setPrefWidth(180);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setStyle("-fx-alignment: CENTER-LEFT;");
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(str(p.getValue()[4])));
 
         colTrangThai.setCellFactory(col -> new TableCell<>() {

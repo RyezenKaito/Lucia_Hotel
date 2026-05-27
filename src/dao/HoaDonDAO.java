@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import connectDatabase.ConnectDatabase;
 import model.entities.DatPhong;
@@ -192,7 +193,12 @@ public class HoaDonDAO {
                     ? Timestamp.valueOf(hd.getNgayTaoHD())
                     : Timestamp.valueOf(java.time.LocalDateTime.now()));
             ps.setString(8, hd.getTrangThaiThanhToan() != null ? hd.getTrangThaiThanhToan() : "DA_THANH_TOAN");
-            ps.setTimestamp(9, hd.getNgayThanhToan() != null ? Timestamp.valueOf(hd.getNgayThanhToan()) : null);
+            LocalDateTime ngayThanhToan = hd.getNgayThanhToan();
+            if (ngayThanhToan == null && "DA_THANH_TOAN".equals(hd.getTrangThaiThanhToan())) {
+                ngayThanhToan = LocalDateTime.now();
+                hd.setNgayThanhToan(ngayThanhToan);
+            }
+            ps.setTimestamp(9, ngayThanhToan != null ? Timestamp.valueOf(ngayThanhToan) : null);
             ps.setDouble(10, hd.getPhuThu());
             ps.setDouble(11, hd.getPhuPhiTraMuon());
             ps.setString(12, hd.getMaHD());

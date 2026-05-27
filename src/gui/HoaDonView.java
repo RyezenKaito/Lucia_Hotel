@@ -231,7 +231,7 @@ public class HoaDonView extends BorderPane implements IRefreshable {
         colStt.setPrefWidth(50);
         colStt.setMinWidth(30);
         colStt.setMaxWidth(45);
-        colStt.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colStt.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colStt.setCellFactory(col -> new TableCell<HoaDon, Void>() {
             @Override
             public void updateItem(Void item, boolean empty) {
@@ -248,7 +248,7 @@ public class HoaDonView extends BorderPane implements IRefreshable {
         colMa.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getMaHD()));
         colMa.setPrefWidth(120);
         colMa.setMinWidth(40);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
 
         TableColumn<HoaDon, String> colKhach = new TableColumn<>("Khách hàng");
         colKhach.setCellValueFactory(p -> new SimpleStringProperty(
@@ -265,33 +265,33 @@ public class HoaDonView extends BorderPane implements IRefreshable {
                 : "—"));
         colNgay.setPrefWidth(160);
         colNgay.setMinWidth(50);
-        colNgay.setStyle("-fx-alignment: CENTER;");
+        colNgay.setStyle("-fx-alignment: CENTER-LEFT;");
 
         TableColumn<HoaDon, String> colTongCP = new TableColumn<>("Tổng chi phí");
         colTongCP.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongCP())));
-        colTongCP.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colTongCP.setStyle("-fx-alignment: CENTER-LEFT;");
         colTongCP.setPrefWidth(120);
         colTongCP.setMinWidth(50);
 
         TableColumn<HoaDon, String> colTienCoc = new TableColumn<>("Tiền cọc");
         colTienCoc.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTienCoc())));
-        colTienCoc.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colTienCoc.setStyle("-fx-alignment: CENTER-LEFT;");
         colTienCoc.setPrefWidth(120);
         colTienCoc.setMinWidth(50);
 
         TableColumn<HoaDon, String> colPhuThu = new TableColumn<>("Phụ phí");
         colPhuThu.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuThu())));
-        colPhuThu.setStyle("-fx-alignment: CENTER-RIGHT;");
+        colPhuThu.setStyle("-fx-alignment: CENTER-LEFT;");
         colPhuThu.setPrefWidth(110);
         colPhuThu.setMinWidth(40);
 
         TableColumn<HoaDon, String> colPhuPhiTraMuon = new TableColumn<>("Phí trả muộn");
         colPhuPhiTraMuon.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuPhiTraMuon())));
-        colPhuPhiTraMuon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ef4444;");
+        colPhuPhiTraMuon.setStyle("-fx-alignment: CENTER-LEFT; -fx-text-fill: #ef4444;");
         colPhuPhiTraMuon.setPrefWidth(120);
         colPhuPhiTraMuon.setMinWidth(50);
         colPhuPhiTraMuon.setCellFactory(col -> new TableCell<>() {
@@ -303,7 +303,7 @@ public class HoaDonView extends BorderPane implements IRefreshable {
                     setStyle("");
                 } else {
                     setText(item);
-                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #ef4444;");
+                    setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold; -fx-text-fill: #ef4444;");
                 }
             }
         });
@@ -311,7 +311,7 @@ public class HoaDonView extends BorderPane implements IRefreshable {
         TableColumn<HoaDon, String> colTong = new TableColumn<>("Tổng thanh toán");
         colTong.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongTien())));
-        colTong.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
+        colTong.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colTong.setPrefWidth(160);
         colTong.setMinWidth(60);
 
@@ -319,7 +319,7 @@ public class HoaDonView extends BorderPane implements IRefreshable {
         colTrangThai = new TableColumn<>();
         colTrangThai.setPrefWidth(160);
         colTrangThai.setMinWidth(70);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setStyle("-fx-alignment: CENTER-LEFT;");
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(
                 p.getValue().getTrangThaiThanhToan() != null ? p.getValue().getTrangThaiThanhToan() : ""));
         colTrangThai.setCellFactory(c -> new TableCell<>() {
@@ -373,7 +373,7 @@ public class HoaDonView extends BorderPane implements IRefreshable {
                         "; -fx-padding: 4 12 4 12; -fx-background-radius: 12;");
                 setGraphic(badge);
                 setText(null);
-                setAlignment(Pos.CENTER);
+                setAlignment(Pos.CENTER_LEFT);
             }
         });
 

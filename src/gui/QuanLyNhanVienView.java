@@ -199,7 +199,7 @@ public class QuanLyNhanVienView extends BorderPane implements IRefreshable {
         colSTT.setMinWidth(60);
         colSTT.setMaxWidth(60);
         colSTT.setResizable(false);
-        colSTT.setStyle("-fx-alignment: CENTER;");
+        colSTT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSTT.setCellFactory(col -> new TableCell<>() {
             @Override
             public void updateItem(Void item, boolean empty) {
@@ -214,7 +214,7 @@ public class QuanLyNhanVienView extends BorderPane implements IRefreshable {
 
         TableColumn<NhanVien, String> colMa = new TableColumn<>("Mã NV");
         colMa.setMinWidth(80);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colMa.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getMaNV())));
 
         TableColumn<NhanVien, String> colTen = new TableColumn<>("Họ và tên");
@@ -224,29 +224,29 @@ public class QuanLyNhanVienView extends BorderPane implements IRefreshable {
 
         TableColumn<NhanVien, String> colCCCD = new TableColumn<>("Số CCCD");
         colCCCD.setMinWidth(120);
-        colCCCD.setStyle("-fx-alignment: CENTER;");
+        colCCCD.setStyle("-fx-alignment: CENTER-LEFT;");
         colCCCD.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getCccd())));
 
         TableColumn<NhanVien, String> colSDT = new TableColumn<>("Số điện thoại");
         colSDT.setMinWidth(110);
-        colSDT.setStyle("-fx-alignment: CENTER;");
+        colSDT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSDT.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getSoDT())));
 
         TableColumn<NhanVien, String> colNS = new TableColumn<>("Ngày sinh");
         colNS.setMinWidth(100);
-        colNS.setStyle("-fx-alignment: CENTER;");
+        colNS.setStyle("-fx-alignment: CENTER-LEFT;");
         colNS.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getNgaySinh() != null ? c.getValue().getNgaySinh().format(FMT) : ""));
 
         TableColumn<NhanVien, String> colNgayVao = new TableColumn<>("Ngày vào làm");
         colNgayVao.setMinWidth(120);
-        colNgayVao.setStyle("-fx-alignment: CENTER;");
+        colNgayVao.setStyle("-fx-alignment: CENTER-LEFT;");
         colNgayVao.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getNgayVaoLamDate() != null ? c.getValue().getNgayVaoLamDate().format(FMT) : ""));
 
         colChucVu = new TableColumn<>("Chức vụ" + (isCurrentUserAdmin ? " ▼" : ""));
         colChucVu.setMinWidth(140);
-        colChucVu.setStyle("-fx-alignment: CENTER;");
+        colChucVu.setStyle("-fx-alignment: CENTER-LEFT;");
         colChucVu.setCellValueFactory(c -> {
             ChucVu role = c.getValue().getRole();
             if (role == ChucVu.QUAN_LY)
@@ -284,7 +284,7 @@ public class QuanLyNhanVienView extends BorderPane implements IRefreshable {
 
         colTrangThai = new TableColumn<>("Trạng thái ▼");
         colTrangThai.setMinWidth(160);
-        colTrangThai.setStyle("-fx-alignment: CENTER;");
+        colTrangThai.setStyle("-fx-alignment: CENTER-LEFT;");
         colTrangThai.setCellValueFactory(c -> {
             model.enums.TrangThaiNV tt = c.getValue().getTrangThai();
             return new SimpleStringProperty(tt == model.enums.TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");

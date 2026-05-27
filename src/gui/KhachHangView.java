@@ -181,7 +181,7 @@ public class KhachHangView extends BorderPane implements IRefreshable {
         colSTT.setMinWidth(60);
         colSTT.setMaxWidth(60);
         colSTT.setResizable(false);
-        colSTT.setStyle("-fx-alignment: CENTER;");
+        colSTT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSTT.setCellFactory(col -> new TableCell<>() {
             @Override
             public void updateItem(Void item, boolean empty) {
@@ -196,7 +196,7 @@ public class KhachHangView extends BorderPane implements IRefreshable {
 
         TableColumn<KhachHang, String> colMa = new TableColumn<>("Mã KH");
         colMa.setMinWidth(100);
-        colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+        colMa.setStyle("-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getMaKH())));
 
         TableColumn<KhachHang, String> colTen = new TableColumn<>("Họ và tên");
@@ -209,17 +209,17 @@ public class KhachHangView extends BorderPane implements IRefreshable {
 
         TableColumn<KhachHang, String> colCCCD = new TableColumn<>("Số CCCD");
         colCCCD.setMinWidth(140);
-        colCCCD.setStyle("-fx-alignment: CENTER;");
+        colCCCD.setStyle("-fx-alignment: CENTER-LEFT;");
         colCCCD.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getSoCCCD())));
 
         TableColumn<KhachHang, String> colSDT = new TableColumn<>("Số điện thoại");
         colSDT.setMinWidth(130);
-        colSDT.setStyle("-fx-alignment: CENTER;");
+        colSDT.setStyle("-fx-alignment: CENTER-LEFT;");
         colSDT.setCellValueFactory(p -> new SimpleStringProperty(nvl(p.getValue().getSoDT())));
 
         TableColumn<KhachHang, String> colNS = new TableColumn<>("Ngày sinh");
         colNS.setMinWidth(130);
-        colNS.setStyle("-fx-alignment: CENTER;");
+        colNS.setStyle("-fx-alignment: CENTER-LEFT;");
         colNS.setCellValueFactory(p -> {
             LocalDate ns = p.getValue().getNgaySinh();
             return new SimpleStringProperty(ns != null ? ns.format(DATE_FMT) : "");
@@ -229,14 +229,8 @@ public class KhachHangView extends BorderPane implements IRefreshable {
         for (TableColumn<KhachHang, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS)) {
             Label lblHeader = new Label(c.getText());
             lblHeader.setStyle("-fx-font-weight: bold; -fx-text-fill: " + C_TEXT_DARK + ";");
-            if (c == colTen) {
-                lblHeader.setPadding(new Insets(0, 0, 0, 15));
-                c.setGraphic(new StackPane(lblHeader));
-                ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER_LEFT);
-            } else {
-                c.setGraphic(new StackPane(lblHeader));
-                ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER);
-            }
+            c.setGraphic(new StackPane(lblHeader));
+            ((StackPane) c.getGraphic()).setAlignment(Pos.CENTER);
             c.setText(""); // Xóa text gốc để hiển thị Graphic
         }
 
@@ -465,7 +459,7 @@ public class KhachHangView extends BorderPane implements IRefreshable {
             col.setReorderable(false);
             col.setSortable(false);
             col.setResizable(false);
-            col.setStyle("-fx-alignment: CENTER;");
+            col.setStyle("-fx-alignment: CENTER-LEFT;");
 
             if (idx == 0) {
                 // STT
@@ -493,14 +487,14 @@ public class KhachHangView extends BorderPane implements IRefreshable {
                             super.updateItem(item, empty);
                             if (empty) {
                                 setText(null);
-                                setStyle("-fx-alignment: CENTER;");
+                                setStyle("-fx-alignment: CENTER-LEFT;");
                             } else if (item == null || item.isBlank()) {
                                 setText("Chưa nhận phòng");
-                                setStyle("-fx-alignment: CENTER; -fx-text-fill: #9ca3af;");
+                                setStyle("-fx-alignment: CENTER-LEFT; -fx-text-fill: #9ca3af;");
                             } else {
                                 setText(item);
                                 setStyle(
-                                        "-fx-alignment: CENTER; -fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold;");
+                                        "-fx-alignment: CENTER-LEFT; -fx-text-fill: " + C_BLUE + "; -fx-font-weight: bold;");
                             }
                         }
                     });
