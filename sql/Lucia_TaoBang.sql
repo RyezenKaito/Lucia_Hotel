@@ -223,8 +223,17 @@
             FOREIGN KEY (maLoaiPhong)
             REFERENCES LoaiPhong(maLoaiPhong),
 
+<<<<<<< HEAD
+    CONSTRAINT FK_LPTN_TienNghi
+        FOREIGN KEY (maTN)
+        REFERENCES TienNghi(maTN)
+);
+GO
+
+=======
         CONSTRAINT FK_LPTN_TienNghi
             FOREIGN KEY (maTN)
             REFERENCES TienNghi(maTN)
     );
     GO
+>>>>>>> a24b97fb454830da81411b1b32eea533c4337343

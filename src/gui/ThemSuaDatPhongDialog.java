@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -616,10 +617,11 @@ public class ThemSuaDatPhongDialog extends Stage {
             
             HBox box = new HBox(15);
             box.setAlignment(Pos.CENTER_RIGHT);
-            Button btnClose = makeFooterBtn("HỦY BỎ", "white", C_TEXT_GRAY, C_BORDER, "#f3f4f6");
+            Button btnClose = makeFooterBtn("Hủy", "white", C_TEXT_GRAY, C_BORDER, "#f3f4f6");
             btnClose.setOnAction(e -> close());
             
-            btnSave = makeFooterBtn("LƯU ĐỔI PHÒNG", C_SIDEBAR, "white", "transparent", C_ACTIVE);
+            btnSave = makeFooterBtn("💾  Cập nhật", C_SIDEBAR, "white", "transparent", C_ACTIVE);
+            btnSave.setDisable(true);
             btnSave.setOnAction(e -> handleDoiPhong());
             
             box.getChildren().addAll(btnClose, btnSave);
@@ -940,9 +942,39 @@ public class ThemSuaDatPhongDialog extends Stage {
         } catch (Exception ignored) {
             lblGopY.setText("");
         }
+        
+        if (isDoiPhongMode) {
+            checkDoiPhongChanged();
+        }
     }
 
-    /* ── Tính tiền tự động ──────────────────────────────────────────── */
+    private void checkDoiPhongChanged() {
+        if (!isDoiPhongMode || btnSave == null) return;
+        
+        List<String> newSelection = new ArrayList<>();
+        for (Map.Entry<String, CheckBox> e : phongCheckBoxes.entrySet()) {
+            if (e.getValue().isSelected()) {
+                newSelection.add(e.getKey());
+            }
+        }
+        
+        if (newSelection.size() != originalPhongsForDoiPhong.size()) {
+            btnSave.setDisable(true);
+            return;
+        }
+        
+        boolean changed = false;
+        for (Phong p : originalPhongsForDoiPhong) {
+            if (!newSelection.contains(p.getMaPhong())) {
+                changed = true;
+                break;
+            }
+        }
+        
+        btnSave.setDisable(!changed);
+    }
+
+    /* ── LƯU DỮ LIỆU (THÊM MỚI) ─────────────────────────────────────── */
     private void updateTongTien() {
         if (isReadOnly)
             return;
@@ -1182,6 +1214,19 @@ public class ThemSuaDatPhongDialog extends Stage {
 
         if (sp.size() != originalPhongsForDoiPhong.size()) {
             showError("Vui lòng chọn đủ " + originalPhongsForDoiPhong.size() + " phòng để đổi!");
+            return;
+        }
+
+        String oldRooms = originalPhongsForDoiPhong.stream().map(Phong::getMaPhong).collect(Collectors.joining(", "));
+        String newRooms = sp.stream().map(Phong::getMaPhong).collect(Collectors.joining(", "));
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận đổi phòng");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Bạn có chắc muốn cập nhật phòng?\n\n- Phòng cũ: " + oldRooms + "\n- Phòng mới: " + newRooms);
+
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK) {
             return;
         }
 
@@ -1464,7 +1509,10 @@ public class ThemSuaDatPhongDialog extends Stage {
                     card.setOnMouseEntered(e -> updateCardStyle.run());
                     card.setOnMouseExited(e -> updateCardStyle.run());
                     cb.focusedProperty().addListener((obs, o, n) -> updateCardStyle.run());
-                    cb.selectedProperty().addListener((obs, o, n) -> updateCardStyle.run());
+                    cb.selectedProperty().addListener((obs, o, n) -> {
+                        updateCardStyle.run();
+                        checkDoiPhongChanged();
+                    });
 
                     cb.setOnMouseClicked(e -> e.consume());
                 } else {
@@ -1564,9 +1612,9 @@ public class ThemSuaDatPhongDialog extends Stage {
         dpCheckIn.setDisable(true);
         dpCheckOut.setDisable(true);
 
-        if (loaiPhongCheckBoxArea != null)
+        if (loaiPhongCheckBoxArea != null && !isDoiPhongMode)
             loaiPhongCheckBoxArea.setDisable(true);
-        if (phongSelectFlow != null)
+        if (phongSelectFlow != null && !isDoiPhongMode)
             phongSelectFlow.setDisable(true);
     }
 

@@ -215,7 +215,7 @@ public class DatPhongView extends BorderPane {
     @SuppressWarnings("unchecked")
     private VBox buildTable() {
         table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setFixedCellSize(42);
         table.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
                 "; -fx-border-radius: 10; -fx-background-radius: 10;" +
@@ -230,7 +230,7 @@ public class DatPhongView extends BorderPane {
             miDetail.setOnAction(e -> {
                 Object[] r = row.getItem();
                 if (r != null)
-                    openDetailDialog((String) r[0]);
+                    openDetailDialog(r);
             });
 
             MenuItem miCancel = new MenuItem("Hủy đơn đặt phòng");
@@ -274,7 +274,7 @@ public class DatPhongView extends BorderPane {
 
             row.setOnMouseClicked(e -> {
                 if (e.getClickCount() == 2 && !row.isEmpty()) {
-                    openDetailDialog((String) row.getItem()[0]);
+                    openDetailDialog(row.getItem());
                 }
             });
 
@@ -287,8 +287,8 @@ public class DatPhongView extends BorderPane {
             int idx = table.getItems().indexOf(c.getValue()) + 1;
             return new SimpleStringProperty(String.valueOf(idx));
         });
-        colSTT.setMinWidth(50);
-        colSTT.setMaxWidth(60);
+        colSTT.setMinWidth(30);
+        colSTT.setMaxWidth(45);
         colSTT.setStyle("-fx-alignment: CENTER;");
         colSTT.setReorderable(false);
 
@@ -313,7 +313,7 @@ public class DatPhongView extends BorderPane {
         colStatus.setReorderable(false);
         colStatus.setSortable(false);
         colStatus.setCellValueFactory(cd -> new SimpleStringProperty((String) cd.getValue()[8]));
-        colStatus.setMinWidth(160);
+        colStatus.setMinWidth(80);
         colStatus.setStyle("-fx-alignment: CENTER;");
         colStatus.setCellFactory(c -> new TableCell<>() {
             @Override
@@ -372,6 +372,24 @@ public class DatPhongView extends BorderPane {
         table.getColumns().addAll(colSTT, colMaDat, colTenKH, colSDT, colPhong, colIn, colOut, colNguoi, colCoc,
                 colStatus);
 
+        // Ràng buộc chiều rộng các cột để tự giãn đầy bảng và không cho kéo
+        double sttW = 60;
+        colMaDat.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.09));
+        colTenKH.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.15));
+        colSDT.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.11));
+        colPhong.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.10));
+        colIn.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.12));
+        colOut.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.12));
+        colNguoi.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.06));
+        colCoc.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.10));
+        colStatus.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.15));
+
+        // Khóa cứng tất cả cột – không cho kéo thả hay co dãn
+        for (TableColumn<Object[], ?> c : table.getColumns()) {
+            c.setReorderable(false);
+            c.setResizable(false);
+        }
+
         // Install dropdown filter on Trạng thái column
         installColumnFilter();
 
@@ -406,7 +424,7 @@ public class DatPhongView extends BorderPane {
             }
             return new SimpleStringProperty(val.toString());
         });
-        c.setMinWidth(minW);
+        c.setMinWidth(40);
         c.setReorderable(false);
         return c;
     }
@@ -650,11 +668,15 @@ public class DatPhongView extends BorderPane {
         new ThemSuaDatPhongDialog(owner, this::loadData).showDialog();
     }
 
-    private void openDetailDialog(String maDat) {
-        if (maDat == null)
+    private void openDetailDialog(Object[] rowData) {
+        if (rowData == null)
             return;
+        String maDat = (String) rowData[0];
+        String status = (String) rowData[8];
+        boolean isDoiPhong = "DA_XACNHAN".equals(status);
+        
         Window owner = getScene().getWindow();
-        new ThemSuaDatPhongDialog(owner, maDat, this::loadData).showDialog();
+        new ThemSuaDatPhongDialog(owner, maDat, isDoiPhong, this::loadData).showDialog();
     }
 
     /**
