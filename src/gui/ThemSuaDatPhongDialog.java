@@ -619,7 +619,7 @@ public class ThemSuaDatPhongDialog extends Stage {
             Button btnClose = makeFooterBtn("HỦY BỎ", "white", C_TEXT_GRAY, C_BORDER, "#f3f4f6");
             btnClose.setOnAction(e -> close());
             
-            btnSave = makeFooterBtn("LƯU ĐỔI PHÒNG", C_BLUE, "white", "transparent", C_BLUE_HOVER);
+            btnSave = makeFooterBtn("LƯU ĐỔI PHÒNG", C_SIDEBAR, "white", "transparent", C_ACTIVE);
             btnSave.setOnAction(e -> handleDoiPhong());
             
             box.getChildren().addAll(btnClose, btnSave);

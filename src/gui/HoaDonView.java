@@ -641,7 +641,8 @@ public class HoaDonView extends BorderPane {
 
         ScrollPane scrollPhong = new ScrollPane(phongBox);
         scrollPhong.setFitToWidth(true);
-        scrollPhong.setMinHeight(200);
+        scrollPhong.setMinHeight(100);
+        scrollPhong.setPrefHeight(180);
         scrollPhong
                 .setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
         scrollPhong.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -737,12 +738,12 @@ public class HoaDonView extends BorderPane {
 
         // Constrain popup size - dùng visualBounds để trừ taskbar
         javafx.geometry.Rectangle2D screenBounds = javafx.stage.Screen.getPrimary().getVisualBounds();
-        double maxH = screenBounds.getHeight() * 0.75;
+        double maxH = screenBounds.getHeight() * 0.65;
 
         Scene scene = new Scene(root, 580, maxH);
         detailStage.setScene(scene);
         detailStage.setMinWidth(540);
-        detailStage.setMinHeight(500);
+        detailStage.setMinHeight(400);
         detailStage.setMaxHeight(screenBounds.getHeight());
         detailStage.setResizable(true);
         detailStage.showAndWait();
