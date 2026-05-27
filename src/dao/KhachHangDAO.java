@@ -87,6 +87,9 @@ public class KhachHangDAO {
     // XÓA
     // ─────────────────────────────────────────────────────────────────────────
     public boolean delete(String maKH) {
+        if (hasActiveBooking(maKH)) {
+            return false;
+        }
         String sql = "UPDATE KH SET is_deleted = 1 WHERE maKH = ?";
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
@@ -97,6 +100,25 @@ public class KhachHangDAO {
             System.err.println("delete KH: " + e.getMessage());
             return false;
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // KIỂM TRA ĐƠN ĐẶT PHÒNG HOẠT ĐỘNG
+    // ─────────────────────────────────────────────────────────────────────────
+    public boolean hasActiveBooking(String maKH) {
+        String sql = "SELECT COUNT(*) FROM DatPhong WHERE maKH = ? AND trangThai IN (N'CHO_XACNHAN', N'DA_XACNHAN', N'DA_CHECKIN')";
+        try {
+            Connection con = ConnectDatabase.getInstance().getConnection();
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, maKH);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("hasActiveBooking: " + e.getMessage());
+        }
+        return false;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

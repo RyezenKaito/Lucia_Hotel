@@ -367,6 +367,12 @@ public class KhachHangView extends BorderPane {
      * ══════════════════════════════════════════════════════════════════
      */
     private void handleDelete(KhachHang kh) {
+        if (dao.hasActiveBooking(kh.getMaKH())) {
+            showAlert(Alert.AlertType.WARNING, "Không thể xóa",
+                    "Không thể xóa khách hàng đang có đơn đặt phòng chưa hoàn tất (Chờ xác nhận, Đã xác nhận hoặc Đang ở)!");
+            return;
+        }
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận xóa");
         confirm.setHeaderText("Xóa khách hàng " + kh.getMaKH() + "?");
@@ -381,7 +387,7 @@ public class KhachHangView extends BorderPane {
                 loadData();
             } else {
                 showAlert(Alert.AlertType.ERROR, "Xóa thất bại",
-                        "Khách hàng này có thể đang được liên kết với đặt phòng.");
+                        "Đã xảy ra lỗi khi xóa khách hàng. Có thể do ràng buộc dữ liệu.");
             }
         }
     }
