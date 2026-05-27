@@ -8,6 +8,7 @@ import model.enums.TrangThaiNV;
 import model.utils.DatePicker;
 import model.utils.DimOverlay;
 import model.utils.EventUtils;
+import model.utils.FieldValidationUtils;
 import model.utils.ValidationUtils;
 
 import javafx.application.Platform;
@@ -45,6 +46,8 @@ public class ThemSuaNhanVienDialog extends Stage {
     private static final String C_ACTIVE = "#1d4ed8";
     private static final String C_BORDER = "#e9ecef";
     private static final String C_ERROR = "#dc2626";
+    private static final String C_ERROR_BG = "#fef2f2";
+    private static final String C_SUCCESS = "#16a34a";
 
     /* ── State ────────────────────────────────────────────────────── */
     private double xOffset = 0;
@@ -70,6 +73,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
     private DatePicker dpNgaySinh;
     private Label errTen, errSDT, errCCCD, errDiaChi, errNS;
+    private Label errTrinhDo, errChucVu, errTrangThai, errNguoiQuanLy;
     private VBox nguoiQuanLyBox;
 
     /* ── Constructor ──────────────────────────────────────────────── */
@@ -85,7 +89,7 @@ public class ThemSuaNhanVienDialog extends Stage {
         initModality(Modality.APPLICATION_MODAL);
         initStyle(StageStyle.TRANSPARENT);
 
-        Scene scene = new Scene(buildRoot(), 560, 640);
+        Scene scene = new Scene(buildRoot(), 580, 700);
         scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
         setScene(scene);
         centerOnScreen();
@@ -220,8 +224,8 @@ public class ThemSuaNhanVienDialog extends Stage {
      * ════════════════════════════════════════════════════════════════
      */
     private ScrollPane buildFormBody() {
-        VBox form = new VBox(6);
-        form.setPadding(new Insets(22, 32, 10, 32));
+        VBox form = new VBox(10);
+        form.setPadding(new Insets(24, 34, 14, 34));
         form.setStyle("-fx-background-color: white;");
 
         /* ── Họ và tên ─────────────────────────────────────────────── */
@@ -236,7 +240,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
         /* ── Ngày sinh ──────────────────────────────────────────── */
         int curYear = LocalDate.now().getYear();
-        dpNgaySinh = new DatePicker(curYear - 100, curYear + 25);
+        dpNgaySinh = new DatePicker(curYear - 100, curYear);
         dpNgaySinh.setMaxWidth(Double.MAX_VALUE);
         if (nvEdit != null && nvEdit.getNgaySinh() != null) {
             dpNgaySinh.setValue(nvEdit.getNgaySinh());
@@ -259,29 +263,32 @@ public class ThemSuaNhanVienDialog extends Stage {
         /* ── Trình độ ───────────────────────────────────────────── */
         cbTrinhDo = new ComboBox<>();
         cbTrinhDo.getItems().addAll(trinhDo.values());
-        cbTrinhDo.getSelectionModel().selectFirst();
+        cbTrinhDo.setPromptText("Chọn trình độ");
         styleCombo(cbTrinhDo);
         if (nvEdit != null && nvEdit.getTrinhDo() != null) {
             cbTrinhDo.getSelectionModel().select(nvEdit.getTrinhDo());
         }
-        form.getChildren().add(fieldBlock("Trình độ *", cbTrinhDo, null, null));
+        errTrinhDo = errLabel();
+        form.getChildren().add(fieldBlock("Trình độ *", cbTrinhDo, errTrinhDo, "Bắt buộc chọn trình độ chuyên môn"));
 
         /* ── Chức vụ ────────────────────────────────────────────── */
         cbChucVu = new ComboBox<>();
         cbChucVu.getItems().addAll("Quản lý", "Nhân viên");
+        cbChucVu.setPromptText("Chọn chức vụ");
         styleCombo(cbChucVu);
+        errChucVu = errLabel();
 
         if (nvEdit != null) {
             if (isAdmin) {
                 cbChucVu.getSelectionModel().select(getRoleLabel(nvEdit.getRole()));
-                form.getChildren().add(fieldBlock("Chức vụ *", cbChucVu, null, null));
+                form.getChildren().add(fieldBlock("Chức vụ *", cbChucVu, errChucVu, "Admin có thể chọn Quản lý hoặc Nhân viên"));
             } else {
                 TextField txtCV = makeReadonlyField(getRoleLabel(nvEdit.getRole()));
                 form.getChildren().add(fieldBlock("Chức vụ", txtCV, null, null));
             }
         } else if (isAdmin) {
             cbChucVu.getSelectionModel().select("Nhân viên");
-            form.getChildren().add(fieldBlock("Chức vụ *", cbChucVu, null, null));
+            form.getChildren().add(fieldBlock("Chức vụ *", cbChucVu, errChucVu, "Admin có thể chọn Quản lý hoặc Nhân viên"));
         } else {
             TextField txtCV = makeReadonlyField("Nhân viên");
             form.getChildren().add(fieldBlock("Chức vụ", txtCV, null, null));
@@ -291,6 +298,8 @@ public class ThemSuaNhanVienDialog extends Stage {
         if (nvEdit != null) {
             cbTrangThai = new ComboBox<>();
             cbTrangThai.getItems().addAll(TrangThaiNV.values());
+            cbTrangThai.setPromptText("Chọn trạng thái");
+            errTrangThai = errLabel();
             cbTrangThai.setConverter(new javafx.util.StringConverter<TrangThaiNV>() {
                 @Override
                 public String toString(TrangThaiNV object) {
@@ -306,7 +315,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
             if (isAdmin) {
                 cbTrangThai.getSelectionModel().select(nvEdit.getTrangThai());
-                form.getChildren().add(fieldBlock("Trạng thái", cbTrangThai, null, null));
+                form.getChildren().add(fieldBlock("Trạng thái *", cbTrangThai, errTrangThai, null));
             } else {
                 TextField txtTT = makeReadonlyField(
                         nvEdit.getTrangThai() == TrangThaiNV.CON_LAM ? "Còn làm" : "Đã nghỉ");
@@ -316,6 +325,7 @@ public class ThemSuaNhanVienDialog extends Stage {
 
         /* ── Người quản lý ──────────────────────────────────────── */
         cbNguoiQuanLy = new ComboBox<>();
+        cbNguoiQuanLy.setPromptText("Chọn người quản lý trực tiếp");
         styleCombo(cbNguoiQuanLy);
         loadManagersToCombo();
         cbNguoiQuanLy.setCellFactory(lv -> new ListCell<>() {
@@ -333,7 +343,8 @@ public class ThemSuaNhanVienDialog extends Stage {
             }
         });
 
-        nguoiQuanLyBox = fieldBlock("Người quản lý", cbNguoiQuanLy, null, null);
+        errNguoiQuanLy = errLabel();
+        nguoiQuanLyBox = fieldBlock("Người quản lý *", cbNguoiQuanLy, errNguoiQuanLy, "Nhân viên cần có người quản lý trực tiếp");
 
         // Mặc định chọn chính mình nếu đang là QUAN_LY tự tạo nhân viên
         if (!isAdmin && currentUser != null && currentUser.getRole() == ChucVu.QUAN_LY) {
@@ -350,7 +361,11 @@ public class ThemSuaNhanVienDialog extends Stage {
         form.getChildren().add(nguoiQuanLyBox);
 
         if (isAdmin) {
-            cbChucVu.setOnAction(e -> updateNguoiQuanLyVisibility());
+            cbChucVu.setOnAction(e -> {
+                updateNguoiQuanLyVisibility();
+                validateChucVu();
+                validateNguoiQuanLy();
+            });
         }
 
         // Load NQL khi sửa
@@ -407,21 +422,78 @@ public class ThemSuaNhanVienDialog extends Stage {
      * ════════════════════════════════════════════════════════════════
      */
     private void setupValidation() {
-        txtTen.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateTen();
-        });
-        txtSDT.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
-                validateSDT();
-        });
-        txtCCCD.focusedProperty().addListener((o, ov, nv) -> {
-            if (!nv)
+        /*
+         * Dùng FieldValidationUtils.setupLiveValidation(...)
+         * để form tự validate khi người dùng Tab/click rời field.
+         * Validator vẫn giữ trong dialog vì mỗi field có rule riêng.
+         */
+
+        FieldValidationUtils.setupLiveValidation(
+                txtTen, errTen,
+                () -> validateTen(),
+                () -> txtTen.setStyle(fieldStyle())
+        );
+
+        FieldValidationUtils.setupLiveValidation(
+                txtSDT, errSDT,
+                () -> validateSDT(),
+                () -> txtSDT.setStyle(fieldStyle())
+        );
+
+        FieldValidationUtils.setupLiveValidation(
+                txtCCCD, errCCCD,
+                () -> validateCCCD(),
+                () -> txtCCCD.setStyle(fieldStyle())
+        );
+
+        FieldValidationUtils.setupLiveValidation(
+                dpNgaySinh, errNS,
+                () -> {
+                    boolean ok = validateNS();
+                    if (ok && txtCCCD != null && !txtCCCD.getText().trim().isEmpty()) {
+                        validateCCCD();
+                    }
+                    return ok;
+                },
+                () -> dpNgaySinh.setStyle(fieldStyle())
+        );
+
+        FieldValidationUtils.setupLiveValidation(
+                cbTrinhDo, errTrinhDo,
+                () -> validateTrinhDo(),
+                () -> cbTrinhDo.setStyle(fieldStyle())
+        );
+
+        FieldValidationUtils.setupLiveValidation(
+                cbChucVu, errChucVu,
+                () -> validateChucVu(),
+                () -> cbChucVu.setStyle(fieldStyle())
+        );
+
+        FieldValidationUtils.setupLiveValidation(
+                cbNguoiQuanLy, errNguoiQuanLy,
+                () -> validateNguoiQuanLy(),
+                () -> cbNguoiQuanLy.setStyle(fieldStyle())
+        );
+
+        if (cbTrangThai != null) {
+            FieldValidationUtils.setupLiveValidation(
+                    cbTrangThai, errTrangThai,
+                    () -> validateTrangThai(),
+                    () -> cbTrangThai.setStyle(fieldStyle())
+            );
+        }
+
+        /*
+         * Riêng DatePicker custom: khi chọn ngày từ popup thì valueProperty thay đổi,
+         * nên validate ngay để lỗi biến mất/mới xuất hiện không cần chờ Tab.
+         */
+        dpNgaySinh.valueProperty().addListener((o, ov, nv) -> {
+            validateNS();
+            if (txtCCCD != null && !txtCCCD.getText().trim().isEmpty()) {
                 validateCCCD();
+            }
         });
-        // Listen vào valueProperty thay vì focusedProperty
-        // vì popup tự custom không fire focusedProperty của HBox khi đóng
-        dpNgaySinh.valueProperty().addListener((o, ov, nv) -> validateNS());
     }
 
     private boolean validateTen() {
@@ -447,17 +519,63 @@ public class ThemSuaNhanVienDialog extends Stage {
     }
 
     private boolean validateNS() {
-        LocalDate ns = dpNgaySinh.getValue();
-        if (ns == null) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Vui lòng chọn ngày sinh.");
+        return FieldValidationUtils.validateNgaySinh(
+                dpNgaySinh, errNS, 18,
+                fieldStyle(),
+                errorFieldStyle()
+        );
+    }
+
+    private boolean validateTrinhDo() {
+        return FieldValidationUtils.validateRequired(
+                cbTrinhDo, errTrinhDo,
+                "⚠ Chưa chọn trình độ.",
+                fieldStyle(), errorFieldStyle()
+        );
+    }
+
+    private boolean validateChucVu() {
+        if (!isAdmin || cbChucVu == null || !cbChucVu.isVisible()) {
+            return true;
+        }
+        return FieldValidationUtils.validateRequired(
+                cbChucVu, errChucVu,
+                "⚠ Chưa chọn chức vụ.",
+                fieldStyle(), errorFieldStyle()
+        );
+    }
+
+    private boolean validateTrangThai() {
+        if (nvEdit == null || !isAdmin || cbTrangThai == null || !cbTrangThai.isVisible()) {
+            return true;
+        }
+        return FieldValidationUtils.validateRequired(
+                cbTrangThai, errTrangThai,
+                "⚠ Chưa chọn trạng thái.",
+                fieldStyle(), errorFieldStyle()
+        );
+    }
+
+    private boolean validateNguoiQuanLy() {
+        if (nguoiQuanLyBox == null || !nguoiQuanLyBox.isVisible() || !nguoiQuanLyBox.isManaged()) {
+            FieldValidationUtils.clearFieldError(cbNguoiQuanLy, errNguoiQuanLy, fieldStyle());
+            return true;
+        }
+
+        if (cbNguoiQuanLy.getItems().isEmpty()) {
+            FieldValidationUtils.showFieldError(
+                    cbNguoiQuanLy, errNguoiQuanLy,
+                    "⚠ Chưa có Quản lý đang làm để gán cho nhân viên.",
+                    errorFieldStyle()
+            );
             return false;
         }
-        if (LocalDate.now().minusYears(18).isBefore(ns)) {
-            showErrorField(dpNgaySinh, errNS, "⚠ Nhân viên phải từ đủ 18 tuổi.");
-            return false;
-        }
-        clearErrorField(dpNgaySinh, errNS);
-        return true;
+
+        return FieldValidationUtils.validateRequired(
+                cbNguoiQuanLy, errNguoiQuanLy,
+                "⚠ Chưa chọn người quản lý.",
+                fieldStyle(), errorFieldStyle()
+        );
     }
 
     private boolean validateSDT() {
@@ -530,12 +648,34 @@ public class ThemSuaNhanVienDialog extends Stage {
             ok = false;
         if (!validateCCCD())
             ok = false;
+        if (!validateTrinhDo())
+            ok = false;
+        if (!validateChucVu())
+            ok = false;
+        if (!validateTrangThai())
+            ok = false;
+        if (!validateNguoiQuanLy())
+            ok = false;
 
-        // Nếu có lỗi -> Tự động Focus ô lỗi đầu tiên
+        // Nếu có lỗi -> Tự động focus ô lỗi đầu tiên.
+        // Dùng list động để tránh truyền null khi cbTrangThai không xuất hiện ở màn Thêm mới.
         if (!ok) {
+            java.util.List<javafx.scene.Node> errorNodes = new java.util.ArrayList<>();
+            java.util.List<Label> errorLabels = new java.util.ArrayList<>();
+
+            addFocusTarget(errorNodes, errorLabels, txtTen, errTen);
+            addFocusTarget(errorNodes, errorLabels, dpNgaySinh, errNS);
+            addFocusTarget(errorNodes, errorLabels, txtCCCD, errCCCD);
+            addFocusTarget(errorNodes, errorLabels, txtSDT, errSDT);
+            addFocusTarget(errorNodes, errorLabels, cbTrinhDo, errTrinhDo);
+            addFocusTarget(errorNodes, errorLabels, cbChucVu, errChucVu);
+            addFocusTarget(errorNodes, errorLabels, cbTrangThai, errTrangThai);
+            addFocusTarget(errorNodes, errorLabels, cbNguoiQuanLy, errNguoiQuanLy);
+
             EventUtils.focusFirstError(
-                    new javafx.scene.Node[] { txtTen, dpNgaySinh, txtCCCD, txtSDT },
-                    new Label[] { errTen, errNS, errCCCD, errSDT });
+                    errorNodes.toArray(new javafx.scene.Node[0]),
+                    errorLabels.toArray(new Label[0])
+            );
             return;
         }
 
@@ -556,7 +696,12 @@ public class ThemSuaNhanVienDialog extends Stage {
             trinhDo selectedTrinhDo = cbTrinhDo.getValue();
             if (targetRole == ChucVu.QUAN_LY) {
                 if (selectedTrinhDo != trinhDo.DAIHOC && selectedTrinhDo != trinhDo.SAU_DAIHOC) {
-                    showError("Quản lý phải có trình độ Đại học hoặc Trên đại học!");
+                    FieldValidationUtils.showFieldError(
+                            cbTrinhDo, errTrinhDo,
+                            "⚠ Quản lý phải có trình độ Đại học hoặc Sau đại học.",
+                            errorFieldStyle()
+                    );
+                    cbTrinhDo.requestFocus();
                     return;
                 }
 
@@ -732,6 +877,11 @@ public class ThemSuaNhanVienDialog extends Stage {
         }
         nguoiQuanLyBox.setVisible(showNQL);
         nguoiQuanLyBox.setManaged(showNQL);
+
+        if (!showNQL) {
+            cbNguoiQuanLy.getSelectionModel().clearSelection();
+            FieldValidationUtils.clearFieldError(cbNguoiQuanLy, errNguoiQuanLy, fieldStyle());
+        }
     }
 
     private void loadManagersToCombo() {
@@ -795,8 +945,19 @@ public class ThemSuaNhanVienDialog extends Stage {
     }
 
     private String fieldStyle() {
-        return "-fx-font-family: 'Segoe UI'; -fx-font-size: 13px; -fx-pref-height: 40; -fx-background-color: white; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: "
-                + C_BORDER + "; -fx-padding: 8 12 8 12;";
+        return "-fx-font-family: 'Segoe UI';"
+                + "-fx-font-size: 13px;"
+                + "-fx-pref-height: 42;"
+                + "-fx-background-color: white;"
+                + "-fx-background-radius: 10;"
+                + "-fx-border-radius: 10;"
+                + "-fx-border-color: " + C_BORDER + ";"
+                + "-fx-border-width: 1;"
+                + "-fx-padding: 9 12 9 12;";
+    }
+
+    private String errorFieldStyle() {
+        return FieldValidationUtils.errorStyle(fieldStyle(), C_ERROR, C_ERROR_BG);
     }
 
     private TextField makeField(String value, String prompt) {
@@ -809,6 +970,7 @@ public class ThemSuaNhanVienDialog extends Stage {
     private TextField makeReadonlyField(String value) {
         TextField tf = new TextField(value);
         tf.setEditable(false);
+        tf.setFocusTraversable(false);
         tf.setStyle(fieldStyle() + "-fx-background-color: #f3f4f6; -fx-text-fill: #6b7280;");
         return tf;
     }
@@ -824,20 +986,27 @@ public class ThemSuaNhanVienDialog extends Stage {
         l.setFont(Font.font("Segoe UI", 11));
         l.setTextFill(Color.web(C_ERROR));
         l.setWrapText(true);
-        l.setMinHeight(14);
+        l.setMinHeight(16);
+        l.setStyle("-fx-padding: 1 0 0 2;");
         return l;
     }
 
     private void showErrorField(javafx.scene.Node tf, Label errLabel, String msg) {
-        if (errLabel != null)
-            errLabel.setText(msg);
-        tf.setStyle(fieldStyle() + "-fx-border-color: " + C_ERROR + "; -fx-background-color: #fef2f2;");
+        FieldValidationUtils.showFieldError(tf, errLabel, msg, errorFieldStyle());
     }
 
     private void clearErrorField(javafx.scene.Node tf, Label errLabel) {
-        if (errLabel != null)
-            errLabel.setText("");
-        tf.setStyle(fieldStyle());
+        FieldValidationUtils.clearFieldError(tf, errLabel, fieldStyle());
+    }
+
+    private void addFocusTarget(java.util.List<javafx.scene.Node> nodes,
+                                java.util.List<Label> labels,
+                                javafx.scene.Node node,
+                                Label label) {
+        if (node != null && label != null) {
+            nodes.add(node);
+            labels.add(label);
+        }
     }
 
     private Button makeFooterBtn(String text, String bg, String fg, String border, String bgHover) {

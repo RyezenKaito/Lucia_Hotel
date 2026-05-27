@@ -1,6 +1,7 @@
 package model.utils;
 
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ComboBox;
@@ -13,6 +14,7 @@ import javafx.scene.layout.Region;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 /**
  * FieldValidationUtils — Tiện ích kiểm tra dữ liệu nhập trên form (JavaFX).
@@ -344,8 +346,177 @@ public final class FieldValidationUtils {
         return ok;
     }
 
+
     /* ══════════════════════════════════════════════════════════════════
-     * 5. AUTO-CLEAR ERROR — gắn listener tự xóa lỗi khi user bắt đầu nhập/chọn
+     * 5. LIVE VALIDATION / VALIDATE KHI RỜI FIELD
+     *    Dùng để Tab qua field là tự hiện lỗi + bôi đỏ field.
+     *    Validator truyền vào nên là method đã tự show/clear lỗi, ví dụ:
+     *    () -> validateTen()
+     * ══════════════════════════════════════════════════════════════════ */
+
+    /**
+     * Tạo style lỗi từ style thường.
+     * Dùng chung để field lỗi có viền đỏ + nền đỏ nhạt giống nhau ở mọi dialog.
+     */
+    public static String errorStyle(String normalStyle) {
+        return errorStyle(normalStyle, DEFAULT_ERROR_COLOR, DEFAULT_ERROR_BG);
+    }
+
+    /**
+     * Tạo style lỗi từ style thường, có thể truyền màu riêng.
+     */
+    public static String errorStyle(String normalStyle, String errorBorderColor, String errorBgColor) {
+        String base = normalStyle == null ? "" : normalStyle;
+        return base
+                + "-fx-border-color: " + (errorBorderColor == null ? DEFAULT_ERROR_COLOR : errorBorderColor) + ";"
+                + "-fx-background-color: " + (errorBgColor == null ? DEFAULT_ERROR_BG : errorBgColor) + ";";
+    }
+
+    /**
+     * Gọi validator khi field mất focus.
+     *
+     * <p>Dùng được cho TextField, ComboBox, DatePicker chuẩn và cả control custom.
+     * Với control custom có field con bên trong, hàm này sẽ gắn listener đệ quy vào
+     * các node con để trường hợp bấm Tab khỏi ô nhập bên trong vẫn validate được.
+     */
+    public static void validateOnFocusLost(Node field, BooleanSupplier validator) {
+        if (field == null || validator == null) return;
+        attachFocusLostRecursive(field, validator);
+    }
+
+    private static void attachFocusLostRecursive(Node node, BooleanSupplier validator) {
+        if (node == null || validator == null) return;
+
+        node.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (Boolean.TRUE.equals(wasFocused) && Boolean.FALSE.equals(isFocused)) {
+                validator.getAsBoolean();
+            }
+        });
+
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                attachFocusLostRecursive(child, validator);
+            }
+        }
+    }
+
+    /**
+     * Gắn live validation đầy đủ:
+     * - Khi user nhập/chọn lại: xóa lỗi tạm thời.
+     * - Khi user Tab/click rời field: validate và hiện lỗi nếu sai.
+     *
+     * <p>Validator nên là method trả boolean và tự gọi showFieldError/clearFieldError,
+     * ví dụ: {@code () -> validateSDT()}.
+     */
+    public static void setupLiveValidation(Node field, Label err, BooleanSupplier validator, Runnable clearStyle) {
+        if (field == null) return;
+
+        validateOnFocusLost(field, validator);
+
+        if (field instanceof TextInputControl tf) {
+            autoClearOnChange(tf, err, clearStyle);
+        } else if (field instanceof ComboBox<?> cb) {
+            autoClearOnChange(cb, err, clearStyle);
+        } else if (field instanceof ChoiceBox<?> cb) {
+            autoClearOnChange(cb, err, clearStyle);
+        } else if (field instanceof javafx.scene.control.DatePicker dp) {
+            autoClearOnChange(dp, err, clearStyle);
+        } else if (field instanceof model.utils.DatePicker dp) {
+            autoClearOnChange(dp, err, clearStyle);
+        }
+    }
+
+    /**
+     * Gắn validate bắt buộc cho TextField/TextArea:
+     * Tab khỏi field rỗng → hiện lỗi + bôi đỏ field.
+     */
+    public static void setupRequiredOnBlur(TextInputControl tf, Label err, String msg,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                tf, err,
+                () -> validateRequired(tf, err, msg, normalStyle, errorStyle),
+                () -> clearFieldError(tf, err, normalStyle)
+        );
+    }
+
+    /**
+     * Gắn validate bắt buộc cho ComboBox:
+     * Tab khỏi field chưa chọn → hiện lỗi + bôi đỏ field.
+     */
+    public static void setupRequiredOnBlur(ComboBox<?> cb, Label err, String msg,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                cb, err,
+                () -> validateRequired(cb, err, msg, normalStyle, errorStyle),
+                () -> clearFieldError(cb, err, normalStyle)
+        );
+    }
+
+    /**
+     * Gắn validate bắt buộc cho ChoiceBox:
+     * Tab khỏi field chưa chọn → hiện lỗi + bôi đỏ field.
+     */
+    public static void setupRequiredOnBlur(ChoiceBox<?> cb, Label err, String msg,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                cb, err,
+                () -> validateRequired(cb, err, msg, normalStyle, errorStyle),
+                () -> clearFieldError(cb, err, normalStyle)
+        );
+    }
+
+    /**
+     * Gắn validate bắt buộc cho DatePicker chuẩn JavaFX.
+     */
+    public static void setupRequiredOnBlur(javafx.scene.control.DatePicker dp, Label err, String msg,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                dp, err,
+                () -> validateRequired(dp, err, msg, normalStyle, errorStyle),
+                () -> clearFieldError(dp, err, normalStyle)
+        );
+    }
+
+    /**
+     * Gắn validate bắt buộc cho DatePicker custom của project.
+     */
+    public static void setupRequiredOnBlur(model.utils.DatePicker dp, Label err, String msg,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                dp, err,
+                () -> validateRequired(dp, err, msg, normalStyle, errorStyle),
+                () -> clearFieldError(dp, err, normalStyle)
+        );
+    }
+
+    /**
+     * Gắn validate ngày sinh cho DatePicker custom:
+     * Tab khỏi field chưa chọn / sai tuổi / ngày tương lai → hiện lỗi + bôi đỏ.
+     */
+    public static void setupNgaySinhOnBlur(model.utils.DatePicker dp, Label err, int minAge,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                dp, err,
+                () -> validateNgaySinh(dp, err, minAge, normalStyle, errorStyle),
+                () -> clearFieldError(dp, err, normalStyle)
+        );
+    }
+
+    /**
+     * Gắn validate ngày sinh cho DatePicker chuẩn JavaFX.
+     */
+    public static void setupNgaySinhOnBlur(javafx.scene.control.DatePicker dp, Label err, int minAge,
+                                           String normalStyle, String errorStyle) {
+        setupLiveValidation(
+                dp, err,
+                () -> validateNgaySinh(dp, err, minAge, normalStyle, errorStyle),
+                () -> clearFieldError(dp, err, normalStyle)
+        );
+    }
+
+
+    /* ══════════════════════════════════════════════════════════════════
+     * 6. AUTO-CLEAR ERROR — gắn listener tự xóa lỗi khi user bắt đầu nhập/chọn
      *    (giảm noise trên form, UX mượt hơn)
      * ══════════════════════════════════════════════════════════════════ */
 
@@ -362,6 +533,17 @@ public final class FieldValidationUtils {
 
     /** Tự động xóa lỗi khi user chọn ComboBox. */
     public static void autoClearOnChange(ComboBox<?> cb, Label err, Runnable clearStyle) {
+        if (cb == null) return;
+        cb.valueProperty().addListener((o, ov, nv) -> {
+            if (nv != null) {
+                if (err != null) err.setText("");
+                if (clearStyle != null) clearStyle.run();
+            }
+        });
+    }
+
+    /** Tự động xóa lỗi khi user chọn ChoiceBox. */
+    public static void autoClearOnChange(ChoiceBox<?> cb, Label err, Runnable clearStyle) {
         if (cb == null) return;
         cb.valueProperty().addListener((o, ov, nv) -> {
             if (nv != null) {
