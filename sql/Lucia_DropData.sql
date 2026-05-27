@@ -25,7 +25,9 @@ DELETE FROM BangGiaDV_Header;
 DELETE FROM DV;
 DELETE FROM LoaiDichVu;
 DELETE FROM Phong;
+DELETE FROM LoaiPhongTienNghi
 DELETE FROM LoaiPhong;
+DELETE FROM TienNghi
 
 -- 6. Xóa dữ liệu Khách hàng & Nhân viên
 DELETE FROM KH;

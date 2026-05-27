@@ -116,6 +116,7 @@
         maHD                 VARCHAR(20)   PRIMARY KEY,
         maDat                VARCHAR(20),
         maNV                 VARCHAR(9),
+		maKH				 VARCHAR(20),
         ngayTaoHD            DATETIME      DEFAULT GETDATE(),  -- Thá»i Ä‘iá»ƒm xuáº¥t hÃ³a Ä‘Æ¡n (checkout)
         tienPhong            DECIMAL(18,2) DEFAULT 0,
         tienDV               DECIMAL(18,2) DEFAULT 0,
@@ -148,7 +149,8 @@
         phu_phi_tra_muon     DECIMAL(18,2) DEFAULT 0,
 
         CONSTRAINT FK_HoaDon_DatPhong FOREIGN KEY (maDat) REFERENCES DatPhong(maDat),
-        CONSTRAINT FK_HoaDon_NV       FOREIGN KEY (maNV)  REFERENCES NV(maNV)
+        CONSTRAINT FK_HoaDon_NV       FOREIGN KEY (maNV)  REFERENCES NV(maNV),
+		CONSTRAINT FK_HoaDon_KH       FOREIGN KEY (maKH)  REFERENCES KH(maKH),
     );
 
     CREATE TABLE ChiTietHoaDon (
@@ -223,17 +225,9 @@
             FOREIGN KEY (maLoaiPhong)
             REFERENCES LoaiPhong(maLoaiPhong),
 
-<<<<<<< HEAD
-    CONSTRAINT FK_LPTN_TienNghi
-        FOREIGN KEY (maTN)
-        REFERENCES TienNghi(maTN)
+		CONSTRAINT FK_LPTN_TienNghi
+			FOREIGN KEY (maTN)
+			REFERENCES TienNghi(maTN)
 );
 GO
 
-=======
-        CONSTRAINT FK_LPTN_TienNghi
-            FOREIGN KEY (maTN)
-            REFERENCES TienNghi(maTN)
-    );
-    GO
->>>>>>> a24b97fb454830da81411b1b32eea533c4337343

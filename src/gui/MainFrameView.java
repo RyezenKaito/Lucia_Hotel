@@ -231,8 +231,8 @@ public class MainFrameView {
         // ── Nhóm: QUẢN LÝ (Master Data) ──
         nav.getChildren().add(navHeader("- Quản lý"));
         nav.getChildren().addAll(
+            navBtn("🛁", "Tiện nghi", "amenities"),
                 navBtn("🛏", "Phòng", "rooms"),
-                navBtn("🛁", "Tiện nghi", "amenities"),
                 navBtn("👥", "Khách hàng", "customers"));
 
         if (isAdmin) {
