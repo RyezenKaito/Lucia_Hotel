@@ -18,7 +18,7 @@
         soDT     VARCHAR(10),
         ngaySinh DATE,
         soCCCD   VARCHAR(12),
-        is_deleted BIT DEFAULT 0
+        daXoa BIT DEFAULT 0
     );
 
     CREATE TABLE NV (
@@ -34,7 +34,7 @@
         role        NVARCHAR(20)  CHECK (role IN (N'NHAN_VIEN', N'QUAN_LY', N'ADMIN')),
         trangThai   NVARCHAR(20)  DEFAULT 'CON_LAM' CHECK (trangThai IN ('CON_LAM', 'DA_NGHI')),
         maQL        VARCHAR(9)    NULL,
-        is_deleted  BIT DEFAULT 0,
+        daXoa  BIT DEFAULT 0,
         CONSTRAINT FK_NV_QL    FOREIGN KEY (maQL) REFERENCES NV(maNV),
         CONSTRAINT CK_MaNV_Chuan CHECK (maNV = 'ADMIN' OR maNV LIKE 'LUCIA[0-9]%')
     );
@@ -74,7 +74,7 @@
         tinhTrang NVARCHAR(20)  CHECK (tinhTrang IN (N'BAN', N'CONTRONG', N'DANGSUDUNG', N'BAOTRI')),
         soPhong   INT,
         soTang    INT,
-        is_deleted BIT DEFAULT 0,
+        daXoa BIT DEFAULT 0,
         CONSTRAINT FK_Phong_LoaiPhong FOREIGN KEY (loaiPhong) REFERENCES LoaiPhong(maLoaiPhong)
     );
 

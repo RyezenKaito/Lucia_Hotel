@@ -14,7 +14,7 @@ public class NhanVien {
     private TrangThaiNV trangThai;
     private LocalDate ngaySinh, ngayVaoLamDate;
     private NhanVien quanLy;
-    private boolean isDeleted;
+    private boolean daXoa;
 
     // Sử dụng static để tránh tạo mới formatter cho mỗi object, tiết kiệm bộ nhớ
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -132,12 +132,12 @@ public class NhanVien {
         this.diaChi = diaChi;
     }
 
-    public boolean isDeleted() {
-        return isDeleted;
+    public boolean isDaXoa() {
+        return daXoa;
     }
 
-    public void setDeleted(boolean isDeleted) {
-        this.isDeleted = isDeleted;
+    public void setDaXoa(boolean daXoa) {
+        this.daXoa = daXoa;
     }
 
     public trinhDo getTrinhDo() {

@@ -57,7 +57,7 @@ public class QuanLyDichVuView extends BorderPane {
     private TableView<DichVu> table;
     private TextField txtSearch;
     // private ComboBox<String> cbCategory;
-    private String selectedStatusFilter = "Tất cả trạng thái";
+    private String selectedStatusFilter = "Đang phục vụ";
     private String selectedCategoryFilter = "Tất cả";
     private final boolean isAdmin;
 
@@ -262,7 +262,7 @@ public class QuanLyDichVuView extends BorderPane {
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTrangThaiLabel()));
 
         // Thiết kế Header có nút lọc
-        Label lblHeader = new Label("Trạng thái ▼");
+        Label lblHeader = new Label("Trạng thái (Lọc) ▼");
         lblHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblHeader.setTextFill(Color.web(C_TEXT_DARK));
         lblHeader.setCursor(Cursor.HAND);
@@ -278,7 +278,7 @@ public class QuanLyDichVuView extends BorderPane {
         miAll.setToggleGroup(group);
         miActive.setToggleGroup(group);
         miSuspended.setToggleGroup(group);
-        miAll.setSelected(true);
+        miActive.setSelected(true);
 
         miAll.setOnAction(e -> {
             selectedStatusFilter = "Tất cả trạng thái";
@@ -367,15 +367,7 @@ public class QuanLyDichVuView extends BorderPane {
                     openDialog(dv);
             });
 
-            MenuItem miDelete = new MenuItem("🗑 Xóa dịch vụ");
-            miDelete.setStyle("-fx-text-fill: " + C_RED + ";");
-            miDelete.setOnAction(e -> {
-                DichVu dv = table.getSelectionModel().getSelectedItem();
-                if (dv != null)
-                    handleDelete(dv);
-            });
-
-            ctxMenu.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
+            ctxMenu.getItems().addAll(miEdit);
 
             table.setRowFactory(tv -> {
                 TableRow<DichVu> row = new TableRow<>();
@@ -448,23 +440,7 @@ public class QuanLyDichVuView extends BorderPane {
         new ThemSuaDichVuDialog(owner, dv, this::loadData).showDialog();
     }
 
-    private void handleDelete(DichVu dv) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận ẩn");
-        confirm.setHeaderText("Ẩn dịch vụ [" + dv.getTenDV() + "]?");
-        confirm.setContentText("Lưu ý: Dịch vụ này sẽ được ẩn khỏi danh mục đang hoạt động. Bạn có chắc chắn?");
 
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            if (dao.delete(dv.getMaDV())) {
-                showNotify(Alert.AlertType.INFORMATION, "Thành công", "Đã xóa dịch vụ " + dv.getMaDV());
-                loadData();
-            } else {
-                showNotify(Alert.AlertType.ERROR, "Thất bại",
-                        "Không thể xóa dịch vụ này. Có thể nó đang được sử dụng trong hóa đơn/bảng giá.");
-            }
-        }
-    }
 
     /* ── Utilities ──────────────────────────────────────────────────── */
     private void styleButton(Button btn, String bg, String fg, String hoverBg) {

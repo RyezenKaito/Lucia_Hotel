@@ -10,7 +10,7 @@ public class Phong {
     private TrangThaiPhong tinhTrang;
     private int soPhong;
     private int soTang;
-    private boolean isDeleted;
+    private boolean daXoa;
 
     public Phong() {
     }
@@ -76,12 +76,12 @@ public class Phong {
         this.soTang = soTang;
     }
 
-    public boolean isDeleted() {
-        return isDeleted;
+    public boolean isDaXoa() {
+        return daXoa;
     }
 
-    public void setDeleted(boolean isDeleted) {
-        this.isDeleted = isDeleted;
+    public void setDaXoa(boolean daXoa) {
+        this.daXoa = daXoa;
     }
 
     @Override

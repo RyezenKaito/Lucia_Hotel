@@ -6,7 +6,7 @@ public class KhachHang {
     private String maKH;
     private String tenKH;
     private String soCCCD;
-    private boolean isDeleted;
+    private boolean daXoa;
     private String soDT;
     private LocalDate ngaySinh;
 
@@ -64,12 +64,12 @@ public class KhachHang {
         this.soCCCD = soCCCD;
     }
 
-    public boolean isDeleted() {
-        return isDeleted;
+    public boolean isDaXoa() {
+        return daXoa;
     }
 
-    public void setDeleted(boolean isDeleted) {
-        this.isDeleted = isDeleted;
+    public void setDaXoa(boolean daXoa) {
+        this.daXoa = daXoa;
     }
 
     public String getSoDT()             { return soDT; }

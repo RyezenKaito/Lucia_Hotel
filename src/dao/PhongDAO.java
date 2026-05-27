@@ -45,7 +45,7 @@ public class PhongDAO {
         List<Phong> ds = new ArrayList<>();
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
-                "WHERE p.is_deleted = 0 " +
+                "WHERE p.daXoa = 0 " +
                 "ORDER BY p.soTang, p.maPhong";
 
         try (Connection con = ConnectDatabase.getInstance().getConnection();
@@ -75,7 +75,7 @@ public class PhongDAO {
         p.setSoPhong(rs.getInt("soPhong"));
         p.setSoTang(rs.getInt("soTang"));
         try {
-            p.setDeleted(rs.getBoolean("is_deleted"));
+            p.setDaXoa(rs.getBoolean("daXoa"));
         } catch (SQLException ignored) {}
         return p;
     }
@@ -115,7 +115,7 @@ public class PhongDAO {
     }
 
     public boolean delete(String maPhong) {
-        String sql = "UPDATE Phong SET is_deleted = 1 WHERE maPhong=?";
+        String sql = "UPDATE Phong SET daXoa = 1 WHERE maPhong=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement pstmt = con.prepareStatement(sql)) {
             pstmt.setString(1, maPhong);
@@ -137,7 +137,7 @@ public class PhongDAO {
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
                 "WHERE l.maLoaiPhong = ? " +
-                "  AND p.tinhTrang <> N'BAN' AND p.is_deleted = 0 " +   // Phòng đang bảo trì/cấm bán thì không hiện
+                "  AND p.tinhTrang <> N'BAN' AND p.daXoa = 0 " +   // Phòng đang bảo trì/cấm bán thì không hiện
                 "  AND p.maPhong NOT IN (" +
                 "    SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
                 "    JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
@@ -195,7 +195,7 @@ public class PhongDAO {
      */
     public List<String> getPhongTrongByLoai(String maLoaiPhong) {
         List<String> ds = new ArrayList<>();
-        String sql = "SELECT maPhong, tenPhong FROM Phong WHERE loaiPhong = ? AND tinhTrang = N'CONTRONG' AND is_deleted = 0";
+        String sql = "SELECT maPhong, tenPhong FROM Phong WHERE loaiPhong = ? AND tinhTrang = N'CONTRONG' AND daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maLoaiPhong);
@@ -235,7 +235,7 @@ public class PhongDAO {
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                 "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
                 "WHERE p.loaiPhong IN (" + placeholders + ") " +
-                "  AND p.tinhTrang <> N'BAN' AND p.is_deleted = 0 " +
+                "  AND p.tinhTrang <> N'BAN' AND p.daXoa = 0 " +
                 "  AND p.maPhong NOT IN (" +
                 "    SELECT ctdp.maPhong FROM ChiTietDatPhong ctdp " +
                 "    JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
@@ -264,7 +264,7 @@ public class PhongDAO {
         java.util.Map<String, String> map = new java.util.HashMap<>();
         if (maPhongs == null || maPhongs.isEmpty()) return map;
         String placeholders = String.join(",", maPhongs.stream().map(x -> "?").collect(java.util.stream.Collectors.toList()));
-        String sql = "SELECT maPhong, tinhTrang FROM Phong WHERE maPhong IN (" + placeholders + ") AND is_deleted = 0";
+        String sql = "SELECT maPhong, tinhTrang FROM Phong WHERE maPhong IN (" + placeholders + ") AND daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             for (int i = 0; i < maPhongs.size(); i++) ps.setString(i + 1, maPhongs.get(i));
@@ -282,7 +282,7 @@ public class PhongDAO {
         String statusStr = trangThaiToString(ttp);
         String sql = "SELECT p.*, l.gia, l.sucChua FROM Phong p " +
                      "JOIN LoaiPhong l ON p.loaiPhong = l.maLoaiPhong " +
-                     "WHERE p.tinhTrang = ? AND p.is_deleted = 0";
+                     "WHERE p.tinhTrang = ? AND p.daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, statusStr);

@@ -226,10 +226,10 @@ public class DichVuDAO {
     }
 
     /**
-     * Xóa dịch vụ theo mã (Ẩn đi, không xóa vĩnh viễn)
+     * Xóa dịch vụ vĩnh viễn khỏi CSDL
      */
     public boolean delete(String maDV) {
-        String sql = "UPDATE DV SET trangThai = 1, daXoa = 1 WHERE maDV = ?";
+        String sql = "DELETE FROM DV WHERE maDV = ?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maDV);

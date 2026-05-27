@@ -1,5 +1,6 @@
 package dao;
 
+import connectDatabase.ConnectDatabase;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -7,12 +8,10 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-
-import connectDatabase.ConnectDatabase;
 import model.entities.NhanVien;
 import model.enums.ChucVu;
-import model.enums.trinhDo;
 import model.enums.TrangThaiNV;
+import model.enums.trinhDo;
 
 public class NhanVienDAO {
 
@@ -50,7 +49,7 @@ public class NhanVienDAO {
         }
 
         try {
-            nv.setDeleted(rs.getBoolean("is_deleted"));
+            nv.setDaXoa(rs.getBoolean("daXoa"));
         } catch (Exception ignored) {}
 
         return nv;
@@ -100,7 +99,7 @@ public class NhanVienDAO {
     // ── READ ALL ──────────────────────────────────────────────────────────────
     public List<NhanVien> getAll() {
         List<NhanVien> ds = new ArrayList<>();
-        String sql = "SELECT * FROM NV WHERE is_deleted = 0";
+        String sql = "SELECT * FROM NV WHERE daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -115,7 +114,7 @@ public class NhanVienDAO {
     // ── TÌM KIẾM THEO TÊN, MÃ, SĐT ──────────────────────────────────────────
     public List<NhanVien> findByKeyword(String keyword) {
         List<NhanVien> ds = new ArrayList<>();
-        String sql = "SELECT * FROM NV WHERE (maNV LIKE ? OR hoTen LIKE ? OR soDT LIKE ?) AND is_deleted = 0";
+        String sql = "SELECT * FROM NV WHERE (maNV LIKE ? OR hoTen LIKE ? OR soDT LIKE ?) AND daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             String searchStr = "%" + keyword + "%";
@@ -134,7 +133,7 @@ public class NhanVienDAO {
 
     // ── READ BY ID ────────────────────────────────────────────────────────────
     public NhanVien getById(String maNV) {
-        String sql = "SELECT * FROM NV WHERE maNV = ? AND is_deleted = 0";
+        String sql = "SELECT * FROM NV WHERE maNV = ? AND daXoa = 0";
         Connection con = ConnectDatabase.getInstance().getConnection();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maNV);
@@ -209,7 +208,7 @@ public class NhanVienDAO {
 
     // ── DELETE ────────────────────────────────────────────────────────────────
     public boolean delete(String maNV) {
-        String sql = "UPDATE NV SET is_deleted = 1 WHERE maNV=?";
+        String sql = "UPDATE NV SET daXoa = 1 WHERE maNV=?";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maNV);
@@ -224,7 +223,7 @@ public class NhanVienDAO {
      * Đếm số lượng nhân viên đang được quản lý bởi maNV này.
      */
     public int countSubordinates(String maQL) {
-        String sql = "SELECT COUNT(*) FROM NV WHERE maQL = ? AND is_deleted = 0";
+        String sql = "SELECT COUNT(*) FROM NV WHERE maQL = ? AND daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maQL);
@@ -256,7 +255,7 @@ public class NhanVienDAO {
 
     // ── AUTHENTICATE ──────────────────────────────────────────────────────────
     public boolean authenticate(String staffID, String password) {
-        String sql = "SELECT mk FROM NV WHERE maNV=? AND is_deleted = 0";
+        String sql = "SELECT mk FROM NV WHERE maNV=? AND daXoa = 0";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, staffID);

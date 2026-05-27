@@ -14,6 +14,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
@@ -54,6 +55,9 @@ public class QuanLyTienNghiView extends BorderPane {
     private Map<String, SimpleStringProperty> soLuongStates = new HashMap<>();
     private boolean isAutoSavingEnabled = false;
 
+    private TextField txtSearch;
+    private String selectedStatusFilter = "Đang sử dụng";
+
     public QuanLyTienNghiView() {
         setStyle("-fx-background-color: " + C_BG + ";");
         setPadding(new Insets(32));
@@ -89,28 +93,39 @@ public class QuanLyTienNghiView extends BorderPane {
         styleButton(btnAdd, C_BLUE, "white", C_BLUE_HOVER);
         btnAdd.setOnAction(e -> openDialog(null));
 
-        TextField txtSearch = new TextField();
+        txtSearch = new TextField();
         txtSearch.setPromptText("🔍 Tìm kiếm mã hoặc tên tiện nghi...");
         txtSearch.setPrefWidth(450);
         txtSearch.setPrefHeight(40);
         txtSearch.setStyle(
                 "-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-background-radius: 8; -fx-border-color: "
                         + C_BORDER + "; -fx-border-radius: 8; -fx-padding: 8 12;");
-        txtSearch.textProperty().addListener((obs, oldV, newV) -> {
-            if (filteredWrappers != null) {
-                filteredWrappers.setPredicate(wrapper -> {
-                    if (newV == null || newV.isEmpty())
-                        return true;
-                    String lowerCaseFilter = newV.toLowerCase();
-                    return wrapper.getTienNghi().getMaTienNghi().toLowerCase().contains(lowerCaseFilter)
-                            || wrapper.getTienNghi().getTenTienNghi().toLowerCase().contains(lowerCaseFilter);
-                });
-            }
-        });
+        txtSearch.textProperty().addListener((obs, oldV, newV) -> applyFilter());
 
         titleRow.getChildren().addAll(titleBox, txtSearch, new Label("  "), btnAdd);
         header.getChildren().addAll(titleRow);
         return header;
+    }
+
+    private void applyFilter() {
+        if (filteredWrappers == null) return;
+        String keyword = txtSearch.getText();
+        filteredWrappers.setPredicate(wrapper -> {
+            boolean matchesSearch = true;
+            if (keyword != null && !keyword.isEmpty()) {
+                String lowerCaseFilter = keyword.toLowerCase();
+                matchesSearch = wrapper.getTienNghi().getMaTienNghi().toLowerCase().contains(lowerCaseFilter)
+                        || wrapper.getTienNghi().getTenTienNghi().toLowerCase().contains(lowerCaseFilter);
+            }
+
+            boolean matchesStatus = true;
+            if (!"Tất cả trạng thái".equals(selectedStatusFilter)) {
+                boolean isActive = "Đang sử dụng".equals(selectedStatusFilter);
+                matchesStatus = wrapper.getTienNghi().isTrangThai() == isActive;
+            }
+
+            return matchesSearch && matchesStatus;
+        });
     }
 
     private HBox buildMainContent() {
@@ -213,8 +228,43 @@ public class QuanLyTienNghiView extends BorderPane {
         colMoTa.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getTienNghi().getMoTa()));
         colMoTa.setEditable(false);
 
-        TableColumn<TienNghiWrapper, String> colTrangThai = new TableColumn<>("Trạng thái");
+        TableColumn<TienNghiWrapper, String> colTrangThai = new TableColumn<>();
         colTrangThai.setStyle("-fx-alignment: CENTER;");
+
+        Label lblHeader = new Label("Trạng thái (Lọc) ▼");
+        lblHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        lblHeader.setTextFill(Color.web(C_TEXT_DARK));
+        lblHeader.setCursor(Cursor.HAND);
+        colTrangThai.setGraphic(lblHeader);
+
+        ContextMenu filterMenu = new ContextMenu();
+        RadioMenuItem miAll = new RadioMenuItem("Tất cả trạng thái");
+        RadioMenuItem miActive = new RadioMenuItem("Đang sử dụng");
+        RadioMenuItem miSuspended = new RadioMenuItem("Ngưng");
+        ToggleGroup group = new ToggleGroup();
+        miAll.setToggleGroup(group);
+        miActive.setToggleGroup(group);
+        miSuspended.setToggleGroup(group);
+        miActive.setSelected(true);
+
+        miAll.setOnAction(e -> {
+            selectedStatusFilter = "Tất cả trạng thái";
+            lblHeader.setText("Trạng thái ▼");
+            applyFilter();
+        });
+        miActive.setOnAction(e -> {
+            selectedStatusFilter = "Đang sử dụng";
+            lblHeader.setText("Trạng thái (Lọc) ▼");
+            applyFilter();
+        });
+        miSuspended.setOnAction(e -> {
+            selectedStatusFilter = "Ngưng";
+            lblHeader.setText("Trạng thái (Lọc) ▼");
+            applyFilter();
+        });
+
+        filterMenu.getItems().addAll(miAll, miActive, miSuspended);
+        lblHeader.setOnMouseClicked(e -> filterMenu.show(lblHeader, Side.BOTTOM, 0, 5));
         colTrangThai.setCellValueFactory(
                 p -> new SimpleStringProperty(p.getValue().getTienNghi().isTrangThai() ? "Sử dụng" : "Ngưng"));
         colTrangThai.setCellFactory(column -> new TableCell<>() {
@@ -225,19 +275,36 @@ public class QuanLyTienNghiView extends BorderPane {
                     setGraphic(null);
                 } else {
                     boolean active = "Sử dụng".equals(item);
-                    setGraphic(BadgeUtils.createStatusBadge(item, active ? "#d1fae5" : "#fee2e2",
-                            active ? "#065f46" : "#991b1b", false));
-                    setAlignment(Pos.CENTER);
-                    setCursor(Cursor.HAND);
-                    setOnMouseClicked(e -> {
+                    HBox badge = BadgeUtils.createStatusBadge(item, active ? "#d1fae5" : "#fee2e2",
+                            active ? "#065f46" : "#991b1b", true);
+
+                    ContextMenu quickMenu = new ContextMenu();
+                    MenuItem qActive = new MenuItem("✅  Sử dụng");
+                    qActive.setOnAction(e -> {
                         TienNghiWrapper tw = (TienNghiWrapper) getTableRow().getItem();
-                        if (tw != null) {
-                            TienNghi tn = tw.getTienNghi();
-                            tn.setTrangThai(!tn.isTrangThai());
-                            if (tnDAO.update(tn))
-                                loadDataTienNghi();
+                        if (tw != null && !tw.getTienNghi().isTrangThai()) {
+                            tw.getTienNghi().setTrangThai(true);
+                            if (tnDAO.update(tw.getTienNghi())) loadDataTienNghi();
                         }
                     });
+                    MenuItem qSuspended = new MenuItem("🚫  Ngưng");
+                    qSuspended.setOnAction(e -> {
+                        TienNghiWrapper tw = (TienNghiWrapper) getTableRow().getItem();
+                        if (tw != null && tw.getTienNghi().isTrangThai()) {
+                            tw.getTienNghi().setTrangThai(false);
+                            if (tnDAO.update(tw.getTienNghi())) loadDataTienNghi();
+                        }
+                    });
+                    quickMenu.getItems().addAll(qActive, qSuspended);
+
+                    badge.setOnMouseClicked(e -> {
+                        if (e.getButton() == MouseButton.PRIMARY) {
+                            quickMenu.show(badge, Side.BOTTOM, 0, 0);
+                        }
+                    });
+
+                    setGraphic(badge);
+                    setAlignment(Pos.CENTER);
                 }
             }
         });
@@ -250,9 +317,10 @@ public class QuanLyTienNghiView extends BorderPane {
         colSoLuong.prefWidthProperty().bind(table.widthProperty().multiply(0.09));
         colMoTa.prefWidthProperty().bind(table.widthProperty().multiply(0.38));
         colTrangThai.prefWidthProperty().bind(table.widthProperty().multiply(0.12));
-        // Cố định thứ tự cột, không cho kéo di chuyển
+        // Cố định thứ tự cột, không cho kéo di chuyển và co giãn
         for (TableColumn<?, ?> col : table.getColumns()) {
             col.setReorderable(false);
+            col.setResizable(false);
         }
 
         // Context menu và double-click để Sửa/Xóa tiện nghi
@@ -264,14 +332,7 @@ public class QuanLyTienNghiView extends BorderPane {
             if (tw != null)
                 openDialog(tw.getTienNghi());
         });
-        MenuItem miDelete = new MenuItem("🗑  Xóa tiện nghi");
-        miDelete.setStyle("-fx-font-size: 13px; -fx-text-fill: #dc2626;");
-        miDelete.setOnAction(e -> {
-            TienNghiWrapper tw = table.getSelectionModel().getSelectedItem();
-            if (tw != null)
-                handleDelete(tw.getTienNghi());
-        });
-        ctxMenu.getItems().addAll(miEdit, new SeparatorMenuItem(), miDelete);
+        ctxMenu.getItems().addAll(miEdit);
 
         table.setOnMouseClicked(e -> {
             if (e.getButton() == MouseButton.SECONDARY && table.getSelectionModel().getSelectedItem() != null) {
@@ -326,6 +387,7 @@ public class QuanLyTienNghiView extends BorderPane {
             table.setItems(filteredWrappers);
         }
         isAutoSavingEnabled = true;
+        applyFilter();
     }
 
     private void loadConfigForLoaiPhong(String maLoaiPhong) {
@@ -370,21 +432,7 @@ public class QuanLyTienNghiView extends BorderPane {
         new ThemSuaTienNghiDialog(owner, tn, tnDAO, this::loadDataTienNghi).showDialog();
     }
 
-    private void handleDelete(TienNghi tn) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận xóa");
-        confirm.setHeaderText("Xóa tiện nghi [" + tn.getTenTienNghi() + "]?");
-        confirm.setContentText("Hành động này sẽ chuyển trạng thái thành Ngưng sử dụng.");
-        Optional<ButtonType> result = confirm.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            if (tnDAO.delete(tn.getMaTienNghi())) {
-                showAlert(Alert.AlertType.INFORMATION, "Đã xóa", "Tiện nghi đã chuyển sang trạng thái ngưng sử dụng.");
-                loadDataTienNghi();
-            } else {
-                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể vô hiệu hóa tiện nghi này.");
-            }
-        }
-    }
+
 
     private void showAlert(Alert.AlertType type, String header, String msg) {
         Alert a = new Alert(type);

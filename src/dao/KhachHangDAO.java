@@ -24,7 +24,7 @@ public class KhachHangDAO {
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             ResultSet rs = con.createStatement()
-                    .executeQuery("SELECT * FROM KH WHERE is_deleted = 0");
+                    .executeQuery("SELECT * FROM KH WHERE daXoa = 0");
             while (rs.next())
                 ds.add(mapRow(rs));
         } catch (SQLException e) {
@@ -90,7 +90,7 @@ public class KhachHangDAO {
         if (hasActiveBooking(maKH)) {
             return false;
         }
-        String sql = "UPDATE KH SET is_deleted = 1 WHERE maKH = ?";
+        String sql = "UPDATE KH SET daXoa = 1 WHERE maKH = ?";
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
@@ -125,7 +125,7 @@ public class KhachHangDAO {
     // TÌM THEO CCCD
     // ─────────────────────────────────────────────────────────────────────────
     public KhachHang findByCCCD(String cccd) {
-        String sql = "SELECT * FROM KH WHERE soCCCD = ? AND is_deleted = 0";
+        String sql = "SELECT * FROM KH WHERE soCCCD = ? AND daXoa = 0";
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
@@ -143,7 +143,7 @@ public class KhachHangDAO {
     // TÌM THEO SỐ ĐIỆN THOẠI
     // ─────────────────────────────────────────────────────────────────────────
     public KhachHang findBySDT(String soDT) {
-        String sql = "SELECT * FROM KH WHERE soDT = ? AND is_deleted = 0";
+        String sql = "SELECT * FROM KH WHERE soDT = ? AND daXoa = 0";
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
@@ -161,7 +161,7 @@ public class KhachHangDAO {
     // TÌM THEO MÃ (LIKE)
     // ─────────────────────────────────────────────────────────────────────────
     public KhachHang findKhachHangByID(String keyword) {
-        String sql = "SELECT * FROM KH WHERE maKH LIKE ? AND is_deleted = 0";
+        String sql = "SELECT * FROM KH WHERE maKH LIKE ? AND daXoa = 0";
         try {
             Connection con = ConnectDatabase.getInstance().getConnection();
             PreparedStatement pstmt = con.prepareStatement(sql);
@@ -291,7 +291,7 @@ public class KhachHangDAO {
             kh.setNgaySinh(d.toLocalDate());
         
         try {
-            kh.setDeleted(rs.getBoolean("is_deleted"));
+            kh.setDaXoa(rs.getBoolean("daXoa"));
         } catch (SQLException ignored) {}
         
         return kh;
