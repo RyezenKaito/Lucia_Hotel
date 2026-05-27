@@ -99,7 +99,7 @@ INSERT INTO DV (maDV, tenDV, gia, maLoaiDV, mieuTa, donVi, trangThai) VALUES
 -- BangGiaDV_Header - Đã xóa dữ liệu rác.
 -- Cấu trúc: INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES ...
 INSERT INTO BangGiaDV_Header (maBangGia, tenBangGia, ngayApDung, ngayHetHieuLuc, trangThai) VALUES
-('BG001', N'Bảng giá quý 1', '2026-01-01', '2026-03-31', 1);
+('BG001', N'Bảng giá quý 1', '2026-01-01', '2026-03-31', 1),
 ('BG002', N'Bảng giá quý 2', '2026-04-01', '2026-06-30', 1);
 -- BangGiaDV_Detail - Đã xóa dữ liệu rác.
 -- Cấu trúc: INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV) VALUES ...
@@ -115,7 +115,7 @@ INSERT INTO BangGiaDV_Detail (maBangGia, maDV, giaDV) VALUES
 ('BG001', 'DV009', 200000.00),
 ('BG001', 'DV010', 300000.00),
 ('BG001', 'DV011', 400000.00),
-('BG001', 'DV012', 400000.00);
+('BG001', 'DV012', 400000.00),
 ('BG002', 'DV001', 10000.00),
 ('BG002', 'DV002', 50000.00),
 ('BG002', 'DV005', 25000.00),

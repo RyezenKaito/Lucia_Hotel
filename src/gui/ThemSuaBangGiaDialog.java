@@ -342,44 +342,13 @@ public class ThemSuaBangGiaDialog {
             {
                 tf.setStyle("-fx-background-color: transparent; -fx-alignment: CENTER-RIGHT;");
 
-                // Chỉ cho phép nhập số và dấu phẩy (dấu phẩy do formatter tự thêm)
+                // Chỉ cho phép nhập số và dấu phẩy
                 tf.setTextFormatter(new TextFormatter<>(change -> {
                     if (change.getControlNewText().matches("[\\d,]*")) {
                         return change;
                     }
                     return null;
                 }));
-
-                tf.textProperty().addListener((obs, oldV, newV) -> {
-                    if (updating || newV == null || newV.isEmpty())
-                        return;
-
-                    // Loại bỏ dấu phẩy cũ để lấy số thuần túy
-                    String digits = newV.replaceAll("[^\\d]", "");
-                    if (digits.isEmpty()) {
-                        updating = true;
-                        tf.setText("");
-                        updating = false;
-                        return;
-                    }
-
-                    try {
-                        long val = Long.parseLong(digits);
-                        String formatted = String.format("%,d", val);
-
-                        if (!formatted.equals(newV)) {
-                            updating = true;
-                            tf.setText(formatted);
-                            tf.positionCaret(tf.getText().length());
-                            updating = false;
-                        }
-                    } catch (NumberFormatException e) {
-                        // Trường hợp số quá lớn (vượt quá Long)
-                        updating = true;
-                        tf.setText(oldV);
-                        updating = false;
-                    }
-                });
             }
 
             @Override
