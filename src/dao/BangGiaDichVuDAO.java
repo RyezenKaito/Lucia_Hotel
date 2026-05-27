@@ -16,7 +16,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu> getAllBangGia() {
         List<BangGiaDichVu> list = new ArrayList<>();
-        String sql = "SELECT * FROM BangGiaDV_Header ORDER BY ngayApDung DESC";
+        String sql = "SELECT * FROM BangGiaDV_Header WHERE daXoa = 0 ORDER BY ngayApDung DESC";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -271,7 +271,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu> findConflicts(java.sql.Date ngayAD, java.sql.Date ngayHH, String excludeMaBG) {
         List<BangGiaDichVu> list = new ArrayList<>();
-        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
+        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 0 AND daXoa = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
         if (excludeMaBG != null && !excludeMaBG.isEmpty()) {
             sql += " AND maBangGia <> ?";
         }
@@ -321,8 +321,15 @@ public class BangGiaDichVuDAO {
      * Soft delete: set trangThai = 0 thay vì xóa vật lý
      */
     public boolean softDeleteBangGia(String maBG) {
-        // Sửa: Dùng trạng thái 1 (Ngưng áp dụng) cho soft delete vì DB là kiểu BIT
-        return updateTrangThai(maBG, 1);
+        String sql = "UPDATE BangGiaDV_Header SET trangThai = 1, daXoa = 1 WHERE maBangGia = ?";
+        try (Connection conn = ConnectDatabase.getInstance().getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maBG);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**
@@ -349,7 +356,7 @@ public class BangGiaDichVuDAO {
      * Kiểm tra xung đột thời gian khi thêm mới bảng giá
      */
     public boolean checkOverlap(java.sql.Date ngayAD, java.sql.Date ngayHH) {
-        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
+        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE trangThai = 0 AND daXoa = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDate(1, ngayHH);
@@ -368,7 +375,7 @@ public class BangGiaDichVuDAO {
      * Kiểm tra xung đột thời gian khi cập nhật bảng giá (loại trừ chính nó)
      */
     public boolean checkOverlapUpdate(String maBG, java.sql.Date ngayAD, java.sql.Date ngayHH) {
-        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ? AND maBangGia <> ?";
+        String sql = "SELECT COUNT(*) FROM BangGiaDV_Header WHERE trangThai = 0 AND daXoa = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ? AND maBangGia <> ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDate(1, ngayHH);
@@ -394,7 +401,7 @@ public class BangGiaDichVuDAO {
      */
     public List<BangGiaDichVu> findStrictConflicts(java.sql.Date ngayAD, java.sql.Date ngayHH, String excludeMaBG) {
         List<BangGiaDichVu> list = new ArrayList<>();
-        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
+        String sql = "SELECT * FROM BangGiaDV_Header WHERE trangThai = 0 AND daXoa = 0 AND ngayApDung <= ? AND ngayHetHieuLuc >= ?";
         if (excludeMaBG != null && !excludeMaBG.isEmpty()) {
             sql += " AND maBangGia <> ?";
         }
@@ -426,7 +433,7 @@ public class BangGiaDichVuDAO {
         // [ngayApDung, ngayHetHieuLuc]
         String sql = "SELECT d.maDV, d.giaDV, h.maBangGia, h.tenBangGia FROM BangGiaDV_Detail d " +
                 "INNER JOIN BangGiaDV_Header h ON d.maBangGia = h.maBangGia " +
-                "WHERE h.trangThai = 0 AND ? >= h.ngayApDung AND ? < h.ngayHetHieuLuc";
+                "WHERE h.trangThai = 0 AND h.daXoa = 0 AND ? >= h.ngayApDung AND ? < h.ngayHetHieuLuc";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDate(1, new java.sql.Date(System.currentTimeMillis()));
@@ -522,7 +529,7 @@ public class BangGiaDichVuDAO {
     public double getGiaHienTai(String maDV) {
         String sql = "SELECT d.giaDV FROM BangGiaDV_Detail d " +
                 "INNER JOIN BangGiaDV_Header h ON d.maBangGia = h.maBangGia " +
-                "WHERE h.trangThai = 0 AND CAST(GETDATE() AS DATE) >= h.ngayApDung AND CAST(GETDATE() AS DATE) < h.ngayHetHieuLuc " +
+                "WHERE h.trangThai = 0 AND h.daXoa = 0 AND CAST(GETDATE() AS DATE) >= h.ngayApDung AND CAST(GETDATE() AS DATE) < h.ngayHetHieuLuc " +
                 "AND d.maDV = ?";
         try (Connection conn = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {

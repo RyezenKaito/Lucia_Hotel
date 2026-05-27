@@ -434,7 +434,7 @@ public class BangGiaDichVuView extends BorderPane {
         confirm.setHeaderText(null);
         confirm.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.YES) {
-                if (dao.deleteBangGia(maBG)) {
+                if (dao.softDeleteBangGia(maBG)) {
                     showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã xóa bảng giá " + maBG);
                     loadDataFromDatabase();
                 } else {

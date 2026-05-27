@@ -58,6 +58,7 @@ CREATE TABLE DV (
     mieuTa   NVARCHAR(255),
     donVi    NVARCHAR(20),
     trangThai BIT DEFAULT 0,  -- 0: Đang phục vụ, 1: Tạm ngưng phục vụ
+    daXoa BIT DEFAULT 0,
     CONSTRAINT FK_DV_LoaiDV FOREIGN KEY (maLoaiDV) REFERENCES LoaiDichVu(maLoaiDV)
 );
 
@@ -184,7 +185,8 @@ CREATE TABLE BangGiaDV_Header (
     tenBangGia     NVARCHAR(100),
     ngayApDung     DATE,
     ngayHetHieuLuc DATE,
-    trangThai      BIT DEFAULT 1  -- 1: Ä‘ang Ã¡p dá»¥ng, 0: háº¿t hiá»‡u lá»±c
+    trangThai      BIT DEFAULT 1,  -- 1: đang áp dụng, 0: hết hiệu lực
+    daXoa          BIT DEFAULT 0
 );
 
 CREATE TABLE BangGiaDV_Detail (
@@ -205,12 +207,14 @@ CREATE TABLE TienNghi (
     maTN        VARCHAR(20) PRIMARY KEY,
     tenTN       NVARCHAR(100) NOT NULL,
     moTa        NVARCHAR(255),
-    trangThai   BIT DEFAULT 1   -- 1: đang sử dụng, 0: ngưng sử dụng
+    trangThai   BIT DEFAULT 1,  -- 1: đang sử dụng, 0: ngưng sử dụng
+	daXoa BIT DEFAULT 0,
 );
 
 CREATE TABLE LoaiPhongTienNghi (
     maLoaiPhong VARCHAR(20),
     maTN        VARCHAR(20),
+    soLuong     INT DEFAULT 1,
 
     CONSTRAINT PK_LoaiPhong_TienNghi
         PRIMARY KEY (maLoaiPhong, maTN),

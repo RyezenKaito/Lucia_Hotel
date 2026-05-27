@@ -43,8 +43,7 @@ public class HoaDonView extends BorderPane {
     private final HoaDonDAO dao = new HoaDonDAO();
     private final ChiTietHoaDonDAO cthdDAO = new ChiTietHoaDonDAO();
     private ObservableList<HoaDon> masterData = FXCollections.observableArrayList();
-    private FilteredList<HoaDon> filteredData;
-
+    private FilteredList<HoaDon> filteredData = new FilteredList<>(masterData, p -> true);
     /* ── Controls ───────────────────────────────────────────────────── */
     private TableView<HoaDon> table;
     private TextField txtSearch;
@@ -225,6 +224,7 @@ public class HoaDonView extends BorderPane {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         table.setPlaceholder(new Label("Không có dữ liệu"));
+        table.setItems(filteredData);
 
         TableColumn<HoaDon, Void> colStt = new TableColumn<>("STT");
         colStt.setPrefWidth(50);
@@ -488,7 +488,7 @@ public class HoaDonView extends BorderPane {
         detailStage.setTitle("Chi tiết hóa đơn: " + hd.getMaHD());
         detailStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
 
-        VBox root = new VBox(16);
+        BorderPane root = new BorderPane();
         root.setPadding(new Insets(28));
         root.setStyle("-fx-background-color: white;");
         root.setMinWidth(520);
@@ -720,28 +720,31 @@ public class HoaDonView extends BorderPane {
         HBox btnRow = new HBox(12, btnExport, btnClose);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
-        // Wrap the scrollable middle content (rooms + summary) in a VBox
-        VBox scrollableContent = new VBox(16);
-        scrollableContent.getChildren().addAll(lblPhongHeader, scrollPhong, sumBox);
+        // === Layout: BorderPane ===
+        // TOP: Tiêu đề + thông tin khách hàng + header phòng
+        VBox topSection = new VBox(12, lblTitle, khachBox, lblPhongHeader);
+        topSection.setPadding(new Insets(0, 0, 8, 0));
+        root.setTop(topSection);
 
-        ScrollPane mainScroll = new ScrollPane(scrollableContent);
-        mainScroll.setFitToWidth(true);
-        mainScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        mainScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        mainScroll.setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
-        VBox.setVgrow(mainScroll, Priority.ALWAYS);
+        // CENTER: Danh sách phòng (cuộn được)
+        root.setCenter(scrollPhong);
+        BorderPane.setMargin(scrollPhong, new Insets(4, 0, 4, 0));
 
-        root.getChildren().addAll(lblTitle, khachBox, mainScroll, btnRow);
+        // BOTTOM: Tổng tiền + nút bấm (cố định)
+        VBox bottomSection = new VBox(12, sumBox, btnRow);
+        bottomSection.setPadding(new Insets(8, 0, 0, 0));
+        root.setBottom(bottomSection);
 
-        // Constrain popup size to prevent overflow
-        double screenHeight = javafx.stage.Screen.getPrimary().getVisualBounds().getHeight();
-        double maxH = screenHeight * 0.85;
-        root.setMaxHeight(maxH);
+        // Constrain popup size - dùng visualBounds để trừ taskbar
+        javafx.geometry.Rectangle2D screenBounds = javafx.stage.Screen.getPrimary().getVisualBounds();
+        double maxH = screenBounds.getHeight() * 0.75;
 
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root, 580, maxH);
         detailStage.setScene(scene);
-        detailStage.setMaxHeight(maxH);
-        detailStage.sizeToScene();
+        detailStage.setMinWidth(540);
+        detailStage.setMinHeight(500);
+        detailStage.setMaxHeight(screenBounds.getHeight());
+        detailStage.setResizable(true);
         detailStage.showAndWait();
     }
 
@@ -823,10 +826,8 @@ public class HoaDonView extends BorderPane {
 
         task.setOnSucceeded(e -> {
             masterData.setAll(task.getValue());
-            filteredData = new FilteredList<>(masterData, p -> true);
-            table.setItems(filteredData);
             table.setPlaceholder(new Label("Không có dữ liệu"));
-            applyFilter("");
+            applyFilter(txtSearch != null ? txtSearch.getText() : "");
         });
 
         task.setOnFailed(e -> {

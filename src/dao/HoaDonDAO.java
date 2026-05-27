@@ -350,12 +350,12 @@ public class HoaDonDAO {
         String status = hd.getTrangThaiThanhToan();
         double doanhThu = 0;
 
-        if ("DA_HOAN_COC".equals(status) || "DA_HUY".equals(status)) {
-            doanhThu = 0;
+        if ("DA_THANH_TOAN".equals(status)) {
+            doanhThu = tinhTongTien(hd) + hd.getTienCoc();
         } else if ("DA_MAT_COC".equals(status)) {
             doanhThu = hd.getTienCoc();
         } else {
-            doanhThu = tinhTongTien(hd) + hd.getTienCoc();
+            doanhThu = 0;
         }
 
         hd.setDoanhThu(doanhThu);

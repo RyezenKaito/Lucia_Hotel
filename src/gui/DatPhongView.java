@@ -72,7 +72,10 @@ public class DatPhongView extends BorderPane {
         setTop(buildHeader());
         setCenter(buildTable());
 
+        chkFilterDate.setSelected(true);
         loadData();
+
+        // javafx.application.Platform.runLater(this::checkLateCheckOut);
     }
 
     /* ── HEADER ────────────────────────────────────────────────────── */
@@ -127,11 +130,14 @@ public class DatPhongView extends BorderPane {
         lblFrom.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblFrom.setTextFill(Color.web(C_TEXT_MUTED));
         dpFrom = new model.utils.DatePicker(curYear - 5, curYear + 2);
-        dpFrom.setValue(java.time.LocalDate.now().withDayOfMonth(1));
+        dpFrom.setValue(java.time.LocalDate.now());
         dpFrom.setPromptText("Từ ngày");
         dpFrom.setPrefHeight(40);
         dpFrom.setMaxWidth(200);
-        dpFrom.valueProperty().addListener((obs2, o2, n2) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+        dpFrom.valueProperty().addListener((obs2, o2, n2) -> {
+            if (chkFilterDate.isSelected())
+                applyFilter();
+        });
 
         Label lblTo = new Label("Đến:");
         lblTo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
@@ -141,7 +147,10 @@ public class DatPhongView extends BorderPane {
         dpTo.setPromptText("Đến ngày");
         dpTo.setPrefHeight(40);
         dpTo.setMaxWidth(200);
-        dpTo.valueProperty().addListener((obs2, o2, n2) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+        dpTo.valueProperty().addListener((obs2, o2, n2) -> {
+            if (chkFilterDate.isSelected())
+                applyFilter();
+        });
 
         dateFilterRow.getChildren().addAll(chkFilterDate, lblFrom, dpFrom, lblTo, dpTo);
 
@@ -464,6 +473,7 @@ public class DatPhongView extends BorderPane {
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
 
+        // Cập nhật số liệu ban đầu (trước khi lọc)
         lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
         lblDaDat.setText(String.valueOf(cntDaDat));
         lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
@@ -471,13 +481,17 @@ public class DatPhongView extends BorderPane {
         lblDaTra.setText(String.valueOf(cntDaTra));
 
         table.sort();
+
+        // Áp dụng bộ lọc hiện tại ngay sau khi tải dữ liệu
+        applyFilter();
     }
 
     private void applyFilter() {
         if (filteredData == null)
             return;
         String kw = txtSearch != null && txtSearch.getText() != null
-                ? txtSearch.getText().toLowerCase().trim() : "";
+                ? txtSearch.getText().toLowerCase().trim()
+                : "";
         boolean filterByDate = chkFilterDate != null && chkFilterDate.isSelected();
         java.time.LocalDate fromDate = dpFrom != null ? dpFrom.getValue() : null;
         java.time.LocalDate toDate = dpTo != null ? dpTo.getValue() : null;
@@ -489,8 +503,10 @@ public class DatPhongView extends BorderPane {
                 if (checkInStr != null && !"—".equals(checkInStr)) {
                     try {
                         java.time.LocalDate checkInDate = java.time.LocalDateTime.parse(checkInStr, FMT).toLocalDate();
-                        if (fromDate != null && checkInDate.isBefore(fromDate)) return false;
-                        if (toDate != null && checkInDate.isAfter(toDate)) return false;
+                        if (fromDate != null && checkInDate.isBefore(fromDate))
+                            return false;
+                        if (toDate != null && checkInDate.isAfter(toDate))
+                            return false;
                     } catch (Exception e) {
                         return false;
                     }
@@ -502,7 +518,8 @@ public class DatPhongView extends BorderPane {
             // Trạng thái filter (Hỗ trợ chọn nhiều)
             if (!selectedTrangThais.isEmpty()) {
                 String tt = (String) row[8];
-                if (tt == null) return false;
+                if (tt == null)
+                    return false;
 
                 // Quy đổi các trạng thái hủy chi tiết về chung một nhóm "DA_HUY" để so sánh lọc
                 String ttCheck = tt;
@@ -510,7 +527,8 @@ public class DatPhongView extends BorderPane {
                     ttCheck = "DA_HUY";
                 }
 
-                // Nếu trạng thái của dòng này không nằm trong danh sách đang được tick chọn thì ẩn đi
+                // Nếu trạng thái của dòng này không nằm trong danh sách đang được tick chọn thì
+                // ẩn đi
                 if (!selectedTrangThais.contains(ttCheck)) {
                     return false;
                 }
@@ -518,9 +536,9 @@ public class DatPhongView extends BorderPane {
             // Text filter
             if (!kw.isEmpty()) {
                 return ((String) row[0]).toLowerCase().contains(kw) ||
-                       ((String) row[1]).toLowerCase().contains(kw) ||
-                       ((String) row[2]).toLowerCase().contains(kw) ||
-                       ((String) row[3]).toLowerCase().contains(kw);
+                        ((String) row[1]).toLowerCase().contains(kw) ||
+                        ((String) row[2]).toLowerCase().contains(kw) ||
+                        ((String) row[3]).toLowerCase().contains(kw);
             }
             return true;
         });
@@ -538,25 +556,30 @@ public class DatPhongView extends BorderPane {
                 }
             }
         }
-        if (lblTotal != null) lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
-        if (lblDaDat != null) lblDaDat.setText(String.valueOf(cntDaDat));
-        if (lblChoXacNhan != null) lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
-        if (lblDangO != null) lblDangO.setText(String.valueOf(cntDangO));
-        if (lblDaTra != null) lblDaTra.setText(String.valueOf(cntDaTra));
+        if (lblTotal != null)
+            lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
+        if (lblDaDat != null)
+            lblDaDat.setText(String.valueOf(cntDaDat));
+        if (lblChoXacNhan != null)
+            lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
+        if (lblDangO != null)
+            lblDangO.setText(String.valueOf(cntDangO));
+        if (lblDaTra != null)
+            lblDaTra.setText(String.valueOf(cntDaTra));
     }
 
     /* ── Column-header filter helpers ──────────────────────────────── */
-private void installColumnFilter() {
+    private void installColumnFilter() {
         String baseName = "Trạng thái";
         menuTrangThai = new ContextMenu();
 
         MenuItem all = new MenuItem("Tất cả trạng thái");
 
         String[][] statuses = {
-            {"DA_XACNHAN", "Đã xác nhận"},
-            {"DA_CHECKIN", "Đã nhận phòng"},
-            {"DA_CHECKOUT", "Đã trả phòng"},
-            {"DA_HUY", "Đã hủy"}
+                { "DA_XACNHAN", "Đã xác nhận" },
+                { "DA_CHECKIN", "Đã nhận phòng" },
+                { "DA_CHECKOUT", "Đã trả phòng" },
+                { "DA_HUY", "Đã hủy" }
         };
 
         java.util.List<CheckBox> checkBoxes = new java.util.ArrayList<>();
@@ -578,7 +601,12 @@ private void installColumnFilter() {
         for (String[] st : statuses) {
             CheckBox cb = new CheckBox(st[1]);
             cb.setStyle("-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
-            
+
+            if (st[0].equals("DA_XACNHAN") || st[0].equals("DA_CHECKIN")) {
+                cb.setSelected(true);
+                selectedTrangThais.add(st[0]);
+            }
+
             // CustomMenuItem giúp menu KHÔNG BỊ ĐÓNG khi click vào CheckBox
             CustomMenuItem cmi = new CustomMenuItem(cb);
             cmi.setHideOnClick(false);
@@ -603,6 +631,9 @@ private void installColumnFilter() {
         }
 
         btnFilterTT = new Button(baseName + " ▼");
+        if (!selectedTrangThais.isEmpty()) {
+            btnFilterTT.setText("Đã chọn (" + selectedTrangThais.size() + ") ▼");
+        }
         btnFilterTT.setStyle("-fx-font-size: 12px; -fx-background-color: transparent;"
                 + " -fx-padding: 4 8; -fx-cursor: hand;");
         btnFilterTT.setMaxWidth(Double.MAX_VALUE);

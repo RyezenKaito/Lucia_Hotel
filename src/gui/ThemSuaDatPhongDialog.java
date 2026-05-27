@@ -67,7 +67,9 @@ public class ThemSuaDatPhongDialog extends Stage {
     private final Window owner;
     private final Runnable onSuccess;
     private boolean isReadOnly = false;
+    private boolean isDoiPhongMode = false;
     private String maDatExisting = null;
+    private List<Phong> originalPhongsForDoiPhong = new ArrayList<>();
 
     /* ── Form fields ──────────────────────────────────────────────────── */
     private TextField txtHoTen, txtSoDT, txtCCCD, txtSoNguoi, txtGhiChu;
@@ -110,10 +112,15 @@ public class ThemSuaDatPhongDialog extends Stage {
     }
 
     public ThemSuaDatPhongDialog(Window owner, String maDat, Runnable onSuccess) {
+        this(owner, maDat, false, onSuccess);
+    }
+
+    public ThemSuaDatPhongDialog(Window owner, String maDat, boolean isDoiPhong, Runnable onSuccess) {
         this.owner = owner;
         this.onSuccess = onSuccess;
         this.maDatExisting = maDat;
         this.isReadOnly = (maDat != null);
+        this.isDoiPhongMode = isDoiPhong;
 
         if (owner != null)
             initOwner(owner);
@@ -129,6 +136,9 @@ public class ThemSuaDatPhongDialog extends Stage {
         if (isReadOnly && maDatExisting != null) {
             populateData(maDatExisting);
             disableInputs();
+            if (isDoiPhongMode && phongSelectFlow != null) {
+                phongSelectFlow.setDisable(false);
+            }
         }
     }
 
@@ -292,7 +302,7 @@ public class ThemSuaDatPhongDialog extends Stage {
         }
         errSDT = errLabel();
 
-        // Kiểm tra SĐT trùng với khách hàng khác
+        // Kiểm tra SĐT trùng với khách hàng khác và cảnh báo đổi SĐT
         txtSoDT.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && newVal.length() == 10) {
                 model.entities.KhachHang kh = khachHangDAO.findBySDT(newVal);
@@ -302,6 +312,24 @@ public class ThemSuaDatPhongDialog extends Stage {
                 } else {
                     khFoundBySDT = null;
                     clearErrorField(txtSoDT, errSDT);
+                }
+
+                // Cảnh báo ngay nếu SĐT khác với SĐT của khách hàng (theo CCCD) trong hệ thống
+                String currentCCCD = txtCCCD.getText().trim();
+                if (currentCCCD.length() == 12) {
+                    model.entities.KhachHang khExist = khachHangDAO.findByCCCD(currentCCCD);
+                    if (khExist != null && khExist.getSoDT() != null && !khExist.getSoDT().equals(newVal)) {
+                        Alert alert = new Alert(Alert.AlertType.WARNING);
+                        alert.setTitle("Cảnh báo");
+                        alert.setHeaderText(null);
+                        alert.setContentText("SĐT này hiện đang khác với SĐT của khách hàng trong hệ thống, bạn có xác nhận đổi ?");
+                        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+                        
+                        java.util.Optional<ButtonType> result = alert.showAndWait();
+                        if (result.isPresent() && result.get() == ButtonType.NO) {
+                            Platform.runLater(() -> txtSoDT.setText(khExist.getSoDT()));
+                        }
+                    }
                 }
             } else {
                 khFoundBySDT = null;
@@ -570,7 +598,7 @@ public class ThemSuaDatPhongDialog extends Stage {
     }
 
     private VBox buildFooterVBox() {
-        if (isReadOnly) {
+        if (isReadOnly && !isDoiPhongMode) {
             VBox footerWrap = new VBox(10);
             footerWrap.setPadding(new Insets(12, 32, 20, 32));
             footerWrap.setStyle("-fx-background-color: white;");
@@ -578,6 +606,24 @@ public class ThemSuaDatPhongDialog extends Stage {
             Button btnClose = makeFooterBtn("ĐÓNG", "white", C_TEXT_GRAY, C_BORDER, "#f3f4f6");
             btnClose.setOnAction(e -> close());
             footerWrap.getChildren().add(btnClose);
+            return footerWrap;
+        } else if (isDoiPhongMode) {
+            VBox footerWrap = new VBox(10);
+            footerWrap.setPadding(new Insets(12, 32, 20, 32));
+            footerWrap.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER
+                    + " transparent transparent transparent; -fx-border-width: 1 0 0 0;");
+            footerWrap.setAlignment(Pos.CENTER);
+            
+            HBox box = new HBox(15);
+            box.setAlignment(Pos.CENTER_RIGHT);
+            Button btnClose = makeFooterBtn("HỦY BỎ", "white", C_TEXT_GRAY, C_BORDER, "#f3f4f6");
+            btnClose.setOnAction(e -> close());
+            
+            btnSave = makeFooterBtn("LƯU ĐỔI PHÒNG", C_BLUE, "white", "transparent", C_BLUE_HOVER);
+            btnSave.setOnAction(e -> handleDoiPhong());
+            
+            box.getChildren().addAll(btnClose, btnSave);
+            footerWrap.getChildren().add(box);
             return footerWrap;
         }
 
@@ -1019,6 +1065,8 @@ public class ThemSuaDatPhongDialog extends Stage {
         final double tienCoc = parseTienCoc();
         final String ghiChu = txtGhiChu.getText().trim();
 
+        // --- KIỂM TRA ĐỔI SĐT KHÁCH HÀNG ĐÃ ĐƯỢC CHUYỂN LÊN TEXT_PROPERTY LISTENER ---
+
         String tempMa = khachHangDAO.getNextMaKH();
         if (tempMa == null)
             tempMa = "KH001"; // Phòng hờ nếu database lỗi trả về null
@@ -1124,6 +1172,40 @@ public class ThemSuaDatPhongDialog extends Stage {
                 }
             });
         }).start();
+    }
+
+    private void handleDoiPhong() {
+        List<Phong> sp = phongCheckBoxes.entrySet().stream()
+                .filter(e -> e.getValue().isSelected())
+                .map(e -> phongMap.get(e.getKey()))
+                .collect(Collectors.toList());
+
+        if (sp.size() != originalPhongsForDoiPhong.size()) {
+            showError("Vui lòng chọn đủ " + originalPhongsForDoiPhong.size() + " phòng để đổi!");
+            return;
+        }
+
+        try (Connection con = ConnectDatabase.getInstance().getConnection()) {
+            con.setAutoCommit(false);
+            
+            List<String> maCTDPs = new ArrayList<>(ctdpDAO.getMaCTDPMapByMaDat(maDatExisting).values());
+            
+            for (int i = 0; i < sp.size(); i++) {
+                String sql = "UPDATE ChiTietDatPhong SET maPhong = ? WHERE maCTDP = ?";
+                try (java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+                    ps.setString(1, sp.get(i).getMaPhong());
+                    ps.setString(2, maCTDPs.get(i));
+                    ps.executeUpdate();
+                }
+            }
+            con.commit();
+            showInfo("Thành công!", "Đã đổi phòng thành công.");
+            if (onSuccess != null) onSuccess.run();
+            close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("Lỗi hệ thống khi đổi phòng: " + ex.getMessage());
+        }
     }
 
     /* ── UI Factory ──────────────────────────────────────────────────── */
@@ -1302,6 +1384,9 @@ public class ThemSuaDatPhongDialog extends Stage {
         txtTienCoc.setText(DF.format(cocValue));
 
         java.util.List<Phong> dsPhongCuaDon = loadPhongsOfDatPhong(maDat);
+        if (isDoiPhongMode) {
+            originalPhongsForDoiPhong = new ArrayList<>(dsPhongCuaDon);
+        }
 
         // [MỚI] Hiển thị tổng tiền và cần thanh toán từ dữ liệu quá khứ
         long rawDays = (dIn != null && dOut != null) ? ChronoUnit.DAYS.between(dIn, dOut) : 1;
@@ -1328,22 +1413,63 @@ public class ThemSuaDatPhongDialog extends Stage {
         phongCheckBoxes.clear();
         phongMap.clear();
 
-        if (dsPhongCuaDon.isEmpty()) {
+        List<Phong> allPhongsToDisplay = new ArrayList<>(dsPhongCuaDon);
+        if (isDoiPhongMode && dIn != null && dOut != null) {
+            List<String> maLoaiPhongs = new ArrayList<>(loaiPhongDaChon);
+            List<Phong> emptyPhongs = phongDAO.getPhongTrongByMultiLoai(maLoaiPhongs, dIn, dOut);
+            for (Phong p : emptyPhongs) {
+                if (allPhongsToDisplay.stream().noneMatch(x -> x.getMaPhong().equals(p.getMaPhong()))) {
+                    allPhongsToDisplay.add(p);
+                }
+            }
+        }
+
+        if (allPhongsToDisplay.isEmpty()) {
             Label lbl = new Label("— Không có dữ liệu phòng");
             lbl.setFont(Font.font("Segoe UI", 13));
             lbl.setTextFill(Color.web(C_TEXT_GRAY));
             phongSelectFlow.getChildren().add(lbl);
         } else {
-            for (Phong p : dsPhongCuaDon) {
+            for (Phong p : allPhongsToDisplay) {
                 VBox card = new VBox(4);
                 card.setPadding(new Insets(8, 12, 8, 12));
-                card.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 8;"
-                        + " -fx-border-color: " + C_ACTIVE + "; -fx-border-radius: 8; -fx-border-width: 1.5;");
+                
+                boolean isCurrentlyBooked = dsPhongCuaDon.stream().anyMatch(x -> x.getMaPhong().equals(p.getMaPhong()));
 
-                CheckBox cb = new CheckBox(p.getMaPhong());
+                CheckBox cb = new CheckBox(p.getMaPhong() + (isCurrentlyBooked && isDoiPhongMode ? " (Cũ)" : ""));
                 cb.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
-                cb.setTextFill(Color.web("#1e3a8a"));
-                cb.setSelected(true);
+                cb.setTextFill(isCurrentlyBooked && isDoiPhongMode ? Color.BLACK : Color.web("#1e3a8a"));
+                cb.setSelected(isCurrentlyBooked);
+
+                String styleNormal = "-fx-background-color: #f9fafb; -fx-background-radius: 8; -fx-border-color: " + C_BORDER + "; -fx-border-radius: 8; -fx-cursor: hand;";
+                String styleHoverFocus = "-fx-background-color: #e5e7eb; -fx-background-radius: 8; -fx-border-color: #9ca3af; -fx-border-radius: 8; -fx-cursor: hand;";
+                String styleSelected = "-fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-border-color: " + C_ACTIVE + "; -fx-border-radius: 8; -fx-border-width: 1.5; -fx-cursor: hand;";
+
+                Runnable updateCardStyle = () -> {
+                    if (cb.isSelected()) {
+                        card.setStyle(styleSelected);
+                    } else if (card.isHover() || cb.isFocused()) {
+                        card.setStyle(styleHoverFocus);
+                    } else {
+                        card.setStyle(styleNormal);
+                    }
+                };
+                updateCardStyle.run();
+
+                if (isDoiPhongMode) {
+                    card.setOnMouseClicked(e -> {
+                        cb.setSelected(!cb.isSelected());
+                        cb.requestFocus();
+                    });
+                    card.setOnMouseEntered(e -> updateCardStyle.run());
+                    card.setOnMouseExited(e -> updateCardStyle.run());
+                    cb.focusedProperty().addListener((obs, o, n) -> updateCardStyle.run());
+                    cb.selectedProperty().addListener((obs, o, n) -> updateCardStyle.run());
+
+                    cb.setOnMouseClicked(e -> e.consume());
+                } else {
+                    cb.setDisable(true);
+                }
 
                 Label lblLoai = new Label(p.getLoaiPhong() != null && p.getLoaiPhong().toString() != null
                         ? p.getLoaiPhong().toString()
@@ -1355,6 +1481,11 @@ public class ThemSuaDatPhongDialog extends Stage {
                 Label lblGia = new Label(DF.format(p.getLoaiPhong().getGia()) + " đ/đêm");
                 lblGia.setFont(Font.font("Segoe UI", 11));
                 lblGia.setTextFill(Color.web(C_TEXT_GRAY));
+
+                if (isDoiPhongMode) {
+                    lblLoai.setOnMouseClicked(e -> e.consume());
+                    lblGia.setOnMouseClicked(e -> e.consume());
+                }
 
                 card.getChildren().addAll(cb, lblLoai, lblGia);
                 phongCheckBoxes.put(p.getMaPhong(), cb);
@@ -1402,17 +1533,20 @@ public class ThemSuaDatPhongDialog extends Stage {
 
     private Map<String, List<String>> loadTienNghiByLoaiPhong() {
         Map<String, List<String>> result = new LinkedHashMap<>();
-        String sql = "SELECT lptn.maLoaiPhong, tn.tenTN " +
+        String sql = "SELECT lptn.maLoaiPhong, tn.tenTN, lptn.soLuong " +
                 "FROM LoaiPhongTienNghi lptn " +
                 "JOIN TienNghi tn ON tn.maTN = lptn.maTN " +
-                "WHERE tn.trangThai = 1 " +
+                "WHERE tn.trangThai = 1 AND tn.daXoa = 0 " +
                 "ORDER BY lptn.maLoaiPhong, tn.tenTN";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 java.sql.PreparedStatement ps = con.prepareStatement(sql);
                 java.sql.ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
+                String tenTN = rs.getString("tenTN");
+                int sl = rs.getInt("soLuong");
+                String display = (sl > 1 ? sl + " " : "") + tenTN;
                 result.computeIfAbsent(rs.getString("maLoaiPhong"), k -> new ArrayList<>())
-                        .add(rs.getString("tenTN"));
+                        .add(display);
             }
         } catch (Exception e) {
             e.printStackTrace();

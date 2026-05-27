@@ -25,16 +25,12 @@ public class RevenueCalculator {
 
         String status = hd.getTrangThaiThanhToan();
 
-        // Exclude cancelled/refunded bookings
-        if ("DA_HOAN_COC".equals(status) || "DA_HUY".equals(status)) {
-            return 0;
-        }
-
-        if ("DA_MAT_COC".equals(status)) {
+        if ("DA_THANH_TOAN".equals(status)) {
+            return new dao.HoaDonDAO().tinhDoanhThu(hd);
+        } else if ("DA_MAT_COC".equals(status)) {
             return hd.getTienCoc();
         }
 
-        // Revenue = Total including VAT (using DAO calculation)
-        return new dao.HoaDonDAO().tinhDoanhThu(hd);
+        return 0;
     }
 }
