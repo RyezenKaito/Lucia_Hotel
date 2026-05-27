@@ -433,11 +433,10 @@ public class DatPhongDAO {
     }
 
     public String getMaCTDPDangSuDungByMaPhong(String maPhong) {
-        String sql = "SELECT ctdp.maCTDP FROM ChiTietDatPhong ctdp " +
-                "JOIN Phong p ON ctdp.maPhong = p.maPhong " +
+        String sql = "SELECT TOP 1 ctdp.maCTDP FROM ChiTietDatPhong ctdp " +
                 "JOIN DatPhong dp ON ctdp.maDat = dp.maDat " +
-                "WHERE ctdp.maPhong = ? AND p.tinhTrang = N'DANGSUDUNG' AND dp.trangThai = N'DA_CHECKIN' " +
-                "AND ctdp.maCTDP = (SELECT TOP 1 c2.maCTDP FROM ChiTietDatPhong c2 JOIN DatPhong d2 ON c2.maDat = d2.maDat WHERE c2.maPhong = ctdp.maPhong AND d2.trangThai = N'DA_CHECKIN' ORDER BY d2.ngayCheckIn DESC)";
+                "WHERE ctdp.maPhong = ? AND dp.trangThai IN (N'DA_CHECKIN', N'DA_XACNHAN') " +
+                "ORDER BY dp.ngayCheckIn DESC, dp.ngayDat DESC";
         try (Connection con = ConnectDatabase.getInstance().getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, maPhong);
