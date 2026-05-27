@@ -228,8 +228,8 @@ public class HoaDonView extends BorderPane {
 
         TableColumn<HoaDon, Void> colStt = new TableColumn<>("STT");
         colStt.setPrefWidth(50);
-        colStt.setMinWidth(50);
-        colStt.setMaxWidth(60);
+        colStt.setMinWidth(30);
+        colStt.setMaxWidth(45);
         colStt.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
         colStt.setCellFactory(col -> new TableCell<HoaDon, Void>() {
             @Override
@@ -246,7 +246,7 @@ public class HoaDonView extends BorderPane {
         TableColumn<HoaDon, String> colMa = new TableColumn<>("Mã hóa đơn");
         colMa.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getMaHD()));
         colMa.setPrefWidth(120);
-        colMa.setMinWidth(100);
+        colMa.setMinWidth(40);
         colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
 
         TableColumn<HoaDon, String> colKhach = new TableColumn<>("Khách hàng");
@@ -256,14 +256,14 @@ public class HoaDonView extends BorderPane {
                                 ? p.getValue().getDatPhong().getKhachHang().getTenKH()
                                 : "—"));
         colKhach.setPrefWidth(200);
-        colKhach.setMinWidth(150);
+        colKhach.setMinWidth(50);
 
         TableColumn<HoaDon, String> colNgay = new TableColumn<>("Ngày lập");
         colNgay.setCellValueFactory(p -> new SimpleStringProperty(p.getValue().getNgayTaoHD() != null
                 ? p.getValue().getNgayTaoHD().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
                 : "—"));
         colNgay.setPrefWidth(160);
-        colNgay.setMinWidth(140);
+        colNgay.setMinWidth(50);
         colNgay.setStyle("-fx-alignment: CENTER;");
 
         TableColumn<HoaDon, String> colTongCP = new TableColumn<>("Tổng chi phí");
@@ -271,28 +271,28 @@ public class HoaDonView extends BorderPane {
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongCP())));
         colTongCP.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTongCP.setPrefWidth(120);
-        colTongCP.setMinWidth(100);
+        colTongCP.setMinWidth(50);
 
         TableColumn<HoaDon, String> colTienCoc = new TableColumn<>("Tiền cọc");
         colTienCoc.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTienCoc())));
         colTienCoc.setStyle("-fx-alignment: CENTER-RIGHT;");
         colTienCoc.setPrefWidth(120);
-        colTienCoc.setMinWidth(100);
+        colTienCoc.setMinWidth(50);
 
         TableColumn<HoaDon, String> colPhuThu = new TableColumn<>("Phụ phí");
         colPhuThu.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuThu())));
         colPhuThu.setStyle("-fx-alignment: CENTER-RIGHT;");
         colPhuThu.setPrefWidth(110);
-        colPhuThu.setMinWidth(90);
+        colPhuThu.setMinWidth(40);
 
         TableColumn<HoaDon, String> colPhuPhiTraMuon = new TableColumn<>("Phí trả muộn");
         colPhuPhiTraMuon.setCellValueFactory(
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getPhuPhiTraMuon())));
         colPhuPhiTraMuon.setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ef4444;");
         colPhuPhiTraMuon.setPrefWidth(120);
-        colPhuPhiTraMuon.setMinWidth(100);
+        colPhuPhiTraMuon.setMinWidth(50);
         colPhuPhiTraMuon.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -312,12 +312,12 @@ public class HoaDonView extends BorderPane {
                 p -> new SimpleStringProperty(String.format("%,.0f đ", p.getValue().getTongTien())));
         colTong.setStyle("-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;");
         colTong.setPrefWidth(160);
-        colTong.setMinWidth(140);
+        colTong.setMinWidth(60);
 
         // ── [ĐÃ SỬA] Cột Trạng thái TT có BADGE MÀU ────────────────
         colTrangThai = new TableColumn<>();
         colTrangThai.setPrefWidth(160);
-        colTrangThai.setMinWidth(140);
+        colTrangThai.setMinWidth(70);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(p -> new SimpleStringProperty(
                 p.getValue().getTrangThaiThanhToan() != null ? p.getValue().getTrangThaiThanhToan() : ""));
@@ -386,8 +386,23 @@ public class HoaDonView extends BorderPane {
         table.getColumns().add(colPhuPhiTraMuon);
         table.getColumns().add(colTong);
         table.getColumns().add(colTrangThai);
+
+        // Ràng buộc chiều rộng các cột để tự giãn đầy bảng và không cho kéo
+        double sttW = 55;
+        colMa.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.09));
+        colKhach.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.14));
+        colNgay.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.12));
+        colTongCP.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.10));
+        colTienCoc.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.08));
+        colPhuThu.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.07));
+        colPhuPhiTraMuon.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.09));
+        colTong.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.13));
+        colTrangThai.prefWidthProperty().bind(table.widthProperty().subtract(sttW).multiply(0.15));
+
+        // Khóa cứng tất cả cột – không cho kéo thả hay co dãn
         for (TableColumn<HoaDon, ?> c : table.getColumns()) {
             c.setReorderable(false);
+            c.setResizable(false);
         }
         VBox.setVgrow(table, Priority.ALWAYS);
 

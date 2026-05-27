@@ -228,3 +228,4 @@ CREATE TABLE LoaiPhongTienNghi (
         REFERENCES TienNghi(maTN)
 );
 GO
+
