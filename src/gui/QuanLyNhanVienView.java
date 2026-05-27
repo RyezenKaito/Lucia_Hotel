@@ -21,6 +21,7 @@ import javafx.stage.Window;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import gui.interfaces.IRefreshable;
 
 import dao.NhanVienDAO;
 import model.entities.NhanVien;
@@ -39,7 +40,7 @@ import model.utils.DimOverlay;
  *
  * Thiết kế đồng bộ với KhachHangView & QuanLyPhongView.
  */
-public class QuanLyNhanVienView extends BorderPane {
+public class QuanLyNhanVienView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu (đồng bộ KhachHangView & MainFrameView) ────────── */
     private static final String C_BG = "#f8f9fa";
@@ -539,6 +540,23 @@ public class QuanLyNhanVienView extends BorderPane {
 
         // Apply filters ngay sau khi loadData
         applyFilter(txtSearch != null ? txtSearch.getText() : "");
+    }
+
+    @Override
+    public void autoRefresh() {
+        NhanVien selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? selected.getMaNV() : null;
+        
+        loadData();
+        
+        if (selectedId != null) {
+            for (NhanVien nv : table.getItems()) {
+                if (nv.getMaNV().equals(selectedId)) {
+                    table.getSelectionModel().select(nv);
+                    break;
+                }
+            }
+        }
     }
 
     private void applyFilter(String keyword) {

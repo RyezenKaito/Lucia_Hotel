@@ -25,6 +25,7 @@ import javafx.stage.Window;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import gui.interfaces.IRefreshable;
 
 /**
  * BangGiaDichVuView – JavaFX
@@ -32,7 +33,7 @@ import java.util.List;
  * Giữ nguyên toàn bộ logic nghiệp vụ, chỉ đổi giao diện sang JavaFX
  * đồng nhất với KhachHangView, DichVuView, NhanVienView...
  */
-public class BangGiaDichVuView extends BorderPane {
+public class BangGiaDichVuView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu (đồng bộ KhachHangView & MainFrameView) ────────── */
     private static final String C_BG = "#f8f9fa";
@@ -363,6 +364,23 @@ public class BangGiaDichVuView extends BorderPane {
         // Re-apply filter nếu có
         if (txtSearch != null && !txtSearch.getText().isEmpty()) {
             applyFilter(txtSearch.getText());
+        }
+    }
+
+    @Override
+    public void autoRefresh() {
+        Object[] selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? str(selected[0]) : null;
+        
+        loadDataFromDatabase();
+        
+        if (selectedId != null) {
+            for (Object[] row : table.getItems()) {
+                if (str(row[0]).equals(selectedId)) {
+                    table.getSelectionModel().select(row);
+                    break;
+                }
+            }
         }
     }
 

@@ -26,12 +26,13 @@ import model.entities.LoaiPhong;
 
 import java.io.InputStream;
 import java.util.*;
+import gui.interfaces.IRefreshable;
 
 /**
  * TrangChuView – JavaFX Dashboard
  * Chứa Banner ảnh phòng (hỗ trợ kéo thả/nút bấm) và sơ đồ phòng chia theo tầng.
  */
-public class TrangChuView extends BorderPane {
+public class TrangChuView extends BorderPane implements IRefreshable {
 
     /* ── Màu giao diện ───────────────────────────────────────────────── */
     private static final String C_BG = "#f8f9fa";
@@ -64,6 +65,8 @@ public class TrangChuView extends BorderPane {
     private static final double SWIPE_THRESHOLD = 50;
     private double dragStartX;
     private double dragStartLocalX;
+    
+    private ScrollPane scrollRoomGrid;
 
     /* ── Constructor ─────────────────────────────────────────────────── */
     public TrangChuView() {
@@ -91,16 +94,25 @@ public class TrangChuView extends BorderPane {
         divider.setStyle("-fx-background-color: " + C_BORDER + ";");
         center.getChildren().add(divider);
 
-        ScrollPane scroll = new ScrollPane(buildRoomGrid());
-        scroll.setBorder(Border.EMPTY);
-        scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-        scroll.getContent().setStyle("-fx-background-color: transparent;");
-        VBox.setVgrow(scroll, Priority.ALWAYS);
-        center.getChildren().add(scroll);
+        scrollRoomGrid = new ScrollPane(buildRoomGrid());
+        scrollRoomGrid.setBorder(Border.EMPTY);
+        scrollRoomGrid.setFitToWidth(true);
+        scrollRoomGrid.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        scrollRoomGrid.getContent().setStyle("-fx-background-color: transparent;");
+        VBox.setVgrow(scrollRoomGrid, Priority.ALWAYS);
+        center.getChildren().add(scrollRoomGrid);
 
         setCenter(center);
         startBannerAutoPlay();
+    }
+
+    @Override
+    public void autoRefresh() {
+        if (scrollRoomGrid != null) {
+            double vvalue = scrollRoomGrid.getVvalue();
+            scrollRoomGrid.setContent(buildRoomGrid());
+            scrollRoomGrid.setVvalue(vvalue); // Cố gắng giữ nguyên cuộn
+        }
     }
 
     /*

@@ -33,8 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import gui.interfaces.IRefreshable;
 
-public class CheckOutView extends BorderPane {
+public class CheckOutView extends BorderPane implements IRefreshable {
     // ===== COLOR PALETTE =====
     private static final String C_BG = "#f8fafc";
     private static final String C_BORDER = "#e5e7eb";
@@ -508,6 +509,33 @@ public class CheckOutView extends BorderPane {
     // ============================================================
     // LIST RENDERING & SEARCH
     // ============================================================
+    @Override
+    public void autoRefresh() {
+        String currentSelectedId = null;
+        if (selectedItem != null) {
+            currentSelectedId = (String) selectedItem[0];
+        }
+        
+        refreshList();
+        
+        if (currentSelectedId != null) {
+            boolean found = false;
+            for (Object[] item : allItems) {
+                if (currentSelectedId.equals(item[0])) {
+                    selectedItem = item;
+                    loadItemDetail(item);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                selectedItem = null;
+                resetDetail();
+            }
+            renderList();
+        }
+    }
+
     private void refreshList() {
         allItems.clear();
         if (isModeDon) {

@@ -24,11 +24,12 @@ import javafx.stage.Stage;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import gui.interfaces.IRefreshable;
 
 /**
  * HoaDonView – JavaFX
  */
-public class HoaDonView extends BorderPane {
+public class HoaDonView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu ───────────────────────────────────────────────────── */
     private static final String C_BG = "#f8f9fa";
@@ -858,6 +859,11 @@ public class HoaDonView extends BorderPane {
         });
 
         new Thread(task, "HoaDon-Loader").start();
+    }
+
+    @Override
+    public void autoRefresh() {
+        loadData();
     }
 
     private void applyFilter(String kw) {

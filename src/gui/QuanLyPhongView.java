@@ -25,12 +25,13 @@ import javafx.stage.Window;
 
 import java.util.List;
 import java.util.Optional;
+import gui.interfaces.IRefreshable;
 
 /**
  * QuanLyPhongView – JavaFX
  * Thay thế QuanLyPhongPanel (Swing).
  */
-public class QuanLyPhongView extends BorderPane {
+public class QuanLyPhongView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu ───────────────────────────────────────────────────── */
     private static final String C_BG = "#f8f9fa";
@@ -385,6 +386,23 @@ public class QuanLyPhongView extends BorderPane {
             applyFilter(txtSearch != null ? txtSearch.getText() : "");
         } catch (Exception ex) {
             // Không làm gì nếu lỗi db
+        }
+    }
+
+    @Override
+    public void autoRefresh() {
+        Phong selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? selected.getMaPhong() : null;
+        
+        loadData();
+        
+        if (selectedId != null) {
+            for (Phong p : table.getItems()) {
+                if (p.getMaPhong().equals(selectedId)) {
+                    table.getSelectionModel().select(p);
+                    break;
+                }
+            }
         }
     }
 

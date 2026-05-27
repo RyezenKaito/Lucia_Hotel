@@ -26,6 +26,15 @@ import gui.QuanLyNhanVienView;
 import gui.DatPhongView;
 import gui.SuDungDichVuView;
 
+import java.util.HashMap;
+import java.util.Map;
+import javafx.scene.Node;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+import gui.interfaces.IRefreshable;
+
 /**
  * MainFrameView – JavaFX
  * Sidebar xanh navy + content area.
@@ -57,6 +66,7 @@ public class MainFrameView {
     private Button activeBtn = null;
     private boolean serviceExpanded = false;
     private VBox serviceSubMenu;
+    private final Map<String, Node> viewCache = new HashMap<>();
 
     /* ── Constructors ───────────────────────────────────────────────── */
     public MainFrameView(Stage stage, NhanVien staff) {
@@ -84,7 +94,13 @@ public class MainFrameView {
         contentArea.setStyle("-fx-background-color: " + C_CONTENT_BG + ";");
         root.setCenter(contentArea);
 
+        // Chạy ngầm load toàn bộ các view vào bộ nhớ cache
+        preloadViews();
+
         navigateTo("dashboard");
+
+        // Bật poller tự động reload dữ liệu mỗi 5 giây cho màn hình đang hiển thị
+        startRealTimePoller();
 
         Scene scene = new Scene(root, 1400, 800);
         primaryStage.setTitle("Khách sạn Lucia Star – " +
@@ -479,42 +495,86 @@ public class MainFrameView {
      * ════════════════════════════════════════════════════════════════
      */
     private void navigateTo(String card) {
-        switch (card) {
-            // FIX: đổi TrangChuPanel (Swing) → TrangChuView (JavaFX)
-            case "dashboard" -> showFX(new TrangChuView());
-            case "customers" -> showFX(new KhachHangView(isAdmin));
-            case "profile" -> {
-                Region overlay = DimOverlay.show(primaryStage);
-                new ThongTinCaNhanView(primaryStage, staff).showAndWait();
-                DimOverlay.hide(primaryStage, overlay);
-            }
-            case "staff" -> {
-                if (!isAdmin) {
-                    showFX(buildAccessDenied());
-                } else {
-                    showFX(new gui.QuanLyNhanVienView(staff));
-                }
-            }
-            case "statistics" -> {
-                if (!isAdmin) {
-                    showFX(buildAccessDenied());
-                } else {
-                    showFX(new gui.ThongKeDoanhThuView(staff));
-                }
-            }
-            case "booking" -> showFX(new DatPhongView(staff != null && staff.getRole() == model.enums.ChucVu.ADMIN));
-            // Phase 3 - đã migrate sang JavaFX
-            case "checkin" -> showFX(new CheckInView());
-            case "checkout" -> showFX(new CheckOutView(staff));
-            case "invoices" -> showFX(new HoaDonView());
-            // Phase 2 - đã migrate sang JavaFX
-            case "service" -> showFX(new gui.SuDungDichVuView());
-            case "serviceManager" -> showFX(new QuanLyDichVuView(isAdmin));
-            case "servicePrice" -> showFX(new BangGiaDichVuView());
-            case "rooms" -> showFX(new QuanLyPhongView(isAdmin));
-            case "amenities" -> showFX(new QuanLyTienNghiView());
-            default -> showFX(buildPlaceholder(card));
+        if (card.equals("profile")) {
+            Region overlay = DimOverlay.show(primaryStage);
+            new ThongTinCaNhanView(primaryStage, staff).showAndWait();
+            DimOverlay.hide(primaryStage, overlay);
+            return;
         }
+
+        if (!viewCache.containsKey(card)) {
+            Node viewNode = switch (card) {
+                case "dashboard" -> new TrangChuView();
+                case "customers" -> new KhachHangView(isAdmin);
+                case "staff" -> {
+                    if (!isAdmin) yield buildAccessDenied();
+                    else yield new gui.QuanLyNhanVienView(staff);
+                }
+                case "statistics" -> {
+                    if (!isAdmin) yield buildAccessDenied();
+                    else yield new gui.ThongKeDoanhThuView(staff);
+                }
+                case "booking" -> new DatPhongView(staff != null && staff.getRole() == model.enums.ChucVu.ADMIN);
+                case "checkin" -> new CheckInView();
+                case "checkout" -> new CheckOutView(staff);
+                case "invoices" -> new HoaDonView();
+                case "service" -> new gui.SuDungDichVuView();
+                case "serviceManager" -> new QuanLyDichVuView(isAdmin);
+                case "servicePrice" -> new BangGiaDichVuView();
+                case "rooms" -> new QuanLyPhongView(isAdmin);
+                case "amenities" -> new QuanLyTienNghiView();
+                default -> buildPlaceholder(card);
+            };
+            viewCache.put(card, viewNode);
+        }
+
+        Node activeView = viewCache.get(card);
+        if (activeView instanceof IRefreshable refreshable) {
+            refreshable.autoRefresh();
+        }
+
+        showFX(activeView);
+    }
+
+    private void preloadViews() {
+        Platform.runLater(() -> {
+            String[] cards = {"dashboard", "customers", "staff", "statistics", "booking", "checkin", "checkout", "invoices", "service", "serviceManager", "servicePrice", "rooms", "amenities"};
+            for (String card : cards) {
+                if (!viewCache.containsKey(card)) {
+                    try {
+                        Node viewNode = switch (card) {
+                            case "dashboard" -> new TrangChuView();
+                            case "customers" -> new KhachHangView(isAdmin);
+                            case "staff" -> (!isAdmin) ? buildAccessDenied() : new QuanLyNhanVienView(staff);
+                            case "statistics" -> (!isAdmin) ? buildAccessDenied() : new ThongKeDoanhThuView(staff);
+                            case "booking" -> new DatPhongView(staff != null && staff.getRole() == ChucVu.ADMIN);
+                            case "checkin" -> new CheckInView();
+                            case "checkout" -> new CheckOutView(staff);
+                            case "invoices" -> new HoaDonView();
+                            case "service" -> new SuDungDichVuView();
+                            case "serviceManager" -> new QuanLyDichVuView(isAdmin);
+                            case "servicePrice" -> new BangGiaDichVuView();
+                            case "rooms" -> new QuanLyPhongView(isAdmin);
+                            case "amenities" -> new QuanLyTienNghiView();
+                            default -> buildPlaceholder(card);
+                        };
+                        viewCache.put(card, viewNode);
+                    } catch (Exception ignored) {}
+                }
+            }
+        });
+    }
+
+    private void startRealTimePoller() {
+        Timeline poller = new Timeline(new KeyFrame(Duration.seconds(2), e -> {
+            if (contentArea.getChildren().isEmpty()) return;
+            Node currentView = contentArea.getChildren().get(0);
+            if (currentView instanceof IRefreshable refreshable) {
+                refreshable.autoRefresh();
+            }
+        }));
+        poller.setCycleCount(Animation.INDEFINITE);
+        poller.play();
     }
 
     /** Chặn không cho nhân viên vào */

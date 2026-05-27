@@ -28,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import gui.interfaces.IRefreshable;
 
 /**
  * CheckInView – Thủ tục nhận phòng.
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
  * 2. Click 1 đơn → load chi tiết bên phải + danh sách phòng (kèm trạng thái)
  * 3. Bấm "Xác nhận nhận phòng" → cập nhật DB, tạo HoaDon, đổi trạng thái
  */
-public class CheckInView extends BorderPane {
+public class CheckInView extends BorderPane implements IRefreshable {
 
     // ===== COLOR PALETTE (đồng bộ CheckOutView) =====
     private static final String C_BG = "#f8fafc";
@@ -333,10 +334,37 @@ public class CheckInView extends BorderPane {
     // ============================================================
     // LIST RENDERING
     // ============================================================
+    @Override
+    public void autoRefresh() {
+        String currentSelectedId = null;
+        if (selectedItem != null) {
+            currentSelectedId = (String) selectedItem[0];
+        }
+        
+        refreshList();
+        
+        if (currentSelectedId != null) {
+            boolean found = false;
+            for (Object[] item : allItems) {
+                if (currentSelectedId.equals(item[0])) {
+                    selectedItem = item;
+                    loadOrderDetail(currentSelectedId);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                selectedItem = null;
+                resetDetail();
+            }
+            renderList();
+        }
+    }
+
     private void refreshList() {
         allItems.clear();
         // Lấy danh sách đơn ĐÃ_XÁC_NHẬN có thể check-in (default: hôm nay, không lọc)
-        List<Object[]> rows = datPhongDAO.getDonCheckInByDate(LocalDate.now(), false);
+        List<Object[]> rows = datPhongDAO.getDonCheckInByDate(LocalDate.now(), true);
         if (rows == null)
             rows = new ArrayList<>();
         for (Object[] r : rows) {

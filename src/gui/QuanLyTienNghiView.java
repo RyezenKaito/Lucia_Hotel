@@ -29,9 +29,10 @@ import javafx.stage.Window;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import gui.interfaces.IRefreshable;
 import java.util.Optional;
 
-public class QuanLyTienNghiView extends BorderPane {
+public class QuanLyTienNghiView extends BorderPane implements IRefreshable {
 
     private static final String C_BG = "#f8f9fa";
     private static final String C_CARD_BG = "white";
@@ -430,6 +431,23 @@ public class QuanLyTienNghiView extends BorderPane {
     private void openDialog(TienNghi tn) {
         Window owner = getScene().getWindow();
         new ThemSuaTienNghiDialog(owner, tn, tnDAO, this::loadDataTienNghi).showDialog();
+    }
+
+    @Override
+    public void autoRefresh() {
+        TienNghiWrapper selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? selected.getTienNghi().getMaTienNghi() : null;
+        
+        loadDataTienNghi();
+        
+        if (selectedId != null) {
+            for (TienNghiWrapper tw : table.getItems()) {
+                if (tw.getTienNghi().getMaTienNghi().equals(selectedId)) {
+                    table.getSelectionModel().select(tw);
+                    break;
+                }
+            }
+        }
     }
 
 

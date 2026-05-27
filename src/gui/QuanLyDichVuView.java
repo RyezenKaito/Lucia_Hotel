@@ -27,13 +27,14 @@ import javafx.stage.Window;
 
 import java.util.List;
 import java.util.Optional;
+import gui.interfaces.IRefreshable;
 
 /**
  * QuanLyDichVuView – JavaFX
  * Quản lý danh mục tất cả dịch vụ (Thêm, Xóa, Sửa).
  * Đồng bộ phong cách thiết kế với hệ thống Lucia Hotel.
  */
-public class QuanLyDichVuView extends BorderPane {
+public class QuanLyDichVuView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu chuẩn hệ thống ────────────────────────────────────── */
     private static final String C_BG = "#f8f9fa";
@@ -398,6 +399,23 @@ public class QuanLyDichVuView extends BorderPane {
 
         filteredData = new FilteredList<>(masterData, p -> true);
         table.setItems(filteredData);
+    }
+
+    @Override
+    public void autoRefresh() {
+        DichVu selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? selected.getMaDV() : null;
+        
+        loadData();
+        
+        if (selectedId != null) {
+            for (DichVu dv : table.getItems()) {
+                if (dv.getMaDV().equals(selectedId)) {
+                    table.getSelectionModel().select(dv);
+                    break;
+                }
+            }
+        }
     }
 
     private void applyFilter() {

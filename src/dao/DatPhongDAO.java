@@ -59,7 +59,7 @@ public class DatPhongDAO {
     public List<Object[]> getDonCheckInByDate(LocalDate date, boolean includeLate) {
         List<Object[]> ds = new ArrayList<>();
         String dateCondition = includeLate
-                ? "CAST(dp.ngayCheckIn AS DATE) < ?"
+                ? "CAST(dp.ngayCheckIn AS DATE) <= ?"
                 : "CAST(dp.ngayCheckIn AS DATE) = ?";
         String sql = "SELECT dp.maDat, kh.tenKH, kh.soDT, kh.soCCCD, " +
                 "STRING_AGG(ctdp.maPhong, ', ') AS dsPhong, " +

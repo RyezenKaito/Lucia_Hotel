@@ -22,13 +22,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.text.DecimalFormat;
 import java.util.Optional;
+import gui.interfaces.IRefreshable;
 
 import connectDatabase.ConnectDatabase;
 
 /**
  * DatPhongView – Giao diện quản lý đặt phòng (JavaFX).
  */
-public class DatPhongView extends BorderPane {
+public class DatPhongView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu ────────────────────────────────────────────────── */
     private static final String C_ACTIVE = "#1d4ed8";
@@ -413,6 +414,23 @@ public class DatPhongView extends BorderPane {
     }
 
     /* ── DATA ────────────────────────────────────────────────────── */
+    @Override
+    public void autoRefresh() {
+        Object[] selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? (String) selected[0] : null;
+        
+        loadData();
+        
+        if (selectedId != null) {
+            for (Object[] row : table.getItems()) {
+                if (((String) row[0]).equals(selectedId)) {
+                    table.getSelectionModel().select(row);
+                    break;
+                }
+            }
+        }
+    }
+
     public void loadData() {
         masterData.clear();
         long cntDaDat = 0, cntDangO = 0, cntDaTra = 0, cntChoXacNhan = 0;

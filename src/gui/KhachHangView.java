@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import gui.interfaces.IRefreshable;
 
 /**
  * KhachHangView – JavaFX
@@ -35,7 +36,7 @@ import java.util.Optional;
  *
  * Màu sắc kế thừa từ TrangChuView / MainFrameView.
  */
-public class KhachHangView extends BorderPane {
+public class KhachHangView extends BorderPane implements IRefreshable {
 
     /* ── Bảng màu (đồng bộ TrangChuView & MainFrameView) ───────────── */
     private static final String C_BG = "#f8f9fa";
@@ -334,6 +335,23 @@ public class KhachHangView extends BorderPane {
         } catch (Exception ex) {
             lblTongKH.setText("—");
             lblSinhNhat.setText("—");
+        }
+    }
+
+    @Override
+    public void autoRefresh() {
+        KhachHang selected = table.getSelectionModel().getSelectedItem();
+        String selectedId = selected != null ? selected.getMaKH() : null;
+        
+        loadData();
+        
+        if (selectedId != null) {
+            for (KhachHang kh : table.getItems()) {
+                if (kh.getMaKH().equals(selectedId)) {
+                    table.getSelectionModel().select(kh);
+                    break;
+                }
+            }
         }
     }
 
