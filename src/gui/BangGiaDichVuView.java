@@ -251,10 +251,17 @@ public class BangGiaDichVuView extends BorderPane {
             }
         });
 
+        colMa.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colTen.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.35));
+        colNgayAD.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colNgayHH.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colTrangThai.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.20));
+
         // Khóa tất cả cột
         for (TableColumn<Object[], ?> c : List.of(colSTT, colMa, colTen, colNgayAD, colNgayHH, colTrangThai)) {
             c.setReorderable(false);
             c.setSortable(false);
+            c.setResizable(false);
         }
 
         table.getColumns().addAll(colSTT, colMa, colTen, colNgayAD, colNgayHH, colTrangThai);

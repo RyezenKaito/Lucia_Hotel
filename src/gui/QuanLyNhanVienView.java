@@ -72,7 +72,7 @@ public class QuanLyNhanVienView extends BorderPane {
 
     /* ── Column filter state ────────────────────────────────────────── */
     private String filterChucVu = null;     // null = tất cả
-    private String filterTrangThai = null;  // null = tất cả
+    private String filterTrangThai = "Còn làm";  // mặc định nhân viên Còn làm
     private TableColumn<NhanVien, String> colChucVu, colTrangThai;
 
     /* ── Constructor ──────────────────────────────────────────────── */
@@ -212,22 +212,22 @@ public class QuanLyNhanVienView extends BorderPane {
         });
 
         TableColumn<NhanVien, String> colMa = new TableColumn<>("Mã NV");
-        colMa.setMinWidth(100);
+        colMa.setMinWidth(80);
         colMa.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
         colMa.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getMaNV())));
 
         TableColumn<NhanVien, String> colTen = new TableColumn<>("Họ và tên");
-        colTen.setMinWidth(200);
+        colTen.setMinWidth(160);
         colTen.setStyle("-fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 20;");
         colTen.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getHoTen())));
 
         TableColumn<NhanVien, String> colCCCD = new TableColumn<>("Số CCCD");
-        colCCCD.setMinWidth(130);
+        colCCCD.setMinWidth(120);
         colCCCD.setStyle("-fx-alignment: CENTER;");
         colCCCD.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getCccd())));
 
         TableColumn<NhanVien, String> colSDT = new TableColumn<>("Số điện thoại");
-        colSDT.setMinWidth(120);
+        colSDT.setMinWidth(110);
         colSDT.setStyle("-fx-alignment: CENTER;");
         colSDT.setCellValueFactory(c -> new SimpleStringProperty(nvl(c.getValue().getSoDT())));
 
@@ -238,13 +238,13 @@ public class QuanLyNhanVienView extends BorderPane {
                 c.getValue().getNgaySinh() != null ? c.getValue().getNgaySinh().format(FMT) : ""));
 
         TableColumn<NhanVien, String> colNgayVao = new TableColumn<>("Ngày vào làm");
-        colNgayVao.setMinWidth(110);
+        colNgayVao.setMinWidth(120);
         colNgayVao.setStyle("-fx-alignment: CENTER;");
         colNgayVao.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getNgayVaoLamDate() != null ? c.getValue().getNgayVaoLamDate().format(FMT) : ""));
 
         colChucVu = new TableColumn<>("Chức vụ" + (isCurrentUserAdmin ? " ▼" : ""));
-        colChucVu.setMinWidth(110);
+        colChucVu.setMinWidth(140);
         colChucVu.setStyle("-fx-alignment: CENTER;");
         colChucVu.setCellValueFactory(c -> {
             ChucVu role = c.getValue().getRole();
@@ -282,7 +282,7 @@ public class QuanLyNhanVienView extends BorderPane {
         });
 
         colTrangThai = new TableColumn<>("Trạng thái ▼");
-        colTrangThai.setMinWidth(120);
+        colTrangThai.setMinWidth(160);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
         colTrangThai.setCellValueFactory(c -> {
             model.enums.TrangThaiNV tt = c.getValue().getTrangThai();
@@ -309,6 +309,7 @@ public class QuanLyNhanVienView extends BorderPane {
 
         // ── Install column header filters ────────────────────────────
         installColumnFilter(colTrangThai, "Trạng thái", buildTrangThaiNVMenu());
+        updateColumnHeader(colTrangThai, "Trạng thái", "Còn làm"); // Mặc định UI hiển thị "Còn làm"
         if (isCurrentUserAdmin) {
             installColumnFilter(colChucVu, "Chức vụ", buildChucVuMenu());
         }
@@ -355,12 +356,26 @@ public class QuanLyNhanVienView extends BorderPane {
             }
         });
 
-        // Khóa cứng tất cả cột – không cho kéo thả, không cho sort
+        // Sử dụng binding để các cột tự giãn đều full bảng và KHÔNG THỂ kéo tay (bị khóa)
+        colMa.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.08));
+        colTen.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.18));
+        colCCCD.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.12));
+        colSDT.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.11));
+        colNS.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.10));
+        colNgayVao.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.11));
+        colChucVu.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.14));
+        colTrangThai.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.16));
+
         for (TableColumn<NhanVien, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS, colNgayVao, colChucVu,
                 colTrangThai)) {
             c.setReorderable(false);
             c.setSortable(false);
+            c.setResizable(false); // Chặn resize mặc định
         }
+        // Riêng colSTT không bind nên vẫn giữ resizable = false
+        // Các cột đã bind prefWidth sẽ được TableView tự động giãn mà không cần resizable = true
+        // Wait, nếu resizable = false thì policy sẽ bỏ qua, cột sẽ bị fix theo prefWidth (đã được bind với width của bảng)!
+        // Do đó nó VẪN giãn theo bảng, và KHÔNG THỂ kéo bằng tay! Rất hoàn hảo!
 
         table.getColumns().addAll(colSTT, colMa, colTen, colCCCD, colSDT, colNS, colNgayVao, colChucVu, colTrangThai);
 
@@ -521,6 +536,9 @@ public class QuanLyNhanVienView extends BorderPane {
             if (lblWorking != null) lblWorking.setText(String.valueOf(totalWorking));
             if (lblResigned != null) lblResigned.setText(String.valueOf(totalResigned));
         }
+
+        // Apply filters ngay sau khi loadData
+        applyFilter(txtSearch != null ? txtSearch.getText() : "");
     }
 
     private void applyFilter(String keyword) {

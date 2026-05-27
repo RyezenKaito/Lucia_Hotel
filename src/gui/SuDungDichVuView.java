@@ -523,31 +523,31 @@ public class SuDungDichVuView extends BorderPane {
 
     private HBox buildBillHeader(boolean showDelete) {
         HBox header = new HBox(0);
-        header.setPadding(new Insets(5, 20, 5, 20));
+        header.setPadding(new Insets(5, 10, 5, 15));
         header.setStyle("-fx-border-color: transparent transparent #f3f4f6 transparent; -fx-border-width: 0 0 1 0;");
 
         Label lblName = new Label("Dịch vụ");
-        lblName.setPrefWidth(160);
+        lblName.setPrefWidth(140);
 
         Label lblQty = new Label("SL");
-        lblQty.setPrefWidth(40);
+        lblQty.setPrefWidth(86);
         lblQty.setAlignment(Pos.CENTER);
 
         Label lblPrice = new Label("Thành tiền");
-        lblPrice.setPrefWidth(110);
+        lblPrice.setPrefWidth(80);
         lblPrice.setAlignment(Pos.CENTER_RIGHT);
 
         header.getChildren().addAll(lblName, lblQty, lblPrice);
 
         if (showDelete) {
             Label lblDel = new Label("Xóa");
-            lblDel.setPrefWidth(50);
-            lblDel.setPadding(new Insets(0, 0, 0, 30));
+            lblDel.setPrefWidth(40);
+            lblDel.setPadding(new Insets(0, 0, 0, 15));
             lblDel.setAlignment(Pos.CENTER_LEFT);
             header.getChildren().add(lblDel);
         } else {
             Label placeholder = new Label("");
-            placeholder.setPrefWidth(50);
+            placeholder.setPrefWidth(40);
             header.getChildren().add(placeholder);
         }
 
@@ -564,47 +564,120 @@ public class SuDungDichVuView extends BorderPane {
     private HBox buildBillRow(String name, int qty, double sub, boolean showDelete, DichVu dv) {
         HBox row = new HBox(0);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10, 20, 10, 20));
+        row.setPadding(new Insets(10, 10, 10, 15));
         row.setStyle("-fx-border-color: transparent transparent #f9fafb transparent; -fx-border-width: 0 0 1 0;");
 
         Label lblName = new Label(name);
-        lblName.setPrefWidth(160);
+        lblName.setPrefWidth(140);
         lblName.setFont(Font.font("Segoe UI", 13));
         lblName.setTextFill(Color.web(C_TEXT_DARK));
 
-        Label lblQty = new Label(String.valueOf(qty));
-        lblQty.setPrefWidth(40);
-        lblQty.setAlignment(Pos.CENTER);
-        lblQty.setFont(Font.font("Segoe UI", 13));
+        row.getChildren().add(lblName);
+
+        if (!showDelete) { // Dịch vụ đã dùng (readonly)
+            Label lblQty = new Label(String.valueOf(qty));
+            lblQty.setPrefWidth(86);
+            lblQty.setAlignment(Pos.CENTER);
+            lblQty.setFont(Font.font("Segoe UI", 13));
+            row.getChildren().add(lblQty);
+        } else { // Dịch vụ thêm mới (editable)
+            HBox qtyBox = new HBox(3);
+            qtyBox.setPrefWidth(86);
+            qtyBox.setAlignment(Pos.CENTER);
+
+            Button btnMinus = new Button("-");
+            styleQtyBtn(btnMinus, "white", C_TEXT_GRAY);
+
+            TextField txtQty = new TextField(String.valueOf(qty));
+            txtQty.setPrefWidth(26);
+            txtQty.setMinWidth(26);
+            txtQty.setMaxWidth(26);
+            txtQty.setPrefHeight(24);
+            txtQty.setMinHeight(24);
+            txtQty.setMaxHeight(24);
+            txtQty.setAlignment(Pos.CENTER);
+            txtQty.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 11;" +
+                    "-fx-text-fill: " + C_SIDEBAR + "; -fx-background-color: #f0f4ff;" +
+                    "-fx-border-color: " + C_BORDER + "; -fx-border-radius: 4; -fx-background-radius: 4;" +
+                    "-fx-alignment: center; -fx-padding: 0;");
+
+            Button btnPlus = new Button("+");
+            styleQtyBtn(btnPlus, C_ACTIVE, "white");
+
+            Runnable commitQty = () -> {
+                String text = txtQty.getText().trim();
+                try {
+                    int val = text.isEmpty() ? 0 : Integer.parseInt(text);
+                    if (val <= 0) {
+                        cart.remove(dv);
+                    } else {
+                        cart.put(dv, val);
+                    }
+                    updateBillUI();
+                } catch (NumberFormatException ex) {
+                    txtQty.setText(String.valueOf(cart.getOrDefault(dv, 0)));
+                }
+            };
+
+            txtQty.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (!newVal.matches("\\d*")) {
+                    txtQty.setText(newVal.replaceAll("[^\\d]", ""));
+                }
+            });
+
+            txtQty.focusedProperty().addListener((obs, oldVal, focused) -> {
+                if (!focused) {
+                    commitQty.run();
+                }
+            });
+            txtQty.setOnAction(e -> commitQty.run());
+
+            btnMinus.setOnAction(e -> {
+                int q = cart.getOrDefault(dv, 0);
+                if (q > 1) {
+                    cart.put(dv, q - 1);
+                } else {
+                    cart.remove(dv);
+                }
+                updateBillUI();
+            });
+
+            btnPlus.setOnAction(e -> {
+                cart.put(dv, cart.getOrDefault(dv, 0) + 1);
+                updateBillUI();
+            });
+
+            qtyBox.getChildren().addAll(btnMinus, txtQty, btnPlus);
+            row.getChildren().add(qtyBox);
+        }
 
         Label lblSub = new Label(String.format("%,.0f", sub));
-        lblSub.setPrefWidth(110);
+        lblSub.setPrefWidth(80);
         lblSub.setAlignment(Pos.CENTER_RIGHT);
-        lblSub.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        lblSub.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
         lblSub.setTextFill(Color.web(C_SIDEBAR));
 
-        row.getChildren().addAll(lblName, lblQty, lblSub);
+        row.getChildren().add(lblSub);
 
         if (showDelete) {
             StackPane delPane = new StackPane();
-            delPane.setPrefWidth(50);
-            delPane.setPadding(new Insets(0, 0, 0, 36));
+            delPane.setPrefWidth(40);
+            delPane.setPadding(new Insets(0, 0, 0, 15));
             delPane.setAlignment(Pos.CENTER_LEFT);
 
             Button btn = new Button("x");
-            btn.setPrefSize(25, 25);
+            btn.setPrefSize(22, 22);
             btn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white;" +
                     "-fx-background-radius: 6; -fx-cursor: hand;");
             btn.setOnAction(e -> {
                 cart.remove(dv);
                 updateBillUI();
-                refreshServices();
             });
             delPane.getChildren().add(btn);
             row.getChildren().add(delPane);
         } else {
             StackPane placeholder = new StackPane();
-            placeholder.setPrefWidth(50);
+            placeholder.setPrefWidth(40);
             row.getChildren().add(placeholder);
         }
 
@@ -665,16 +738,21 @@ public class SuDungDichVuView extends BorderPane {
     }
 
     private HBox buildServiceCard(DichVu item) {
-        int qty = cart.getOrDefault(item, 0);
-
         HBox card = new HBox(12);
         card.setPrefSize(230, 85);
         card.setMaxWidth(230);
-        card.setPadding(new Insets(12));
+        card.setPadding(new Insets(12, 16, 12, 16));
         card.setAlignment(Pos.CENTER_LEFT);
+        card.setCursor(Cursor.HAND);
         card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
                 "; -fx-border-radius: 12; -fx-background-radius: 12;");
         card.setEffect(new DropShadow(6, 0, 2, Color.web("#00000005")));
+
+        // Hover effect for card
+        card.setOnMouseEntered(e -> card.setStyle("-fx-background-color: " + C_SOFT_BLUE + "; -fx-border-color: " + C_ACTIVE +
+                "; -fx-border-radius: 12; -fx-background-radius: 12;"));
+        card.setOnMouseExited(e -> card.setStyle("-fx-background-color: white; -fx-border-color: " + C_BORDER +
+                "; -fx-border-radius: 12; -fx-background-radius: 12;"));
 
         VBox info = new VBox(4);
         info.setAlignment(Pos.CENTER_LEFT);
@@ -688,84 +766,17 @@ public class SuDungDichVuView extends BorderPane {
         info.getChildren().addAll(lblName, lblPrice);
         HBox.setHgrow(info, Priority.ALWAYS);
 
-        HBox qtyBox = new HBox(3);
-        qtyBox.setAlignment(Pos.CENTER_RIGHT);
+        Label lblAdd = new Label("＋");
+        lblAdd.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        lblAdd.setTextFill(Color.web(C_ACTIVE));
 
-        Button btnMinus = new Button("-");
-        styleQtyBtn(btnMinus, "white", C_TEXT_GRAY);
-
-        TextField txtQty = new TextField(qty == 0 ? "0" : String.valueOf(qty));
-        txtQty.setPrefWidth(24);
-        txtQty.setMinWidth(24);
-        txtQty.setMaxWidth(24);
-        txtQty.setPrefHeight(24);
-        txtQty.setMinHeight(24);
-        txtQty.setMaxHeight(24);
-        txtQty.setAlignment(Pos.CENTER);
-        txtQty.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 12;" +
-                "-fx-text-fill: " + C_SIDEBAR + "; -fx-background-color: #f0f4ff;" +
-                "-fx-border-color: " + C_BORDER + "; -fx-border-radius: 5; -fx-background-radius: 5;" +
-                "-fx-alignment: center; -fx-padding: 0;");
-
-        Button btnPlus = new Button("+");
-        styleQtyBtn(btnPlus, C_ACTIVE, "white");
-
-        Runnable refreshUI = () -> {
-            updateBillUI();
-            renderServices();
-        };
-
-        Runnable commitQty = () -> {
-            String text = txtQty.getText().trim();
-            try {
-                int val = text.isEmpty() ? 0 : Integer.parseInt(text);
-                if (val < 0) {
-                    val = 0;
-                }
-                if (val == 0) {
-                    cart.remove(item);
-                } else {
-                    cart.put(item, val);
-                }
-                refreshUI.run();
-            } catch (NumberFormatException ex) {
-                int q = cart.getOrDefault(item, 0);
-                txtQty.setText(q == 0 ? "" : String.valueOf(q));
-            }
-        };
-
-        txtQty.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*")) {
-                txtQty.setText(newVal.replaceAll("[^\\d]", ""));
-            }
-        });
-
-        txtQty.focusedProperty().addListener((obs, oldVal, focused) -> {
-            if (!focused) {
-                commitQty.run();
-            }
-        });
-        txtQty.setOnAction(e -> commitQty.run());
-
-        btnMinus.setOnAction(e -> {
-            int q = cart.getOrDefault(item, 0);
-            if (q > 0) {
-                if (q == 1) {
-                    cart.remove(item);
-                } else {
-                    cart.put(item, q - 1);
-                }
-                refreshUI.run();
-            }
-        });
-
-        btnPlus.setOnAction(e -> {
+        card.getChildren().addAll(info, lblAdd);
+        
+        card.setOnMouseClicked(e -> {
             cart.put(item, cart.getOrDefault(item, 0) + 1);
-            refreshUI.run();
+            updateBillUI();
         });
-
-        qtyBox.getChildren().addAll(btnMinus, txtQty, btnPlus);
-        card.getChildren().addAll(info, qtyBox);
+        
         return card;
     }
 

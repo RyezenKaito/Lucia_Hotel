@@ -282,9 +282,18 @@ public class QuanLyPhongView extends BorderPane {
         table.getColumns().add(colTrangThai);
         table.getColumns().add(colTang);
 
+        // Ràng buộc chiều rộng để các cột tự giãn và chặn kéo tay
+        colMa.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colLoai.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.25));
+        colGia.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colSucChua.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colTrangThai.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.20));
+        colTang.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.10));
+
         for (TableColumn<Phong, ?> c : table.getColumns()) {
             c.setReorderable(false);
             c.setSortable(false);
+            c.setResizable(false);
         }
 
         // ContextMenu (Nhấn phải chuột)

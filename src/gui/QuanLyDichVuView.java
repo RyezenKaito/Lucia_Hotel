@@ -343,10 +343,18 @@ public class QuanLyDichVuView extends BorderPane {
         table.getColumns().add(colDonVi);
         table.getColumns().add(colTrangThai);
 
+        colMa.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colTen.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.25));
+        colLoai.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colGia.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colDonVi.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.10));
+        colTrangThai.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.20));
+
         // Chặn kéo cột, sắp xếp
         table.getColumns().forEach(c -> {
             c.setReorderable(false);
             c.setSortable(false);
+            c.setResizable(false);
         });
 
         // Context Menu (Chuột phải)

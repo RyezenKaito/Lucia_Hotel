@@ -239,10 +239,18 @@ public class KhachHangView extends BorderPane {
             c.setText(""); // Xóa text gốc để hiển thị Graphic
         }
 
+        // Ràng buộc chiều rộng các cột để tự giãn đầy bảng và không cho kéo
+        colMa.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.15));
+        colTen.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.30));
+        colCCCD.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.20));
+        colSDT.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.17));
+        colNS.prefWidthProperty().bind(table.widthProperty().subtract(65).multiply(0.18));
+
         // Khóa cứng tất cả cột – không cho kéo thả
         for (TableColumn<KhachHang, ?> c : List.of(colSTT, colMa, colTen, colCCCD, colSDT, colNS)) {
             c.setReorderable(false);
             c.setSortable(false);
+            c.setResizable(false);
         }
 
         table.getColumns().addAll(colSTT, colMa, colTen, colCCCD, colSDT, colNS);
@@ -432,6 +440,7 @@ public class KhachHangView extends BorderPane {
             TableColumn<String[], String> col = new TableColumn<>(colNames[i]);
             col.setReorderable(false);
             col.setSortable(false);
+            col.setResizable(false);
             col.setStyle("-fx-alignment: CENTER;");
 
             if (idx == 0) {
@@ -475,6 +484,13 @@ public class KhachHangView extends BorderPane {
             }
             bdTable.getColumns().add(col);
         }
+        
+        var cols = bdTable.getColumns();
+        cols.get(1).prefWidthProperty().bind(bdTable.widthProperty().subtract(65).multiply(0.15));
+        cols.get(2).prefWidthProperty().bind(bdTable.widthProperty().subtract(65).multiply(0.25));
+        cols.get(3).prefWidthProperty().bind(bdTable.widthProperty().subtract(65).multiply(0.20));
+        cols.get(4).prefWidthProperty().bind(bdTable.widthProperty().subtract(65).multiply(0.20));
+        cols.get(5).prefWidthProperty().bind(bdTable.widthProperty().subtract(65).multiply(0.20));
 
         ObservableList<String[]> bdData = FXCollections.observableArrayList();
         if (!list.isEmpty())
