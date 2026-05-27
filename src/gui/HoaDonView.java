@@ -53,7 +53,12 @@ public class HoaDonView extends BorderPane {
     private Label lblFrom, lblTo, lblMonth, lblQuarter, lblYear;
     private DatePicker dpFrom, dpTo;
     private ComboBox<Integer> cbMonth, cbQuarter, cbYear;
-    private ComboBox<String> cbTrangThai;
+    
+    /* ── Column filter state ────────────────────────────────────────── */
+    private java.util.Set<String> selectedTrangThais = new java.util.HashSet<>();
+    private TableColumn<HoaDon, String> colTrangThai;
+    private Button btnFilterTT;
+    private ContextMenu menuTrangThai;
 
     public HoaDonView() {
         setStyle("-fx-background-color: " + C_BG + ";");
@@ -163,17 +168,8 @@ public class HoaDonView extends BorderPane {
         cbQuarter.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
         cbYear.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
 
-        Label lblTrangThai = new Label("Trạng thái:");
-        lblTrangThai.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        lblTrangThai.setTextFill(Color.web(C_TEXT_DARK));
-        cbTrangThai = new ComboBox<>(FXCollections.observableArrayList(
-                "Tất cả", "Đã thanh toán", "Chưa thanh toán", "Đã đặt cọc", "Đã hủy - hoàn cọc", "Đã hủy - mất cọc"));
-        cbTrangThai.setValue("Tất cả");
-        cbTrangThai.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-pref-height: 44; -fx-background-radius: 8;");
-        cbTrangThai.valueProperty().addListener((obs, oldV, newV) -> applyFilter(txtSearch.getText()));
-
         HBox dateBox = new HBox(12, lblFilter, cbGroupBy, lblFrom, dpFrom, lblTo, dpTo, lblMonth, cbMonth, lblQuarter,
-                cbQuarter, lblYear, cbYear, lblTrangThai, cbTrangThai);
+                cbQuarter, lblYear, cbYear);
         dateBox.setAlignment(Pos.CENTER_LEFT);
 
         // Spacer đẩy dateBox sang bên phải
@@ -319,7 +315,7 @@ public class HoaDonView extends BorderPane {
         colTong.setMinWidth(140);
 
         // ── [ĐÃ SỬA] Cột Trạng thái TT có BADGE MÀU ────────────────
-        TableColumn<HoaDon, String> colTrangThai = new TableColumn<>("Trạng thái TT");
+        colTrangThai = new TableColumn<>();
         colTrangThai.setPrefWidth(160);
         colTrangThai.setMinWidth(140);
         colTrangThai.setStyle("-fx-alignment: CENTER;");
@@ -410,9 +406,78 @@ public class HoaDonView extends BorderPane {
         lblHint.setTextFill(Color.web(C_TEXT_GRAY));
         lblHint.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 13));
         lblHint.setPadding(new Insets(10, 0, 0, 0));
+        
+        installColumnFilter();
 
         card.getChildren().addAll(table, lblHint);
         return card;
+    }
+
+    private void installColumnFilter() {
+        String baseName = "Trạng thái TT";
+        menuTrangThai = new ContextMenu();
+
+        MenuItem all = new MenuItem("Tất cả trạng thái");
+
+        String[][] statuses = {
+            {"DA_THANH_TOAN", "Đã thanh toán"},
+            {"CHUA_THANH_TOAN", "Chưa thanh toán"},
+            {"DA_THANH_TOAN_COC", "Đã đặt cọc"},
+            {"DA_HOAN_COC", "Đã hủy - hoàn cọc"},
+            {"DA_MAT_COC", "Đã hủy - mất cọc"}
+        };
+
+        java.util.List<CheckBox> checkBoxes = new java.util.ArrayList<>();
+
+        // Nút "Tất cả trạng thái" sẽ làm mới lại danh sách
+        all.setOnAction(e -> {
+            selectedTrangThais.clear();
+            for (CheckBox cb : checkBoxes) {
+                cb.setSelected(false); // Bỏ tích toàn bộ CheckBox
+            }
+            btnFilterTT.setText(baseName + " ▼");
+            applyFilter(txtSearch.getText());
+        });
+
+        menuTrangThai.getItems().add(all);
+        menuTrangThai.getItems().add(new SeparatorMenuItem());
+
+        // Tạo các tùy chọn lọc bằng CheckBox
+        for (String[] st : statuses) {
+            CheckBox cb = new CheckBox(st[1]);
+            cb.setStyle("-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
+            
+            // CustomMenuItem giúp menu KHÔNG BỊ ĐÓNG khi click vào CheckBox
+            CustomMenuItem cmi = new CustomMenuItem(cb);
+            cmi.setHideOnClick(false);
+            menuTrangThai.getItems().add(cmi);
+
+            cb.setOnAction(e -> {
+                if (cb.isSelected()) {
+                    selectedTrangThais.add(st[0]);
+                } else {
+                    selectedTrangThais.remove(st[0]);
+                }
+
+                // Cập nhật text cho Header Button
+                if (selectedTrangThais.isEmpty()) {
+                    btnFilterTT.setText(baseName + " ▼");
+                } else {
+                    btnFilterTT.setText("Đã chọn (" + selectedTrangThais.size() + ") ▼");
+                }
+                applyFilter(txtSearch.getText());
+            });
+            checkBoxes.add(cb);
+        }
+
+        btnFilterTT = new Button(baseName + " ▼");
+        btnFilterTT.setStyle("-fx-font-size: 12px; -fx-background-color: transparent;"
+                + " -fx-padding: 4 8; -fx-cursor: hand; -fx-font-weight: bold;");
+        btnFilterTT.setMaxWidth(Double.MAX_VALUE);
+        btnFilterTT.setOnAction(e -> menuTrangThai.show(btnFilterTT, javafx.geometry.Side.BOTTOM, 0, 0));
+
+        colTrangThai.setGraphic(btnFilterTT);
+        colTrangThai.setText("");
     }
 
     public static void showHoaDonDetail(HoaDon hd) {
@@ -423,7 +488,7 @@ public class HoaDonView extends BorderPane {
         detailStage.setTitle("Chi tiết hóa đơn: " + hd.getMaHD());
         detailStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
 
-        VBox root = new VBox(16);
+        BorderPane root = new BorderPane();
         root.setPadding(new Insets(28));
         root.setStyle("-fx-background-color: white;");
         root.setMinWidth(520);
@@ -655,28 +720,31 @@ public class HoaDonView extends BorderPane {
         HBox btnRow = new HBox(12, btnExport, btnClose);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
-        // Wrap the scrollable middle content (rooms + summary) in a VBox
-        VBox scrollableContent = new VBox(16);
-        scrollableContent.getChildren().addAll(lblPhongHeader, scrollPhong, sumBox);
+        // === Layout: BorderPane ===
+        // TOP: Tiêu đề + thông tin khách hàng + header phòng
+        VBox topSection = new VBox(12, lblTitle, khachBox, lblPhongHeader);
+        topSection.setPadding(new Insets(0, 0, 8, 0));
+        root.setTop(topSection);
 
-        ScrollPane mainScroll = new ScrollPane(scrollableContent);
-        mainScroll.setFitToWidth(true);
-        mainScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        mainScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        mainScroll.setStyle("-fx-background-color: transparent; -fx-background: white; -fx-border-color: transparent;");
-        VBox.setVgrow(mainScroll, Priority.ALWAYS);
+        // CENTER: Danh sách phòng (cuộn được)
+        root.setCenter(scrollPhong);
+        BorderPane.setMargin(scrollPhong, new Insets(4, 0, 4, 0));
 
-        root.getChildren().addAll(lblTitle, khachBox, mainScroll, btnRow);
+        // BOTTOM: Tổng tiền + nút bấm (cố định)
+        VBox bottomSection = new VBox(12, sumBox, btnRow);
+        bottomSection.setPadding(new Insets(8, 0, 0, 0));
+        root.setBottom(bottomSection);
 
-        // Constrain popup size to prevent overflow
-        double screenHeight = javafx.stage.Screen.getPrimary().getVisualBounds().getHeight();
-        double maxH = screenHeight * 0.85;
-        root.setMaxHeight(maxH);
+        // Constrain popup size - dùng visualBounds để trừ taskbar
+        javafx.geometry.Rectangle2D screenBounds = javafx.stage.Screen.getPrimary().getVisualBounds();
+        double maxH = screenBounds.getHeight() * 0.75;
 
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root, 580, maxH);
         detailStage.setScene(scene);
-        detailStage.setMaxHeight(maxH);
-        detailStage.sizeToScene();
+        detailStage.setMinWidth(540);
+        detailStage.setMinHeight(500);
+        detailStage.setMaxHeight(screenBounds.getHeight());
+        detailStage.setResizable(true);
         detailStage.showAndWait();
     }
 
@@ -802,20 +870,12 @@ public class HoaDonView extends BorderPane {
         final java.time.LocalDate fEnd = endDate;
 
         filteredData.setPredicate(hd -> {
-            // Filter by status
-            String selectedStatus = cbTrangThai.getValue();
-            if (selectedStatus != null && !"Tất cả".equals(selectedStatus)) {
+            // Filter by status (multi-select)
+            if (!selectedTrangThais.isEmpty()) {
                 String trangThai = hd.getTrangThaiThanhToan();
-                boolean statusMatch = false;
-                switch (selectedStatus) {
-                    case "Đã thanh toán":      statusMatch = "DA_THANH_TOAN".equals(trangThai); break;
-                    case "Chưa thanh toán": statusMatch = "CHUA_THANH_TOAN".equals(trangThai); break;
-                    case "Đã đặt cọc":       statusMatch = "DA_THANH_TOAN_COC".equals(trangThai); break;
-                    case "Đã hủy - hoàn cọc": statusMatch = "DA_HOAN_COC".equals(trangThai); break;
-                    case "Đã hủy - mất cọc": statusMatch = "DA_MAT_COC".equals(trangThai); break;
-                    default: statusMatch = true;
+                if (trangThai == null || !selectedTrangThais.contains(trangThai)) {
+                    return false;
                 }
-                if (!statusMatch) return false;
             }
             if (hd.getNgayTaoHD() != null) {
                 java.time.LocalDate invoiceDate = hd.getNgayTaoHD().toLocalDate();

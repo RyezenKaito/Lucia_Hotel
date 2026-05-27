@@ -75,7 +75,7 @@ public class DatPhongView extends BorderPane {
         chkFilterDate.setSelected(true);
         loadData();
 
-        javafx.application.Platform.runLater(this::checkLateCheckOut);
+        // javafx.application.Platform.runLater(this::checkLateCheckOut);
     }
 
     /* ── HEADER ────────────────────────────────────────────────────── */
@@ -134,7 +134,10 @@ public class DatPhongView extends BorderPane {
         dpFrom.setPromptText("Từ ngày");
         dpFrom.setPrefHeight(40);
         dpFrom.setMaxWidth(200);
-        dpFrom.valueProperty().addListener((obs2, o2, n2) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+        dpFrom.valueProperty().addListener((obs2, o2, n2) -> {
+            if (chkFilterDate.isSelected())
+                applyFilter();
+        });
 
         Label lblTo = new Label("Đến:");
         lblTo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
@@ -144,7 +147,10 @@ public class DatPhongView extends BorderPane {
         dpTo.setPromptText("Đến ngày");
         dpTo.setPrefHeight(40);
         dpTo.setMaxWidth(200);
-        dpTo.valueProperty().addListener((obs2, o2, n2) -> { if (chkFilterDate.isSelected()) applyFilter(); });
+        dpTo.valueProperty().addListener((obs2, o2, n2) -> {
+            if (chkFilterDate.isSelected())
+                applyFilter();
+        });
 
         dateFilterRow.getChildren().addAll(chkFilterDate, lblFrom, dpFrom, lblTo, dpTo);
 
@@ -484,7 +490,8 @@ public class DatPhongView extends BorderPane {
         if (filteredData == null)
             return;
         String kw = txtSearch != null && txtSearch.getText() != null
-                ? txtSearch.getText().toLowerCase().trim() : "";
+                ? txtSearch.getText().toLowerCase().trim()
+                : "";
         boolean filterByDate = chkFilterDate != null && chkFilterDate.isSelected();
         java.time.LocalDate fromDate = dpFrom != null ? dpFrom.getValue() : null;
         java.time.LocalDate toDate = dpTo != null ? dpTo.getValue() : null;
@@ -496,8 +503,10 @@ public class DatPhongView extends BorderPane {
                 if (checkInStr != null && !"—".equals(checkInStr)) {
                     try {
                         java.time.LocalDate checkInDate = java.time.LocalDateTime.parse(checkInStr, FMT).toLocalDate();
-                        if (fromDate != null && checkInDate.isBefore(fromDate)) return false;
-                        if (toDate != null && checkInDate.isAfter(toDate)) return false;
+                        if (fromDate != null && checkInDate.isBefore(fromDate))
+                            return false;
+                        if (toDate != null && checkInDate.isAfter(toDate))
+                            return false;
                     } catch (Exception e) {
                         return false;
                     }
@@ -509,7 +518,8 @@ public class DatPhongView extends BorderPane {
             // Trạng thái filter (Hỗ trợ chọn nhiều)
             if (!selectedTrangThais.isEmpty()) {
                 String tt = (String) row[8];
-                if (tt == null) return false;
+                if (tt == null)
+                    return false;
 
                 // Quy đổi các trạng thái hủy chi tiết về chung một nhóm "DA_HUY" để so sánh lọc
                 String ttCheck = tt;
@@ -517,7 +527,8 @@ public class DatPhongView extends BorderPane {
                     ttCheck = "DA_HUY";
                 }
 
-                // Nếu trạng thái của dòng này không nằm trong danh sách đang được tick chọn thì ẩn đi
+                // Nếu trạng thái của dòng này không nằm trong danh sách đang được tick chọn thì
+                // ẩn đi
                 if (!selectedTrangThais.contains(ttCheck)) {
                     return false;
                 }
@@ -525,9 +536,9 @@ public class DatPhongView extends BorderPane {
             // Text filter
             if (!kw.isEmpty()) {
                 return ((String) row[0]).toLowerCase().contains(kw) ||
-                       ((String) row[1]).toLowerCase().contains(kw) ||
-                       ((String) row[2]).toLowerCase().contains(kw) ||
-                       ((String) row[3]).toLowerCase().contains(kw);
+                        ((String) row[1]).toLowerCase().contains(kw) ||
+                        ((String) row[2]).toLowerCase().contains(kw) ||
+                        ((String) row[3]).toLowerCase().contains(kw);
             }
             return true;
         });
@@ -545,104 +556,30 @@ public class DatPhongView extends BorderPane {
                 }
             }
         }
-        if (lblTotal != null) lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
-        if (lblDaDat != null) lblDaDat.setText(String.valueOf(cntDaDat));
-        if (lblChoXacNhan != null) lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
-        if (lblDangO != null) lblDangO.setText(String.valueOf(cntDangO));
-        if (lblDaTra != null) lblDaTra.setText(String.valueOf(cntDaTra));
-    }
-
-    private void checkLateCheckOut() {
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.util.Map<String, String> lateRooms = new java.util.HashMap<>();
-
-        // 1. Tìm các phòng đang trễ check-out
-        for (Object[] row : masterData) {
-            String tt = (String) row[8];
-            if ("DA_CHECKIN".equals(tt)) {
-                String checkOutStr = (String) row[5];
-                if (checkOutStr != null && !"—".equals(checkOutStr)) {
-                    try {
-                        java.time.LocalDate checkOutDate = java.time.LocalDateTime.parse(checkOutStr, FMT).toLocalDate();
-                        if (today.isAfter(checkOutDate)) {
-                            String tenKH = (String) row[1];
-                            String maPhongs = (String) row[3];
-                            if (maPhongs != null) {
-                                for (String p : maPhongs.split(",\\s*")) {
-                                    lateRooms.put(p, tenKH);
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-        }
-
-        if (lateRooms.isEmpty()) return;
-
-        // 2. Tìm khách sắp đến hôm nay bị trùng phòng
-        String conflictMessage = null;
-        String conflictingMaDat = null;
-
-        for (Object[] row : masterData) {
-            String tt = (String) row[8];
-            if ("DA_XACNHAN".equals(tt)) {
-                String checkInStr = (String) row[4];
-                if (checkInStr != null && !"—".equals(checkInStr)) {
-                    try {
-                        java.time.LocalDate checkInDate = java.time.LocalDateTime.parse(checkInStr, FMT).toLocalDate();
-                        if (today.equals(checkInDate)) {
-                            String tenKH = (String) row[1];
-                            String maPhongs = (String) row[3];
-                            if (maPhongs != null) {
-                                for (String p : maPhongs.split(",\\s*")) {
-                                    if (lateRooms.containsKey(p)) {
-                                        conflictMessage = "Khách hàng " + tenKH + " đang bị trùng phòng (" + p + ") với khách hàng " + lateRooms.get(p) + " (đang trễ check-out).";
-                                        conflictingMaDat = (String) row[0];
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-            if (conflictMessage != null) break;
-        }
-
-        // 3. Hiển thị thông báo và tuỳ chọn đổi phòng
-        if (conflictMessage != null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Cảnh báo trùng phòng");
-            alert.setHeaderText("Phát hiện trùng phòng với khách trễ Check-out");
-            alert.setContentText(conflictMessage);
-
-            ButtonType btnClose = new ButtonType("Đóng", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType btnChangeRoom = new ButtonType("Đổi phòng", ButtonBar.ButtonData.OK_DONE);
-            alert.getButtonTypes().setAll(btnClose, btnChangeRoom);
-
-            final String maDatToEdit = conflictingMaDat;
-            alert.showAndWait().ifPresent(type -> {
-                if (type == btnChangeRoom) {
-                    Window owner = getScene() != null ? getScene().getWindow() : null;
-                    new ThemSuaDatPhongDialog(owner, maDatToEdit, true, this::loadData).showDialog();
-                }
-            });
-        }
+        if (lblTotal != null)
+            lblTotal.setText(String.valueOf(cntDaDat + cntDangO + cntDaTra + cntChoXacNhan));
+        if (lblDaDat != null)
+            lblDaDat.setText(String.valueOf(cntDaDat));
+        if (lblChoXacNhan != null)
+            lblChoXacNhan.setText(String.valueOf(cntChoXacNhan));
+        if (lblDangO != null)
+            lblDangO.setText(String.valueOf(cntDangO));
+        if (lblDaTra != null)
+            lblDaTra.setText(String.valueOf(cntDaTra));
     }
 
     /* ── Column-header filter helpers ──────────────────────────────── */
-private void installColumnFilter() {
+    private void installColumnFilter() {
         String baseName = "Trạng thái";
         menuTrangThai = new ContextMenu();
 
         MenuItem all = new MenuItem("Tất cả trạng thái");
 
         String[][] statuses = {
-            {"DA_XACNHAN", "Đã xác nhận"},
-            {"DA_CHECKIN", "Đã nhận phòng"},
-            {"DA_CHECKOUT", "Đã trả phòng"},
-            {"DA_HUY", "Đã hủy"}
+                { "DA_XACNHAN", "Đã xác nhận" },
+                { "DA_CHECKIN", "Đã nhận phòng" },
+                { "DA_CHECKOUT", "Đã trả phòng" },
+                { "DA_HUY", "Đã hủy" }
         };
 
         java.util.List<CheckBox> checkBoxes = new java.util.ArrayList<>();
@@ -664,12 +601,12 @@ private void installColumnFilter() {
         for (String[] st : statuses) {
             CheckBox cb = new CheckBox(st[1]);
             cb.setStyle("-fx-font-size: 13px; -fx-cursor: hand; -fx-padding: 4 8;");
-            
+
             if (st[0].equals("DA_XACNHAN") || st[0].equals("DA_CHECKIN")) {
                 cb.setSelected(true);
                 selectedTrangThais.add(st[0]);
             }
-            
+
             // CustomMenuItem giúp menu KHÔNG BỊ ĐÓNG khi click vào CheckBox
             CustomMenuItem cmi = new CustomMenuItem(cb);
             cmi.setHideOnClick(false);
